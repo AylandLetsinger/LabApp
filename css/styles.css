@@ -1,0 +1,264 @@
+/* PURPOSE OF SCRIPT:
+This file contains all of the styling for the Lab App PWA.
+It controls the layout, colors, fonts, and overall visual appearance of all pages in the PWA. */
+
+/* 1. Reset default styles */ /* This resets the default styles for all elements */
+* { /* This selects all elements */
+    margin: 0; /* This removes the default margin for all elements */
+    padding: 0; /* This removes the default padding for all elements */
+    box-sizing: border-box; /* This ensures that padding and border are included in the element's total width and height */
+} /* end of * */
+
+
+
+/* 2. Body styles */ /* This styles the body element for the entire PWA */
+body { /* This styles the body element */
+    font-family: 'Arial', sans-serif; /* This sets the font for the body to Arial */
+    line-height: 1; /* This sets the line height for the body to 1 */
+    font-size: 18px; /* This sets the font size for the body to 18px */
+    color: #0a3b2e; /* This sets the text color for the body */
+    background-color: #eae6d3; /* This sets the background color for the body */
+    background-image: url(../assets/images/background.jpg); /* This sets the background image for the body */
+    background-size: cover; /* This sets the background size for the body */
+    background-position: center; /* This sets the background position for the body */
+    background-repeat: no-repeat; /* This sets the background repeat for the body */
+    background-attachment: fixed; /* This sets the background attachment for the body */
+} /* end of body */
+
+
+
+/* 3. Header styles */ /* This styles the header element */
+header h1 { /* This styles the header element */
+    font-size: 75px; /* This sets the font size for the header */
+    color: white; /* This sets the text color for the header */
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* This sets the text shadow for the header */
+    -webkit-text-stroke: 3px black; /* This sets the text stroke for the header */
+    text-align: center; /* This sets the text alignment for the header */
+    margin: 0; /* This removes the margin for the header */
+} /* end of header */
+
+
+
+/* 4. Navigation styles */ /* This styles the navigation element */
+nav { /* This styles the nav element */
+    text-align: center; /* This sets the text alignment for the nav */
+} /* end of nav */
+
+nav ul { /* This styles the unordered list for the navigation */
+    list-style: none; /* This removes the default list style for the navigation */
+    display: flex; /* This sets the display for the navigation */
+    gap: 1rem; /* This sets the gap between the navigation items */
+    display: inline-block; /* This sets the display for the navigation */
+    margin: 0; /* This removes the margin for the navigation */
+} /* end of nav ul */
+
+nav li { /* This styles the list items for the navigation */
+    display: inline; /* This sets the display for the list items */
+} /* end of nav li */
+
+nav a { /* This styles the navigation links */
+    display: inline-block; /* This sets the display for the navigation links */
+    padding: 10px; /* This sets the padding for the navigation links */
+    margin: 5px; /* This sets the margin for the navigation links */
+    background-color: white; /* This sets the background color for the navigation links */
+    color: black; /* This sets the text color for the navigation links */
+    border: 2px solid black; /* This sets the border for the navigation links */
+    box-shadow: 2px 2px black; /* This sets the box shadow for the navigation links */
+    text-decoration: none; /* This removes the text decoration for the navigation links on hover */
+} /* end of nav a */
+
+nav a:hover { /* This styles the navigation links on hover */
+    background-color: #f0f0f0; /* This sets the background color for the navigation links on hover */
+} /* end of nav a:hover */
+
+
+
+/* 5. Main content styles */ /* This styles the main content element */
+main { /* This styles the main element */
+    max-width: 1200px; /* This sets the maximum width for the main element */
+    margin: 0 auto; /* This centers the main element */
+    padding: 1rem; /* This sets the padding for the main element */
+    background-color: rgba(10, 40, 15, 0.7); /* This sets the background color for the main element */
+    color: rgb(255, 255, 255); /* This sets the text color for the main element */
+    padding: 15px; /* This sets the padding for the main element */
+    margin: 20px auto; /* This sets the margin for the main element */
+    text-align: center; /* This sets the text alignment for the main element */
+} /* end of main */
+
+main h2 { /* This styles the h2 element for the main element */
+    margin-bottom: 1rem; /* This adds a space between the h2 element and the next element */
+    color: rgb(146, 234, 238); /* This sets the text color for the h3 element */
+} /* end of main h2 */
+
+main h3 { /* This styles the h3 element for the main element */
+    margin-bottom: 1rem; /* This adds a space between the h2 element and the next element */
+    color: rgb(187, 234, 238); /* This sets the text color for the h3 element */
+} /* end of main h3 */
+
+main p { /* This styles the p element for the main element */
+    margin-bottom: 1rem; /* This adds a space between the p element and the next element */
+    line-height: 1.4; /* This sets the line height for the p element */
+} /* end of main p */
+
+
+
+/* 6. Calculation Pages Styles */ /* This styles calculation pages for consistent aesthetics */
+.calculator-section { /* This styles the calculator section */
+    background-color: rgba(0, 50, 50, 0.7); /* This sets the background color for the calculator section */
+    color: rgb(255, 255, 255); /* This sets the text color for the calculator section */
+    padding: 15px; /* This sets the padding for the calculator section */
+    margin: 20px; /* This sets the margin for the calculator section */
+} /* end of .calculator-section */
+
+.calculator-section h2 { /* This styles the h2 element for the calculator section */
+    font-size: 36px; /* This sets the font size for the h2 element */
+    margin-top: 20px; /* This sets the margin top for the h2 element */
+    margin-bottom: 20px; /* This sets the margin bottom for the h2 element */
+} /* end of .calculator-section h2 */
+
+.calculator-section h3 { /* This styles the h3 element for the calculator section */
+    font-size: 28px; /* This sets the font size for the h3 element */
+    margin-top: 16px; /* This sets the margin top for the h3 element */
+    margin-bottom: 16px; /* This sets the margin bottom for the h3 element */
+} /* end of .calculator-section h3 */
+
+.calculator-section h4 { /* This styles the h4 element for the calculator section */
+    font-size: 22px; /* This sets the font size for the h4 element */
+    margin-top: 14px; /* This sets the margin top for the h4 element */
+    margin-bottom: 14px; /* This sets the margin bottom for the h4 element */
+} /* end of .calculator-section h4 */
+
+.calculation-result { /* This styles the calculation result element */
+    font-family: Arial, sans-serif; /* This sets the font for the calculation result */
+    font-size: 16px; /* This sets the font size for the calculation result */
+} /* end of .calculation-result */
+
+.calculation-result .equation { /* This styles the equation element for the calculation result */
+    display: inline-block; /* This sets the display for the equation element */
+    font-family: 'Cambria Math', serif; /* This sets the font for the equation element */
+    text-align: center; /* This sets the text alignment for the equation element */
+} /* end of .calculation-result .equation */
+
+.calculation-result .equation span { /* This styles the span element for the equation */
+    display: block; /* This sets the display for the span element */
+} /* end of .calculation-result .equation span */
+
+
+
+/* 7. Footer styles */ /* This styles the footer element */
+footer { /* This styles the footer element */
+    text-align: center; /* This centers the text for the footer */
+    padding: 1rem; /* This sets the padding for the footer */
+    margin-top: 2rem; /* This sets the margin top for the footer */
+    border-top: 1px solid #0a3b2e; /* This sets the border top for the footer */
+} /* end of footer */
+
+
+
+/* 8. Active Page Styles */ /* This styles the active page nav link to be highlighted */
+.active {
+    background-color: rgb(241, 241, 129); /* Change this to your desired color */
+    color: black; /* Change text color if needed */
+}
+
+
+
+/* 9. Note Styles */ /* This styles the note element */
+.note { /* This styles the note element */
+    font-size: 14px; /* This sets the font size for the note */
+    color: lightgrey; /* This sets the text color for the note */
+} /* end of .note */
+
+
+
+/* 10. Form Group Styles */ /* This styles the form group element */
+.form-group { /* This styles the form group element */
+    margin-bottom: 20px; /* Sets the margin bottom for the form group */
+} /* end of .form-group */
+
+.row { /* This styles the row element */
+    display: grid; /* Sets the display for the row */
+    grid-template-columns: 280px 100px 45px 30px 100px 45px 50px; /* Defines the column widths for the row */
+    align-items: center; /* Sets the alignment for the row */
+    gap: 3px; /* Sets the spacing between elements */
+    margin-bottom: 10px; /* Sets space between rows */
+    justify-content: left; /* Centers the grid horizontally */
+} /* end of .row */
+
+label { /* This styles the label element */
+    text-align: right; /* Sets the text alignment for the label */
+    white-space: nowrap; /* Prevents wrapping for the label */
+} /* end of label */
+
+.input { /* This styles the input field */
+    padding: 1px; /* Sets the padding for the input field */
+    font-family: 'Arial', sans-serif; /* Sets the font for the input field */
+    font-size: 16px; /* Sets the font size for the input field */
+    width: 75px; /* Sets the width for the input field */
+    text-align: center; /* Sets the text alignment for the input field */
+} /* end of .input */
+
+input.highlight-input { /* This styles the highlighted input field */ 
+    background-color: rgb(247, 206, 130); /* Sets the background color for the highlighted input field */
+    text-align: center; /* Centers the text for the highlighted input field */
+    font-family: 'Arial', sans-serif; /* Sets the font for the highlighted input field */
+    font-size: 16px; /* Sets the font size for the highlighted input field */
+    width: 100px; /* Sets the width for the highlighted input field */
+    height: 20px; /* Sets the height for the highlighted input field */
+} /* end of input.highlight */
+
+input.highlight-output { /* This styles the highlighted output field */ 
+    background-color: rgb(203, 234, 236); /* Sets the background color for the highlighted output field */
+    text-align: center; /* Centers the text for the highlighted output field */
+    font-family: 'Arial', sans-serif; /* Sets the font for the highlighted output field */
+    font-size: 16px; /* Sets the font size for the highlighted output field */
+    width: 100px; /* Sets the width for the highlighted output field */
+    height: 20px; /* Sets the height for the highlighted output field */
+} /* end of input.highlight */
+
+select.form-field { /* This styles the dropdown field element */
+    width: auto; /* Sets the width for the dropdown field */
+    height: auto; /* Sets the height for the dropdown field */
+    text-align: center; /* Sets the text alignment for the dropdown field */
+    text-align-last: center; /* Sets the text alignment for the dropdown field */
+    font-size: 16px; /* Sets the font size for the dropdown field */
+    padding: 1px; /* Sets the padding for the dropdown field */
+} /* end of select.form-field */
+
+.note { /* This styles the note element */
+    grid-column: 1 / span 5; /* Make notes span across the entire row */
+    font-size: 14px; /* Sets the font size for the note */
+    color: lightgrey; /* Sets the text color for the note */
+    white-space: nowrap; /* Prevents wrapping for the note */
+} /* end of .note */
+
+span { /* This styles the span element */
+    text-align: left; /* Sets the text alignment for the span */
+} /* end of span */
+
+label, span { /* This styles the label and span elements */
+    white-space: nowrap; /* Prevent wrapping */
+} /* end of label, span */
+
+input[type="submit"], button[type="submit"] { /* This styles the submit button */
+    display: block; /* Ensures the button gets its own line */
+    margin: 10px auto; /* Center button horizontally */
+    padding: 5px 10px; /* Sets the padding for the button */
+    font-size: 14px; /* Sets the font size for the button */
+    width: auto; /* Sets the button width */
+    height: auto; /* Sets the button height */
+    border: none; /* Removes the border for the button */
+    border-radius: 5px; /* Sets the border radius for the button */
+    cursor: pointer; /* Sets the cursor for the button */
+    text-align: center; /* Center-aligns the button text */
+}
+
+
+
+
+
+
+
+
+
+

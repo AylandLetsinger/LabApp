@@ -1,0 +1,245 @@
+<!-- PURPOSE OF SCRIPT: 
+ This is the main HTML file for the Dosage - Intraperitoneal Injection - by Body Weight page on the Lab App PWA. 
+ It's purpose is to specify the content for the dosage-ip-bw page and link related files needed for this page. -->
+
+ <!DOCTYPE html> <!-- specify this is an HTML5 document -->
+
+ <html lang="en"> <!-- specify the language of the document -->  
+ 
+ <head> <!-- HEAD SECTION - Users don't see this --> 
+     
+     <!-- 1. Essential Meta Tags -->
+     <meta charset="UTF-8"> <!-- specify character encoding for proper display of special characters -->
+     <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- makes PWA mobile-responsive -->
+     
+     <!-- 2. Page Title (shows in browser tab) --> 
+     <title>THE LAB APP</title> <!-- specify the title of the PWA -->
+ 
+     <!-- 3. Links to External CSS files --> <!-- preferred for styling -->
+     <link rel="stylesheet" href="../css/styles.css"> <!-- link to the CSS file -->
+
+ </head> <!-- end the head section -->
+ 
+ <body> <!-- BODY SECTION - Users see everything here -->
+ 
+     <!-- 1. Header/Navigation -->
+     <header>
+         <h1>THE LAB APP</h1> <!-- specify the main heading of the page -->
+         <nav> <!-- specify the navigation section of the page -->
+             <ul>
+                 <li><a href="../index.html">Home</a></li> <!-- link to the home page -->
+                 <li><a href="about.html">About</a></li> <!-- link to the about page -->
+                 <li><a href="dosage.html" class="active">Dosage</a></li> <!-- link to the dosage page -->
+                 <li><a href="molarity.html">Molarity</a></li> <!-- link to the molarity page -->
+                 <li><a href="dilutions.html">Dilutions</a></li> <!-- link to the dilutions page -->
+                 <li><a href="antibodies.html">Antibodies</a></li> <!-- link to the antibodies page -->
+             </ul>
+         </nav> <!-- end the navigation section -->
+     </header> <!-- end the header section -->
+ 
+     <!-- 2. Main Content on Home Page -->
+     <main>
+         <h2>Dosage Calculator</h2> <!-- specify the subheading of the page -->
+         <p>This calculator is to calculate the dosage of a drug or medication based on the patient or animal's weight.</p>
+         <h3>Step 1. Select delivery method:</h3>   
+         <p>Use the buttons below to select the specific type of dosage calculator that you need, then follow the steps within.</p>
+            <nav> <!-- specify the navigation section of the sub-Dosage pages -->
+            <ul> 
+                <li><a href="dosage-stock.html">Stock Solution</a></li> <!-- link to the Stock sub-page -->
+                <li><a href="dosage-direct.html">Direct Application</a></li> <!-- link to the Direct sub-page -->
+                <li><a href="dosage-ip.html" class="active">Intraperitoneal Injection</a></li> <!-- link to the IP sub-page -->
+                <li><a href="dosage-subq.html">Subcutaneous Injection</a></li> <!-- link to the SubQ sub-page -->
+                <li><a href="dosage-ic.html">Intracranial Injection/Infusion</a></li> <!-- link to the IC sub-page -->
+                <li><a href="dosage-iv.html">Intravenous Injection</a></li> <!-- link to the IV sub-page -->
+                <li><a href="dosage-drink.html">Drinking Fluid</a></li> <!-- link to the Drink sub-page -->
+                <li><a href="dosage-eat.html">Eatable Solid</a></li> <!-- link to the Eat sub-page -->
+             </ul>
+        </nav>
+        <p></p>
+
+        <h3>Step 2. Select Dosage Method</h3>
+        <p>Use the buttons below to select the method to calculate dosage that you need, then follow the steps within.</p>
+        <nav> <!-- specify the navigation section of the sub-Dosage pages -->
+            <ul> 
+                <li><a href="dosage-ip-subj.html">Dose Per Subject</a></li> <!-- link to the by Subject sub-page -->
+                <li><a href="dosage-ip-bw.html" class="active">Dose By Body Weight</a></li> <!-- link to the by BW sub-page -->
+                <li><a href="dosage-ip-solconc.html" >Dose By Solution Concentration</a></li> <!-- link to the by SolConc sub-page -->
+                <li><a href="dosage-ip-infus.html">Dose by Infusion Rate</a></li> <!-- link to the by Infusion Rate sub-page -->
+             </ul>
+            </nav>
+        <p></p>
+
+        <h3>Step 3. Enter Study Parameters:</h3>
+        <p>Enter the study parameters below to calculate the dosage by body weight for an IP injection.
+            Parameters you must enter are highlighted in orange. Change the units using the dropdown menus.</p>
+
+        <form id="dosage-ip-bw-1-form"> <!-- specify form for the dosage by body weight calculator -->
+            <div class="form-group">
+                <div class="row">
+                    <!-- Dose Per Bodyweight-->
+                    <label for="dose">Dose</label> <!-- specify the label for the dose input -->
+                    <input type="number" id="dose" name="dose" step="any" required class="highlight-input";"> <!-- configure the dose input -->
+                    <select id="dose-unit" name="dose-unit"> <!-- specify the dropdown menu for the dose unit -->
+                        <option value="mcg">ug</option> <!-- specify the option for micrograms -->
+                        <option value="mg" selected>mg</option> <!-- specify the option for milligrams -->
+                        <option value="g">g</option> <!-- specify the option for grams -->
+                        <option value="kg">kg</option> <!-- specify the option for kilograms -->
+                    </select> <!-- end the dropdown menu for the dose unit -->
+                    <span>per</span>
+                    <input type="number" id="bodyweight" name="bodyweight" step="any" required class="highlight-input";"> <!-- configure the weight input -->
+                    <select id="bodyweight-unit" name="bodyweight-unit"> <!-- specify the dropdown menu for the weight unit -->
+                        <option value="mcg">ug</option> <!-- specify the option for micrograms -->
+                        <option value="mg">mg</option> <!-- specify the option for milligrams -->
+                        <option value="g">g</option> <!-- specify the option for grams -->
+                        <option value="kg" selected>kg</option> <!-- specify the option for kilograms -->
+                    </select> <!-- end the dropdown menu for the weight unit -->
+                    <label for="weight">Body Weight</label> <!-- specify the label for the weight input --> 
+                </div>
+                
+                <button type="submit" class="btn">Continue</button>
+            </div>
+        </form> <!-- end the form for the dosage by body weight calculator -->
+        <p></p>
+        <p></p>
+        <form id="dosage-ip-bw-2-form"> <!-- specify form 2 for the dosage by body weight calculator -->
+            <div class="form-group">
+                <div class="row">
+                    <!-- Volume Per Injection-->
+                    <label for="volume">Volume Per Injection</label> <!-- specify the label for the volume input -->
+                    <input type="number" id="volume-inj" name="volume-inj" step="any" required class="highlight-input" title="Note: 100 uL per 10 g of body weight is recommended for mice. The maximal volume per injection is 2 mL.";"> <!-- configure the volume input -->
+                    <select id="volume-inj-unit" name="volume-inj-unit"> <!-- specify the dropdown menu for the volume unit -->
+                        <option value="ul">ul</option> <!-- specify the option for microliters -->
+                        <option value="ml" selected>ml</option> <!-- specify the option for milliliters -->
+                        <option value="l">l</option> <!-- specify the option for liters -->
+                    </select> <!-- end the dropdown menu for the volume unit -->
+                    <span>per</span>
+                    <input type="number" id="weight" name="weight" step="any" required class="highlight-input" title="Note: 100 uL per 10 g of body weight is recommended for mice. The maximal volume per injection is 2 mL.";"> <!-- configure the weight input -->
+                    <select id="weight-unit" name="weight-unit"> <!-- specify the dropdown menu for the weight unit -->
+                        <option value="mg">mg</option> <!-- specify the option for milligrams -->
+                        <option value="g" selected>g</option> <!-- specify the option for grams -->
+                        <option value="kg">kg</option> <!-- specify the option for kilograms -->
+                    </select> <!-- end the dropdown menu for the weight unit -->
+                    <span>Body Weight</span>
+                </div>
+                <div class="row">
+                    <!-- Average Body Weight per Subject-->
+                    <label for="avg-weight">Average Body Weight per Subject</label> <!-- specify the label for the average subject weight input -->
+                    <input type="number" id="avg-weight" name="avg-weight" step="any" required class="highlight-input";"> <!-- configure the average subject weight input -->
+                    <select id="avg-weight-unit" name="avg-weight-unit"> <!-- specify the dropdown menu for the average subject weight unit -->
+                        <option value="mg">mg</option> <!-- specify the option for milligrams -->
+                        <option value="g" selected>g</option> <!-- specify the option for grams -->
+                        <option value="kg">kg</option> <!-- specify the option for kilograms -->
+                    </select> <!-- end the dropdown menu for the average subject weight unit -->
+                </div>
+                <div class="row">
+                    <!-- Total Number of Injections-->
+                    <label for="total-injections">Total Number of Injections</label> <!-- specify the label for the total number of injections input -->
+                    <input type="number" id="total-injections" name="total-injections" required class="highlight-input";"> <!-- configure the total number of injections input -->  
+                </div>
+                <div class="row">
+                    <!-- Amount of Extra Volume-->
+                    <label for="waste-buffer">Amount of Surplus Volume</label> <!-- specify the label for the waste buffer volume input -->
+                    <input type="number" id="waste-buffer" name="waste-buffer" required class="highlight-input" title="Note: How much extra volume to make? 10% is recommended.";> <!-- configure the waste buffer volume input -->
+                    <span>%</span>
+                </div>
+                
+                <button type="submit" class="btn">Calculate</button>
+            </div>
+        </form> <!-- end the form 2 for the dosage by body weight calculator -->
+        <p></p>
+        <h3>Step 4. Dosage Output:</h3>
+        <p>Once both input steps are completed above, the dosage output for IP injection by body weight will appear below. Outputs are highlighted in blue. 
+            The output includes the total volume to make, the amount of solute required, and the final concentration.</p>
+        
+        <div class="form-output">
+            <div class="row">
+                <!-- Dose Per Average Subject-->
+                <label for="dose-per-avg-subj">Dose Per Average Subject</label> <!-- specify the label for the dose per subject input -->
+                <input type="number" id="dose-per-avg-subj" name="dose-per-avg-subj" required class="highlight-output";> <!-- configure the dose per subject input -->
+                <select id="dose-per-avg-subj-unit" name="dose-per-avg-subj-unit"> <!-- specify the dropdown menu for the dose per subject unit -->
+                    <option value="mcg">ug</option> <!-- specify the option for micrograms -->
+                    <option value="mg" selected>mg</option> <!-- specify the option for milligrams -->
+                    <option value="g">g</option> <!-- specify the option for grams -->
+                </select> <!-- end the dropdown menu for the dose per subject unit -->
+            </div>
+            <div class="row">
+                <!-- Amount of Solute Required-->
+                <label for="total-solute">Amount of Solute Required</label> <!-- specify the label for the total solute required input -->
+                <input type="number" id="total-solute" name="total-solute" required class="highlight-output";> <!-- configure the total solute required input -->
+                <select id="solute-unit" name="solute-unit"> <!-- specify the dropdown menu for the solute unit -->
+                    <option value="mcg">ug</option> <!-- specify the option for micrograms -->
+                    <option value="mg" selected>mg</option> <!-- specify the option for milligrams -->
+                    <option value="g">g</option> <!-- specify the option for grams -->
+                </select> <!-- end the dropdown menu for the solute unit -->
+            </div>
+            <div class="row">
+                <!-- Volume Per Average Subject-->
+                <label for="volume-per-avg-subj">Volume Per Average Subject</label> <!-- specify the label for the volume per subject input -->
+                <input type="number" id="volume-per-avg-subj" name="volume-per-avg-subj" required class="highlight-output";> <!-- configure the volume per subject input -->
+                <select id="volume-per-avg-subj-unit" name="volume-per-avg-subj-unit"> <!-- specify the dropdown menu for the volume per subject unit -->
+                    <option value="ul">ul</option> <!-- specify the option for microliters -->
+                    <option value="ml" selected>ml</option> <!-- specify the option for milliliters -->
+                    <option value="l">l</option> <!-- specify the option for liters -->
+                </select> <!-- end the dropdown menu for the volume per subject unit -->
+            </div>
+            <div class="row">
+                <label for="total-volume">Total Volume to Make</label> <!-- specify the label for the total volume to make input -->
+                <input type="number" id="total-volume" name="total-volume" required class="highlight-output";> <!-- configure the total volume to make input -->
+                <select id="total-volume-unit" name="total-volume-unit"> <!-- specify the dropdown menu for the volume unit -->
+                    <option value="ul">ul</option> <!-- specify the option for microliters -->
+                    <option value="ml" selected>ml</option> <!-- specify the option for milliliters -->
+                    <option value="l">l</option> <!-- specify the option for liters -->
+                </select> <!-- end the dropdown menu for the volume unit -->
+            </div>
+            <div class="row">
+                <!-- Final Concentration-->
+                <label for="concentration">Concentration</label> <!-- specify the label for the final concentration input -->
+                <input type="number" id="concentration" name="concentration" required class="highlight-output";> <!-- configure the final concentration input -->
+                <select id="concentration-unit" name="concentration-unit"> <!-- specify the dropdown menu for the final concentration unit -->
+                    <option value="mcg">ug</option> <!-- specify the option for micrograms -->
+                    <option value="mg" selected>mg</option> <!-- specify the option for milligrams -->
+                    <option value="g">g</option> <!-- specify the option for grams -->
+                </select> <!-- end the dropdown menu for the final concentration unit -->
+                <span>per</span>
+                <select id="concentration-volume-unit" name="concentration-volume-unit"> <!-- specify the dropdown menu for the volume unit -->
+                    <option value="ul">ul</option> <!-- specify the option for microliters -->
+                    <option value="ml" selected>ml</option> <!-- specify the option for milliliters -->
+                    <option value="l">l</option> <!-- specify the option for liters -->
+                </select> <!-- end the dropdown menu for the volume unit -->
+            </div>
+            <p></p>
+            <div class="row">
+                <!-- Initial Solute-->
+                <label for="initial-solute">Initial Solute</label>
+                <input type="number" id="initial-solute" name="initial-solute" required class="highlight-input" title="Note: Equals solute required. Can be overriden if more or less solute is available.";> <!-- configure the initial solute input -->
+                <select id="initial-solute-unit" name="initial-solute-unit"> <!-- specify the dropdown menu for initial solute unit -->
+                    <option value="mcg">ug</option> <!-- specify the option for micrograms -->
+                    <option value="mg" selected>mg</option> <!-- specify the option for milligrams -->
+                    <option value="g">g</option> <!-- specify the option for grams -->
+                </select> <!-- end the dropdown menu for initial solute unit -->
+            </div>
+            <div class="row">
+                <!-- Total Yield-->
+                <label for="total-yield">Total Yield</label>
+                <input type="number" id="total-yield" name="total-yield" required class="highlight-output";> <!-- configure the total yield input -->
+                <span>doses</span>    
+            </div>
+        </div>
+     </main> <!-- end the main content section -->
+ 
+     <!-- 4. Any JavaScript that can wait until the user has loaded the page -->
+     <script src="../js/app.js"></script> <!-- link to the JavaScript file -->
+     <script src="../js/conversions.js"></script> <!-- link to the conversions JavaScript file -->
+     <script src="../js/dosage.js"></script> <!-- link to the dosage JavaScript file -->
+     <!-- INSERT OTHER DOSAGE .JS FILES HERE -- not sure if I'll make one for each calculator or just the main nav groups -->
+ 
+     <!-- 5. Footer -->
+     <footer>
+         <p>&copy; 2024 The Lab App</p> <!-- specify the copyright of the PWA -->
+     </footer> <!-- end the footer section -->   
+ 
+ </body> <!-- end the body section -->
+ 
+ </html> <!-- end the HTML document -->
+ 
+ 
