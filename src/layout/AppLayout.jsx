@@ -73,6 +73,7 @@ export default function AppLayout() {
             <NavButton to="/molarity">Molarity</NavButton>
             <NavButton to="/dilutions">Dilutions</NavButton>
             <NavButton to="/antibodies">Antibodies</NavButton>
+            <NavButton to="/recipes">Recipes</NavButton>
           </Group>
         </Group>
       </AppShell.Header>

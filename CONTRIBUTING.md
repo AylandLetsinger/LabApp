@@ -1,135 +1,184 @@
-# Working on The Lab App
+# SOP — Working on The Lab App
 
-This is a small team on a tool that students use to dose animals. The point of
-the rules below is not process for its own sake — it is that a wrong number on
-this site can reach a mouse.
+Standard operating procedure for the three of us. Follow it in order.
 
-Two rules matter more than all the others:
+Students use these calculators to dose live animals. A wrong number can reach a
+mouse. That is why this reads like a lab protocol rather than a style guide.
 
-1. **Pull before you start.** Every session, every time.
-2. **Never commit straight to `main`.** Work on a branch, open a Pull Request.
-
-Everything else is detail.
+**Everyone here works with an AI assistant.** That changes what the risky step
+is. The AI will write correct-looking code quickly; the danger is no longer
+typos, it is plausible-looking wrong answers landing on the live site. Section
+3 exists for that.
 
 ---
 
-## Who works on what
+## 0. Who owns what
 
-Splitting by area is what keeps us out of each other's way. Two people editing
-different files is a non-event. Two people editing the *same* file at the same
-time is the one thing git cannot sort out on its own.
+Two people editing different files is a non-event. Two people editing the same
+file at the same time is the one thing git cannot resolve on its own.
 
 | Person | Area | Files |
 |---|---|---|
-| Ayland | Dosage calculators | `src/dosage/`, `src/components/dosage/` |
-| Klarissa | Molarity, Dilutions, Antibodies | `src/pages/`, new folders per calculator |
+| **Ayland** | Dosage calculators | `src/dosage/`, `src/components/dosage/` |
+| **Klarissa** | Molarity, Dilutions, Antibodies | `src/pages/Molarity.jsx`, `Dilutions.jsx`, `Antibodies.jsx` |
+| **Elijah** | Recipes | `src/pages/Recipes.jsx` |
 
-Shared files — `src/theme.js`, `src/layout/AppLayout.jsx`, `src/App.jsx`,
-`src/dosageDeliveryMethods.js`, `package.json`. **Say something in chat before
-editing these.** They are small and everyone touches them, which makes them the
-most likely place for a collision.
+**Shared files — say so in chat before editing:**
 
-If you need to work in someone else's area, message them first. It takes ten
-seconds and saves an afternoon.
+```
+src/theme.js                  colours and fonts
+src/layout/AppLayout.jsx      the top navigation bar
+src/App.jsx                   the list of pages
+src/dosageDeliveryMethods.js  the Dosage dropdown
+package.json                  dependencies
+```
+
+These five are small, everyone needs them eventually, and they are where
+collisions actually happen. Adding a page to the nav means editing
+`AppLayout.jsx` and `App.jsx` — flag it.
 
 ---
 
-## The loop
-
-### 1. Pull
+## 1. Start of every session
 
 ```bash
+git checkout main
 git pull
+git checkout -b short-name-for-what-youre-doing
 ```
 
-Gets everyone else's work. If you skip this, you are building on a stale copy
-and you will have conflicts later.
+**Do not skip the pull.** Working from a stale copy is how you get conflicts.
 
-### 2. Branch
-
-```bash
-git checkout -b molarity-calculator
-```
-
-Name it after what you are doing: `molarity-calculator`, `fix-dilution-units`,
-`antibody-titration`. Lowercase, hyphens, no spaces.
+Branch names: lowercase, hyphens, describe the work.
+`molarity-calculator`, `fix-dilution-units`, `recipes-form`.
 
 Your branch is yours. You cannot break the live site from it.
 
-### 3. Work, and commit as you go
+---
+
+## 2. While you work
+
+Commit whenever a piece works — not once at the end.
 
 ```bash
 git add -A
 git commit -m "Add molarity input fields"
 ```
 
-Commit whenever a piece works — not once at the end. Small commits are easy to
-read and easy to undo. A commit is a save point, not an announcement.
+Write the message as what it does. "Add molarity input fields", not "changes"
+or "wip". A commit is a save point you can return to.
 
-Write the message as what it *does*: "Add molarity input fields", not "changes"
-or "wip".
+**Tell your AI assistant to read `CLAUDE.md` if it hasn't.** Claude Code loads
+it automatically; other tools may not. It contains the rules that exist because
+something already went wrong.
 
-### 4. Push your branch
+---
+
+## 3. Checking AI-written work
+
+This is the step that matters most and the easiest to skip.
+
+**Check the arithmetic against a hand calculation.** Pick one case you can do
+on paper and confirm the tool agrees. Not "does the code look right" — does the
+number come out right.
+
+**Check units in both directions.** Enter the same quantity two ways — 25 g and
+0.025 kg — and confirm every output is identical. This exact test caught a
+1000x error in the IP calculator that had been live for weeks.
+
+**Check the edge cases.** Zero. Blank. Negative. A absurd value. Every one
+should produce a visible message, never a silent blank or a confident wrong
+number.
+
+**Check it did what you asked and nothing else.** AI assistants add
+requirements you did not ask for. This has already happened here: an earlier
+session invented a consumption-tracking feature for the mealworm calculator
+that nobody wanted, and it survived into a later spec because its origin was
+forgotten. If a feature appears that you did not request, delete it or ask
+where it came from.
+
+**Never accept a safety number without a source.** Tolerability limits,
+maximum volumes, concentration ceilings — if the AI produced a figure, ask for
+the citation. If it cannot cite it, the value must be recorded as unknown, not
+guessed. Check `src/dosage/vehicles.js` for the required shape.
+
+Then:
 
 ```bash
-git push -u origin molarity-calculator
+npm run lint     # must pass with no errors
+npm run build    # must succeed
+npm run dev      # click through what you changed
 ```
 
-**Vercel builds every branch to its own live URL.** Within about a minute you
-get a working link to the site with your changes on it, and production is
-completely untouched. Find it on the Vercel dashboard, or in the bot comment on
-your Pull Request.
+If lint or build fails for you, it fails for everyone.
 
-This is the best thing about our setup. Use it. Send the link instead of
-describing what you did.
+---
 
-### 5. Open a Pull Request
+## 4. Publish for review
 
-On github.com the repo will offer a **Compare & pull request** button after you
-push. Click it, write a sentence about what changed, create it.
+```bash
+git push -u origin your-branch-name
+```
 
-### 6. The other person looks, then merge
+**Vercel builds every branch to its own live URL** — about a minute. Production
+is untouched.
 
-Open the preview URL and click around. You are not required to read the code —
-looking at the working thing is a legitimate review, and often a better one.
+On github.com the repo offers a **Compare & pull request** button. Click it,
+write a sentence about what changed, create it. Vercel posts the preview link
+on the PR.
 
-Then **Merge pull request**. It is live on thelabapp.org in about a minute.
+---
 
-### 7. Go back to main and pull
+## 5. Review
+
+The other person opens the preview link and clicks around.
+
+You are not required to read the code. Opening the working thing and trying it
+is a legitimate review, and for a calculator it is usually the better one — try
+the numbers you actually use at the bench.
+
+For anything touching dosage maths, repeat the checks in section 3 yourself.
+Two people checking one number costs a minute.
+
+---
+
+## 6. Merge and reset
+
+Click **Merge pull request** on GitHub. Live on thelabapp.org in about a
+minute.
+
+Then immediately:
 
 ```bash
 git checkout main
 git pull
 ```
 
-Do this straight after merging, or your next branch starts from stale code.
+Skip this and your next branch starts from stale code.
 
 ---
 
 ## Not comfortable at the command line?
 
-Install **[GitHub Desktop](https://desktop.github.com/)**. Free, from GitHub.
-Pull, branch, commit, and push are all buttons, and it shows you exactly what
-changed before you send anything.
+Install **[GitHub Desktop](https://desktop.github.com/)** — free, from GitHub.
+Pull, branch, commit and push are buttons, and it shows you what changed before
+you send it.
 
-It is the same git underneath, so we can mix — one person on the GUI and one on
-the command line is completely fine.
+Same git underneath. Mixing GUI and command line across the team is fine.
 
 ---
 
 ## When something goes wrong
 
 **"Your local changes would be overwritten by merge"**
-You have uncommitted edits. Either commit them, or park them:
+You have uncommitted edits. Commit them, or park them:
 ```bash
-git stash        # put them aside
+git stash
 git pull
-git stash pop    # bring them back
+git stash pop
 ```
 
-**A merge conflict**
-Two people changed the same lines. Git marks them in the file like this:
-
+**A merge conflict** — two people changed the same lines:
 ```
 <<<<<<< HEAD
 your version
@@ -137,49 +186,26 @@ your version
 their version
 >>>>>>> main
 ```
-
-Pick what the file should say, delete the `<<<<<<<`, `=======`, and `>>>>>>>`
-lines, save, then commit. If it looks frightening, stop and ask — do not guess.
+Decide what the file should say, delete the `<<<<<<<`, `=======` and `>>>>>>>`
+markers, save, commit. **If it looks frightening, stop and ask.** Do not guess,
+and do not let an AI resolve a conflict in dosage maths unsupervised.
 
 **You committed to `main` by accident**
-Don't panic and don't force-push. Say so in chat; it is straightforward to move
-a commit onto a branch as long as nobody has built on top of it.
+Do not force-push. Say so in chat — a commit is easy to move onto a branch as
+long as nobody has built on top of it.
+
+**The live site is broken**
+Vercel dashboard → Deployments → find the last good one → **Instant Rollback**.
+Fix it properly afterwards. Rolling back first is not an admission of anything.
 
 ---
 
-## Before you open a Pull Request
+## Deployment, briefly
 
-```bash
-npm run lint     # must pass with no errors
-npm run build    # must succeed
-npm run dev      # then click through what you changed
-```
-
-If lint or build fails, it will fail for everyone else too.
-
----
-
-## Things worth knowing about this codebase
-
-**All arithmetic happens in milligrams and millilitres.** Values enter through
-`src/dosage/unitConversions.js` and leave through it. Display units are a
-separate layer and must never feed back into a calculation.
-
-This is not a style preference. The calculator previously honoured the
-body-weight unit selector in one code path and ignored it in another, which
-produced a concentration 1000x wrong with no warning. If you add a unit
-anywhere, route it through `unitConversions.js`.
-
-**Errors never pass silently.** A calculation that cannot produce a trustworthy
-number returns `undefined` and the UI says why. A blank output field with no
-explanation is a bug.
-
-**Safety numbers carry their source.** Every limit in `src/dosage/vehicles.js`
-has a `source`, an `endpoint` (what was actually measured), and a `confidence`.
-Where no published figure exists, that is recorded as `null` — never filled in
-with something plausible. Do not add a number you cannot cite.
-
-**Shared before specific.** Anything route-agnostic — unit conversion, dose per
-subject, vehicle splitting — lives in `src/dosage/`. Only genuinely
-method-specific logic gets its own module. Before writing a new calculator,
-check what already exists.
+- `thelabapp.org` and `www.thelabapp.org` are served by **Vercel**.
+- Merging to `main` deploys automatically, about one minute.
+- Every branch gets its own preview URL.
+- GitHub Pages was retired in August 2026 — it returned a real 404 for every
+  route except `/`, because static Pages hosting cannot rewrite URLs for a
+  single-page app. Do not re-add a Pages workflow.
+- DNS is at Namecheap: `@` → A record to Vercel, `www` → CNAME to Vercel.

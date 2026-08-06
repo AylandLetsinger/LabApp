@@ -6,6 +6,7 @@ import Dilutions from './pages/Dilutions';
 import Dosage from './pages/Dosage';
 import Home from './pages/Home';
 import Molarity from './pages/Molarity';
+import Recipes from './pages/Recipes';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/molarity" element={<Molarity />} />
         <Route path="/dilutions" element={<Dilutions />} />
         <Route path="/antibodies" element={<Antibodies />} />
+        <Route path="/recipes" element={<Recipes />} />
       </Route>
     </Routes>
   );
