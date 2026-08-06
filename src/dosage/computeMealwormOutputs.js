@@ -210,6 +210,42 @@ export function computeMealwormDosingTable({
 }
 
 /**
+ * Can the vehicle actually dissolve the drug at the concentration required?
+ *
+ * A drug dissolved in a primary solvent cannot be more concentrated in the
+ * finished mix than (its solubility in that solvent) x (the fraction of the
+ * mix that solvent is). Exceed that and the batch is a suspension, whatever
+ * the arithmetic upstream says.
+ *
+ * The ceiling is conservative. It assumes the drug is soluble only in the
+ * primary solvent, which a surfactant can beat by holding the compound in a
+ * stable emulsion — so treat a failure as "check this at the bench", not as
+ * a proof of impossibility.
+ *
+ * @returns {{ ceilingMgPerMl: number, requiredMgPerMl: number,
+ *   achievable: boolean, minSolventFraction: number } | null}
+ */
+export function checkSolubilityCeiling({
+  requiredConcentrationMgPerMl,
+  solubilityMgPerMl,
+  primarySolventPercentVv,
+}) {
+  const required = toPositiveNumber(requiredConcentrationMgPerMl);
+  const solubility = toPositiveNumber(solubilityMgPerMl);
+  const fraction = toPositiveNumber(primarySolventPercentVv);
+  if (required === undefined || solubility === undefined || fraction === undefined) return null;
+
+  const ceilingMgPerMl = solubility * (fraction / 100);
+  return {
+    ceilingMgPerMl,
+    requiredMgPerMl: required,
+    achievable: required <= ceilingMgPerMl,
+    // The share of the mix the primary solvent would have to be to work.
+    minSolventFraction: Math.min(100, (required / solubility) * 100),
+  };
+}
+
+/**
  * Dose rate in mg per gram of body weight, from the Step 2 dose inputs.
  *
  * "0.2 mg per 10 g" and "0.02 mg per 1 g" are the same rate; both are entered

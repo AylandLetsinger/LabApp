@@ -5,11 +5,12 @@ import IssueList from './IssueList';
 import {
   VEHICLE_OPTIONS,
   checkMiscibility,
+  classifyBurden,
   computeSolventBurdenMgPerKg,
   getVehicle,
   observationBurdenMgPerKg,
   relevantObservations,
-  tightestToleratedBurdenMgPerKg,
+  toleratedBurdenRange,
 } from '../../dosage/vehicles';
 import { computeVehiclePercents } from '../../dosage/computeVehicleVolumes';
 import { roundTo } from '../../dosage/numberUtils';
@@ -60,8 +61,8 @@ export default function VehicleRatioTable({
   if (percents) {
     rows.forEach((row, i) => {
       const vehicle = getVehicle(row.vehicleId);
-      const reference = tightestToleratedBurdenMgPerKg(row.vehicleId, { route });
-      if (!vehicle || !reference || !canComputeBurden) return;
+      const range = toleratedBurdenRange(row.vehicleId, { route });
+      if (!vehicle || !range || !canComputeBurden) return;
 
       const burden = computeSolventBurdenMgPerKg({
         vehicleId: row.vehicleId,
@@ -69,16 +70,29 @@ export default function VehicleRatioTable({
         volumePerSubjectMl,
         bodyWeightKg,
       });
-      if (burden === undefined || burden <= reference.mgPerKg) return;
+      const verdict = classifyBurden(burden, range);
+      const routeNote = range.exactRoute ? '' : ' (no data for this route; figure is from another)';
 
-      issues.push({
-        level: 'error',
-        message:
-          `${vehicle.label} would deliver ${roundTo(burden, 1)} mg/kg. The tightest tolerated ` +
-          `figure published for a mouse by this route is ${roundTo(reference.mgPerKg, 1)} mg/kg ` +
-          `(${reference.observation.duration}, ${reference.observation.outcome}). ` +
-          'Reduce it, or justify it in your protocol.',
-      });
+      if (verdict === 'above-highest') {
+        issues.push({
+          level: 'error',
+          message:
+            `${vehicle.label} would deliver ${roundTo(burden, 1)} mg/kg, above every tolerated ` +
+            `figure published for a mouse${routeNote} — the highest is ` +
+            `${roundTo(range.highest.mgPerKg, 1)} mg/kg (${range.highest.observation.duration}). ` +
+            'Reduce it, or justify it in your protocol.',
+        });
+      } else if (verdict === 'above-lowest') {
+        issues.push({
+          level: 'warning',
+          message:
+            `${vehicle.label} would deliver ${roundTo(burden, 1)} mg/kg. Published tolerated ` +
+            `figures for a mouse${routeNote} span ${roundTo(range.lowest.mgPerKg, 1)}` +
+            `–${roundTo(range.highest.mgPerKg, 1)} mg/kg, so this sits inside the range but above ` +
+            `the most conservative (${range.lowest.observation.duration}). ` +
+            'Reasonable for a short study; check it against your dosing schedule.',
+        });
+      }
     });
 
     issues.push(
@@ -123,7 +137,7 @@ export default function VehicleRatioTable({
           {rows.map((row, index) => {
             const vehicle = getVehicle(row.vehicleId);
             const percent = percents ? percents[index] : undefined;
-            const reference = tightestToleratedBurdenMgPerKg(row.vehicleId, { route });
+            const range = toleratedBurdenRange(row.vehicleId, { route });
             const burden =
               canComputeBurden && percent !== undefined
                 ? computeSolventBurdenMgPerKg({
@@ -133,8 +147,10 @@ export default function VehicleRatioTable({
                     bodyWeightKg,
                   })
                 : undefined;
-            const over =
-              burden !== undefined && reference !== undefined && burden > reference.mgPerKg;
+            const verdict = classifyBurden(burden, range);
+            const over = verdict === 'above-highest';
+            const marginal = verdict === 'above-lowest';
+            const burdenColor = over ? errorColor : marginal ? 'orange.7' : undefined;
 
             const allObs = relevantObservations(row.vehicleId, { route });
             const tooltip =
@@ -176,22 +192,24 @@ export default function VehicleRatioTable({
                   />
                 </Table.Td>
                 <Table.Td>
-                  <Text size="sm" fw={500} c={over ? errorColor : undefined}>
+                  <Text size="sm" fw={500} c={burdenColor}>
                     {percent === undefined ? '—' : `${roundTo(percent, 2)}%`}
                   </Text>
                 </Table.Td>
                 <Table.Td>
-                  <Text size="sm" fw={600} ff="monospace" c={over ? errorColor : undefined}>
+                  <Text size="sm" fw={600} ff="monospace" c={burdenColor}>
                     {burden === undefined ? '—' : `${roundTo(burden, 1)}`}
                   </Text>
                 </Table.Td>
                 <Table.Td>
-                  <Tooltip label={tooltip} multiline w={420} withArrow>
+                  <Tooltip label={tooltip} multiline w={440} withArrow>
                     <Group gap={4} wrap="nowrap" style={{ cursor: 'help' }}>
-                      <Text size="sm" fw={500} c={over ? errorColor : undefined}>
-                        {reference === undefined
+                      <Text size="sm" fw={500} c={burdenColor}>
+                        {range === undefined
                           ? 'none published'
-                          : `${roundTo(reference.mgPerKg, 1)} mg/kg`}
+                          : range.lowest.mgPerKg === range.highest.mgPerKg
+                            ? `${roundTo(range.lowest.mgPerKg, 1)} mg/kg`
+                            : `${roundTo(range.lowest.mgPerKg, 1)}–${roundTo(range.highest.mgPerKg, 1)}`}
                       </Text>
                       <IconInfoCircle size={14} opacity={0.5} />
                     </Group>

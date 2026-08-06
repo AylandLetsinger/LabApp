@@ -36,6 +36,17 @@ const CASTRO_1995 = 'Castro et al. 1995, Pharmacol Biochem Behav (PMID 7617697)'
 const CAMBRIDGE = 'Cambridge MedChem Consulting — formulation ranges, not safety limits';
 
 /**
+ * Published practice rather than a tolerability study: a vehicle used in real
+ * work with no vehicle-attributed adverse effects reported. Weaker evidence
+ * than a dose-ranging experiment, but it calibrates what a field actually
+ * does, which the toxicology tables alone can make look impossible.
+ *
+ * 20% DMSO with 80% of a 1:1:8 ethanol/Emulphor/saline mix, i.p. at 5 mL/kg
+ * — so 20% DMSO, 8% ethanol, 8% Emulphor, 64% saline.
+ */
+const HOHMANN_GAT = 'Hohmann lab, GAT211 in vivo studies — published vehicle, not a tolerability study';
+
+/**
  * @typedef {object} Observation
  * @property {'mouse'|'rat'|'other'} species
  * @property {'ip'|'oral'|'iv'|'sc'} route
@@ -111,6 +122,13 @@ export const VEHICLES = [
         verdict: 'tolerated',
         source: CASTRO_1995, confidence: CONFIDENCE.moderate,
       },
+      {
+        species: 'mouse', route: 'ip', percentVv: 20, volumeMlPerKg: 5,
+        duration: 'daily dosing',
+        outcome: 'Vehicle for GAT211 at 5-20 mg/kg/day; no vehicle-attributed adverse effects reported',
+        verdict: 'tolerated',
+        source: HOHMANN_GAT, confidence: CONFIDENCE.low,
+      },
     ],
     note: 'Palatability in voluntary oral consumption is not established. A refused mealworm is a failed session, not a safety event — determine empirically.',
     miscibility: {
@@ -143,6 +161,13 @@ export const VEHICLES = [
         verdict: 'tolerated',
         source: CASTRO_1995, confidence: CONFIDENCE.moderate,
       },
+      {
+        species: 'mouse', route: 'ip', percentVv: 8, volumeMlPerKg: 5,
+        duration: 'daily dosing',
+        outcome: 'Part of the GAT211 vehicle (1:1:8 ethanol/Emulphor/saline as 80% of the mix); no vehicle-attributed adverse effects reported',
+        verdict: 'tolerated',
+        source: HOHMANN_GAT, confidence: CONFIDENCE.low,
+      },
     ],
     note: 'Stimulation at 16% is a behavioural confound, not sedation — relevant if your endpoint is activity.',
   },
@@ -157,6 +182,13 @@ export const VEHICLES = [
         duration: 'acute', outcome: 'No effect on locomotor activity at any concentration tested (2-32%). True ceiling above 32%, not established.',
         verdict: 'tolerated',
         source: CASTRO_1995, confidence: CONFIDENCE.moderate,
+      },
+      {
+        species: 'mouse', route: 'ip', percentVv: 8, volumeMlPerKg: 5,
+        duration: 'daily dosing',
+        outcome: 'Part of the GAT211 vehicle; no vehicle-attributed adverse effects reported',
+        verdict: 'tolerated',
+        source: HOHMANN_GAT, confidence: CONFIDENCE.low,
       },
     ],
     note: 'A surfactant — keeps lipophilic compounds emulsified instead of precipitating when they meet an aqueous phase. Density is approximate.',
@@ -371,6 +403,50 @@ export function tightestToleratedBurdenMgPerKg(vehicleId, { species = 'mouse', r
   if (anyRoute) return { ...anyRoute, exactRoute: false };
 
   return undefined;
+}
+
+/**
+ * Every tolerated burden published for a species and route, ascending.
+ * Falls back to the same species by another route when the route asked for
+ * has nothing computable.
+ */
+export function toleratedBurdenRange(vehicleId, { species = 'mouse', route = 'ip' } = {}) {
+  const vehicle = getVehicle(vehicleId);
+  if (!vehicle) return undefined;
+
+  const collect = (filter) =>
+    vehicle.observations
+      .filter((o) => o.verdict === 'tolerated' && filter(o))
+      .map((o) => ({ observation: o, mgPerKg: observationBurdenMgPerKg(o, vehicle.densityGPerMl) }))
+      .filter((x) => x.mgPerKg !== undefined)
+      .sort((a, b) => a.mgPerKg - b.mgPerKg);
+
+  let entries = collect((o) => o.species === species && o.route === route);
+  let exactRoute = true;
+  if (entries.length === 0) {
+    entries = collect((o) => o.species === species);
+    exactRoute = false;
+  }
+  if (entries.length === 0) return undefined;
+
+  return { lowest: entries[0], highest: entries[entries.length - 1], entries, exactRoute };
+}
+
+/**
+ * Where a proposed burden sits against the published range.
+ *
+ * Three tiers rather than one threshold, because the published figures span
+ * more than an order of magnitude and differ mostly in study duration. A
+ * one-month repeated-dose figure should not condemn a single acute dose, but
+ * the user should still be told they are above it.
+ *
+ * @returns {'ok'|'above-lowest'|'above-highest'|'unknown'}
+ */
+export function classifyBurden(burdenMgPerKg, range) {
+  if (burdenMgPerKg === undefined || !range) return 'unknown';
+  if (burdenMgPerKg <= range.lowest.mgPerKg) return 'ok';
+  if (burdenMgPerKg <= range.highest.mgPerKg) return 'above-lowest';
+  return 'above-highest';
 }
 
 /**

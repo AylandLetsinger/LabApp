@@ -9,10 +9,12 @@ import {
   computeMealwormVolumeMode,
   computeWorkableConcentrationWindow,
 } from '../../dosage/computeMealwormOutputs';
+import { checkSolubilityCeiling } from '../../dosage/computeMealwormOutputs';
 import { computeSoluteRequiredMg } from '../../dosage/computeSolutionOutputs';
+import { computeVehiclePercents } from '../../dosage/computeVehicleVolumes';
 import { roundTo, toOptionalNumber } from '../../dosage/numberUtils';
 import { volumeToMl, weightToKg } from '../../dosage/unitConversions';
-import { DEFAULT_ORAL_VEHICLE_ROWS } from '../../dosage/vehicles';
+import { DEFAULT_ORAL_VEHICLE_ROWS, getVehicle } from '../../dosage/vehicles';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import Step2DosageTypeSection from './Step2DosageTypeSection';
 import MealwormParametersSection from './MealwormParametersSection';
@@ -40,8 +42,11 @@ export default function MealwormDosageForm() {
       avgBodyWeightUnit: 'g',
       totalDoses: '',
       wasteBufferPct: '',
-      // An insulin syringe, not a pipette: the smallest labelled tick.
-      pipetteMinUl: 25,
+      solubilityMgPerMl: '',
+      // Two different tools with two different floors: the insulin syringe
+      // loads the worm, the pipette makes up the vehicle.
+      syringeMinUl: 25,
+      pipetteMinUl: 2,
       minBodyWeightG: 18,
       maxBodyWeightG: 35,
       stepG: 1,
@@ -97,12 +102,12 @@ export default function MealwormDosageForm() {
         dosePerSubjectMg,
         loadVolumeUl: v.loadVolumeUl,
         wormCapacityUl: v.wormCapacityUl,
-        pipetteMinUl: v.pipetteMinUl,
+        pipetteMinUl: v.syringeMinUl,
         totalDoses: v.totalDoses,
         wasteBufferPct: v.wasteBufferPct,
       }),
     [
-      dosePerSubjectMg, v.loadVolumeUl, v.wormCapacityUl, v.pipetteMinUl,
+      dosePerSubjectMg, v.loadVolumeUl, v.wormCapacityUl, v.syringeMinUl,
       v.totalDoses, v.wasteBufferPct,
     ],
   );
@@ -113,9 +118,9 @@ export default function MealwormDosageForm() {
         dosePerSubjectMg,
         stockConcentrationMgPerMl: v.stockConcentrationMgPerMl,
         wormCapacityUl: v.wormCapacityUl,
-        pipetteMinUl: v.pipetteMinUl,
+        pipetteMinUl: v.syringeMinUl,
       }),
-    [dosePerSubjectMg, v.stockConcentrationMgPerMl, v.wormCapacityUl, v.pipetteMinUl],
+    [dosePerSubjectMg, v.stockConcentrationMgPerMl, v.wormCapacityUl, v.syringeMinUl],
   );
 
   const window = useMemo(
@@ -125,9 +130,9 @@ export default function MealwormDosageForm() {
         minBodyWeightG: v.minBodyWeightG,
         maxBodyWeightG: v.maxBodyWeightG,
         wormCapacityUl: v.wormCapacityUl,
-        pipetteMinUl: v.pipetteMinUl,
+        pipetteMinUl: v.syringeMinUl,
       }),
-    [doseRateMgPerG, v.minBodyWeightG, v.maxBodyWeightG, v.wormCapacityUl, v.pipetteMinUl],
+    [doseRateMgPerG, v.minBodyWeightG, v.maxBodyWeightG, v.wormCapacityUl, v.syringeMinUl],
   );
 
   const isConcentrationMode = v.mode === 'concentration';
@@ -146,6 +151,36 @@ export default function MealwormDosageForm() {
   const soluteRequiredMg = useMemo(
     () => computeSoluteRequiredMg(dosePerSubjectMg, v.totalDoses, v.wasteBufferPct),
     [dosePerSubjectMg, v.totalDoses, v.wasteBufferPct],
+  );
+
+  /**
+   * Can the vehicle dissolve the drug at the concentration this plan needs?
+   * The primary solvent is taken to be the first non-aqueous row of the
+   * vehicle — the one the drug is actually dissolved in.
+   */
+  const requiredConcentrationMgPerMl = isConcentrationMode
+    ? concentrationMode.requiredConcentrationMgPerMl
+    : toOptionalNumber(v.stockConcentrationMgPerMl);
+
+  const primarySolvent = useMemo(() => {
+    const percents = computeVehiclePercents(vehicleRows.map((r) => r.parts));
+    if (!percents) return undefined;
+    const index = vehicleRows.findIndex((r) => {
+      const vehicle = getVehicle(r.vehicleId);
+      return vehicle && !vehicle.isAqueous;
+    });
+    if (index === -1) return undefined;
+    return { vehicle: getVehicle(vehicleRows[index].vehicleId), percentVv: percents[index] };
+  }, [vehicleRows]);
+
+  const solubility = useMemo(
+    () =>
+      checkSolubilityCeiling({
+        requiredConcentrationMgPerMl,
+        solubilityMgPerMl: v.solubilityMgPerMl,
+        primarySolventPercentVv: primarySolvent?.percentVv,
+      }),
+    [requiredConcentrationMgPerMl, v.solubilityMgPerMl, primarySolvent],
   );
 
   const parameterIssues = useMemo(() => {
@@ -199,6 +234,8 @@ export default function MealwormDosageForm() {
         totalDoses={v.totalDoses}
         wasteBufferPct={v.wasteBufferPct}
         pipetteMinUl={v.pipetteMinUl}
+        syringeMinUl={v.syringeMinUl}
+        solubilityMgPerMl={v.solubilityMgPerMl}
         setFieldValue={form.setFieldValue}
         scheduleOutputFeedback={scheduleOutputFeedback}
         issues={parameterIssues}
@@ -259,6 +296,36 @@ export default function MealwormDosageForm() {
           />
         </Stack>
 
+        {solubility && primarySolvent && (
+          <Alert
+            color={solubility.achievable ? 'blue' : 'red'}
+            variant="light"
+            mt="md"
+            icon={<IconInfoCircle size={18} />}
+            title={solubility.achievable ? 'Solubility check' : 'This vehicle cannot dissolve the drug'}
+          >
+            {solubility.achievable ? (
+              <Text size="sm">
+                At {roundTo(primarySolvent.percentVv, 1)}% {primarySolvent.vehicle.label}, the
+                strongest solution you can make is{' '}
+                <strong>{roundTo(solubility.ceilingMgPerMl, 3)} mg/mL</strong>. This plan needs{' '}
+                {roundTo(solubility.requiredMgPerMl, 3)} mg/mL, so it fits.
+              </Text>
+            ) : (
+              <Text size="sm">
+                This plan needs <strong>{roundTo(solubility.requiredMgPerMl, 3)} mg/mL</strong>, but
+                at {roundTo(primarySolvent.percentVv, 1)}% {primarySolvent.vehicle.label} the ceiling
+                is <strong>{roundTo(solubility.ceilingMgPerMl, 3)} mg/mL</strong> — solubility ×
+                solvent fraction. Raise {primarySolvent.vehicle.label} to at least{' '}
+                <strong>{roundTo(solubility.minSolventFraction, 1)}%</strong>, load a larger volume
+                per worm, or find a solvent the drug is more soluble in. A surfactant can beat this
+                ceiling by holding the compound in emulsion, so treat it as &quot;check at the
+                bench&quot; rather than proof it is impossible.
+              </Text>
+            )}
+          </Alert>
+        )}
+
         {!isConcentrationMode && window && (
           <Alert
             color={window.feasible ? 'blue' : 'red'}
@@ -270,7 +337,7 @@ export default function MealwormDosageForm() {
             {window.feasible ? (
               <Text size="sm">
                 For {v.minBodyWeightG}–{v.maxBodyWeightG} g subjects, a {v.wormCapacityUl} µL worm
-                and a {v.pipetteMinUl} µL pipette, your stock must be between{' '}
+                and a {v.syringeMinUl} µL syringe, your stock must be between{' '}
                 <strong>{roundTo(window.minMgPerMl, 3)} mg/mL</strong> and{' '}
                 <strong>
                   {Number.isFinite(window.maxMgPerMl) ? `${roundTo(window.maxMgPerMl, 3)} mg/mL` : 'no upper limit'}
@@ -318,7 +385,7 @@ export default function MealwormDosageForm() {
           maxBodyWeightG={v.maxBodyWeightG}
           stepG={v.stepG}
           wormCapacityUl={v.wormCapacityUl}
-          pipetteMinUl={v.pipetteMinUl}
+          pipetteMinUl={v.syringeMinUl}
           setFieldValue={form.setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}
         />
