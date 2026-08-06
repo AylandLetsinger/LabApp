@@ -7,6 +7,7 @@ import {
 } from '../../dosage/computeDosePerAvgSubject';
 import { computeInjectionSolutionOutputs } from '../../dosage/computeSolutionOutputs';
 import { toOptionalNumber, roundTo } from '../../dosage/numberUtils';
+import { weightToKg } from '../../dosage/unitConversions';
 import { DEFAULT_IP_VEHICLE_ROWS } from '../../dosage/vehicles';
 import { MOUSE_IP_MAX_VOLUME_ML_PER_G } from '../../constants/doseUnits';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
@@ -190,6 +191,8 @@ export default function IntraperitonealDosageForm() {
         route="ip"
         stepLabel="Step 5 — Vehicle ratio"
         onBlur={scheduleOutputFeedback}
+        volumePerSubjectMl={outputs.volumePerAvgSubjectMl}
+        bodyWeightKg={weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit)}
       />
 
       <DissolutionTable

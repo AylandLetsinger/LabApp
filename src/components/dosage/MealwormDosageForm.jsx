@@ -11,7 +11,7 @@ import {
 } from '../../dosage/computeMealwormOutputs';
 import { computeSoluteRequiredMg } from '../../dosage/computeSolutionOutputs';
 import { roundTo, toOptionalNumber } from '../../dosage/numberUtils';
-import { volumeToMl } from '../../dosage/unitConversions';
+import { volumeToMl, weightToKg } from '../../dosage/unitConversions';
 import { DEFAULT_ORAL_VEHICLE_ROWS } from '../../dosage/vehicles';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import Step2DosageTypeSection from './Step2DosageTypeSection';
@@ -33,14 +33,15 @@ export default function MealwormDosageForm() {
       doseUnit: 'mg',
       bodyWeightAmount: '',
       bodyWeightUnit: 'g',
-      wormCapacityUl: 100,
+      wormCapacityUl: 250,
       loadVolumeUl: '',
       stockConcentrationMgPerMl: '',
       avgBodyWeight: '',
       avgBodyWeightUnit: 'g',
       totalDoses: '',
       wasteBufferPct: '',
-      pipetteMinUl: 2,
+      // An insulin syringe, not a pipette: the smallest labelled tick.
+      pipetteMinUl: 25,
       minBodyWeightG: 18,
       maxBodyWeightG: 35,
       stepG: 1,
@@ -296,6 +297,8 @@ export default function MealwormDosageForm() {
         route="oral"
         stepLabel="Step 5 — Vehicle ratio"
         onBlur={scheduleOutputFeedback}
+        volumePerSubjectMl={volumeToMl(effectiveLoadUl, 'ul')}
+        bodyWeightKg={weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit)}
       />
 
       <DissolutionTable

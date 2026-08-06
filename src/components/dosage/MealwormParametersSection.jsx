@@ -10,10 +10,10 @@ const inputBlue = {
 };
 
 const CAPACITY_MARKS = [
-  { value: 25, label: '25' },
-  { value: 50, label: '50 (small)' },
-  { value: 100, label: '100 (large)' },
-  { value: 150, label: '150' },
+  { value: 50, label: '50' },
+  { value: 125, label: '125 (small)' },
+  { value: 250, label: '250 (large)' },
+  { value: 350, label: '350' },
 ];
 
 /**
@@ -91,9 +91,9 @@ export default function MealwormParametersSection({
               above is there so an exact value can be typed and cannot be
               nudged by accident. Both edit the same number. */}
           <Slider
-            min={5}
-            max={150}
-            step={5}
+            min={25}
+            max={400}
+            step={25}
             value={Number(wormCapacityUl) || 0}
             onChange={(value) => setFieldValue('wormCapacityUl', value)}
             onChangeEnd={scheduleOutputFeedback}
@@ -205,8 +205,8 @@ export default function MealwormParametersSection({
             %
           </Text>
           <NumberInput
-            label="Smallest volume your pipette can deliver"
-            placeholder="e.g. 2"
+            label="Smallest volume your syringe can deliver"
+            placeholder="e.g. 25"
             min={0}
             decimalScale={3}
             value={pipetteMinUl}

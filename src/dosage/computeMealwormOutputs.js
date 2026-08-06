@@ -24,8 +24,8 @@ export const WORMS_PER_MOUSE = 1;
 
 /** Loading capacity presets, in microlitres, before the worm leaks. */
 export const WORM_SIZE_PRESETS = [
-  { value: '100', label: 'Large (100 µL)' },
-  { value: '50', label: 'Small (50 µL)' },
+  { value: '250', label: 'Large (250 µL)' },
+  { value: '125', label: 'Small (125 µL)' },
 ];
 
 /**
