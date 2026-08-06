@@ -1,8 +1,19 @@
+/**
+ * Dose per average subject — shared by every delivery method.
+ *
+ * This step is route-agnostic: how much drug one animal should receive does
+ * not depend on whether it arrives by syringe or inside a mealworm.
+ */
 import { massToMg, weightToKg } from './unitConversions';
+import { toNonNegativeNumber } from './numberUtils';
 
 /**
  * Dose per average subject from dose-by-body-weight inputs.
- * rate (mass/kg) = dose / reference body weight; result = rate × average body weight (in kg).
+ *
+ * rate = dose / reference body weight, then result = rate x average weight.
+ *
+ * @returns {number | undefined} Milligrams, or undefined if any input is
+ *   missing, negative, or would divide by zero.
  */
 export function computeDosePerAvgSubjectByBodyWeight({
   doseAmount,
@@ -10,22 +21,31 @@ export function computeDosePerAvgSubjectByBodyWeight({
   refBodyWeight,
   refBodyWeightUnit,
   avgBodyWeight,
-  /** Step 3 field is grams today; pass another unit when the UI supports it. */
-  avgBodyWeightUnit = 'g',
+  avgBodyWeightUnit,
 }) {
+  // Reject negatives before any arithmetic: a negative dose must never reach
+  // an output field looking like a real number.
+  if (toNonNegativeNumber(doseAmount) === undefined) return undefined;
+  if (toNonNegativeNumber(refBodyWeight) === undefined) return undefined;
+  if (toNonNegativeNumber(avgBodyWeight) === undefined) return undefined;
+
   const doseMg = massToMg(doseAmount, doseUnit);
   const refKg = weightToKg(refBodyWeight, refBodyWeightUnit);
   const avgKg = weightToKg(avgBodyWeight, avgBodyWeightUnit);
   if (doseMg === undefined || refKg === undefined || avgKg === undefined) return undefined;
   if (refKg <= 0) return undefined;
+
   const rateMgPerKg = doseMg / refKg;
   return rateMgPerKg * avgKg;
 }
 
 /**
- * When dose is entered directly per subject, dose per average subject is that dose (as mass in mg).
+ * When dose is entered directly per subject, that dose is the answer.
+ *
+ * @returns {number | undefined} Milligrams.
  */
 export function computeDosePerAvgSubjectFromPerSubject({ doseAmount, doseUnit }) {
+  if (toNonNegativeNumber(doseAmount) === undefined) return undefined;
   return massToMg(doseAmount, doseUnit);
 }
 
@@ -42,7 +62,7 @@ export function computeDosePerAvgSubjectMg(p) {
       refBodyWeight: p.refBodyWeight,
       refBodyWeightUnit: p.refBodyWeightUnit,
       avgBodyWeight: p.avgBodyWeight,
-      avgBodyWeightUnit: p.avgBodyWeightUnit ?? 'g',
+      avgBodyWeightUnit: p.avgBodyWeightUnit,
     });
   }
   if (p.dosageType === 'per-subject') {
@@ -54,7 +74,7 @@ export function computeDosePerAvgSubjectMg(p) {
   return undefined;
 }
 
-/** Mass unit to show for “Dose per Avg Subject” (match the active dosage row). */
+/** Mass unit to show for "Dose per Avg Subject" (match the active dosage row). */
 export function dosePerAvgSubjectDisplayUnit(dosageType, doseUnit, dosePerSubjectUnit) {
   return dosageType === 'by-body-weight' ? doseUnit : dosePerSubjectUnit;
 }

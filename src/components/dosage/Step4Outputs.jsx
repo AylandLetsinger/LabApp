@@ -1,24 +1,17 @@
-import { Group, Loader, NumberInput, Paper, Stack, Text, TextInput, ThemeIcon } from '@mantine/core';
+import { Group, Loader, NumberInput, Paper, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconCheck } from '@tabler/icons-react';
+import DosageOutputRow from './DosageOutputRow';
+import IssueList from './IssueList';
+import LabSelect from '../LabSelect';
+import { DOSE_UNITS, VOLUME_UNITS } from '../../constants/doseUnits';
+import { mgToMassUnit, volumeToMl } from '../../dosage/unitConversions';
+import { roundTo } from '../../dosage/numberUtils';
 
 const outputGray = {
   variant: 'filled',
   color: 'gray',
   readOnly: true,
   styles: { input: { cursor: 'default' } },
-};
-
-const outputUnitGray = {
-  ...outputGray,
-  w: 96,
-};
-
-const outputUnitYellow = {
-  variant: 'filled',
-  color: 'yellow',
-  readOnly: true,
-  styles: { input: { cursor: 'default' } },
-  w: 96,
 };
 
 function OutputCheck({ outputFeedback }) {
@@ -32,13 +25,26 @@ function OutputCheck({ outputFeedback }) {
 
 export default function Step4Outputs({
   outputFeedback,
-  dosePerAvgDisplayValue,
-  dosePerAvgDisplayUnit,
-  soluteDisplayValue,
+  dosePerAvgSubjectMg,
+  soluteRequiredMg,
   volumePerAvgSubjectMl,
   totalVolumeMl,
   concentrationMgPerMl,
+  units,
+  setUnit,
+  issues,
 }) {
+  // Concentration is stored as mg per mL. Rendering it in another unit pair
+  // scales the mass and then scales by how many mL the chosen volume unit is.
+  const concentrationDisplay =
+    concentrationMgPerMl === undefined
+      ? ''
+      : roundTo(
+          mgToMassUnit(concentrationMgPerMl, units.concentrationMass) *
+            volumeToMl(1, units.concentrationVolume),
+          6,
+        );
+
   return (
     <Paper p="md" radius="md" withBorder>
       <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm" mb="sm">
@@ -63,96 +69,46 @@ export default function Step4Outputs({
         )}
       </Group>
       <Text size="sm" c="dimmed" mb="md">
-        Calculated results (grey fields). When you finish editing a Step 2 or Step 3 field (click or tab
-        away), a short update state runs, then a green check shows that Step 4 reflects your latest
-        inputs. Concentration uses yellow unit cells like the spreadsheet.
+        Calculated results (grey fields). Change any unit to suit your balance or pipette — the
+        underlying calculation is unaffected.
       </Text>
 
       <Stack gap="md">
-        <Group justify="space-between" align="flex-end" wrap="wrap" gap="md">
-          <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Dose per Avg Subject"
-              placeholder="—"
-              value={dosePerAvgDisplayValue ?? ''}
-              decimalScale={8}
-              hideControls
-              {...outputGray}
-            />
-            <TextInput
-              label="Unit"
-              placeholder="—"
-              value={dosePerAvgDisplayValue !== undefined ? dosePerAvgDisplayUnit : ''}
-              {...outputUnitGray}
-            />
-          </Group>
-          <OutputCheck outputFeedback={outputFeedback} />
-        </Group>
+        <DosageOutputRow
+          label="Dose per Avg Subject"
+          canonicalValue={dosePerAvgSubjectMg}
+          kind="mass"
+          unit={units.dosePerSubject}
+          onUnitChange={(u) => setUnit('dosePerSubject', u)}
+          rightSection={<OutputCheck outputFeedback={outputFeedback} />}
+        />
 
-        <Group justify="space-between" align="flex-end" wrap="wrap" gap="md">
-          <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Solute Required"
-              placeholder="—"
-              value={soluteDisplayValue ?? ''}
-              decimalScale={8}
-              hideControls
-              {...outputGray}
-            />
-            <TextInput
-              label="Unit"
-              placeholder="—"
-              value={soluteDisplayValue !== undefined ? dosePerAvgDisplayUnit : ''}
-              {...outputUnitGray}
-            />
-          </Group>
-          <OutputCheck outputFeedback={outputFeedback} />
-        </Group>
+        <DosageOutputRow
+          label="Solute Required"
+          canonicalValue={soluteRequiredMg}
+          kind="mass"
+          unit={units.solute}
+          onUnitChange={(u) => setUnit('solute', u)}
+          rightSection={<OutputCheck outputFeedback={outputFeedback} />}
+        />
 
-        <div>
-          <Group justify="space-between" align="flex-end" wrap="wrap" gap="md">
-            <Group align="flex-end" wrap="wrap" gap="sm">
-              <NumberInput
-                label="Volume per Avg Subject"
-                placeholder="—"
-                value={volumePerAvgSubjectMl ?? ''}
-                decimalScale={8}
-                hideControls
-                {...outputGray}
-              />
-              <TextInput
-                label="Unit"
-                placeholder="—"
-                value={volumePerAvgSubjectMl !== undefined ? 'mL' : ''}
-                {...outputUnitGray}
-              />
-            </Group>
-            <OutputCheck outputFeedback={outputFeedback} />
-          </Group>
-          <Text size="xs" c="dimmed" mt={6}>
-            ! User warning if too high based on Injection Maxes table (to be implemented).
-          </Text>
-        </div>
+        <DosageOutputRow
+          label="Volume per Avg Subject"
+          canonicalValue={volumePerAvgSubjectMl}
+          kind="volume"
+          unit={units.volumePerSubject}
+          onUnitChange={(u) => setUnit('volumePerSubject', u)}
+          rightSection={<OutputCheck outputFeedback={outputFeedback} />}
+        />
 
-        <Group justify="space-between" align="flex-end" wrap="wrap" gap="md">
-          <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Total Volume"
-              placeholder="—"
-              value={totalVolumeMl ?? ''}
-              decimalScale={8}
-              hideControls
-              {...outputGray}
-            />
-            <TextInput
-              label="Unit"
-              placeholder="—"
-              value={totalVolumeMl !== undefined ? 'mL' : ''}
-              {...outputUnitGray}
-            />
-          </Group>
-          <OutputCheck outputFeedback={outputFeedback} />
-        </Group>
+        <DosageOutputRow
+          label="Total Volume"
+          canonicalValue={totalVolumeMl}
+          kind="volume"
+          unit={units.totalVolume}
+          onUnitChange={(u) => setUnit('totalVolume', u)}
+          rightSection={<OutputCheck outputFeedback={outputFeedback} />}
+        />
 
         <div>
           <Text size="sm" fw={500} mb={6}>
@@ -164,17 +120,18 @@ export default function Step4Outputs({
                 label="Mass"
                 placeholder="—"
                 aria-label="Concentration: mass amount"
-                value={concentrationMgPerMl ?? ''}
-                decimalScale={8}
+                value={concentrationDisplay}
+                decimalScale={6}
                 hideControls
                 {...outputGray}
               />
-              <TextInput
+              <LabSelect
                 label="Unit"
-                placeholder="—"
-                value={concentrationMgPerMl !== undefined ? 'mg' : ''}
+                data={DOSE_UNITS}
+                value={units.concentrationMass}
+                onChange={(v) => setUnit('concentrationMass', v ?? 'mg')}
+                w={96}
                 aria-label="Concentration: mass unit"
-                {...outputUnitYellow}
               />
               <Text pb="sm" size="sm">
                 per
@@ -184,22 +141,24 @@ export default function Step4Outputs({
                 placeholder="—"
                 aria-label="Concentration: volume amount"
                 value={concentrationMgPerMl !== undefined ? 1 : ''}
-                decimalScale={8}
                 hideControls
                 {...outputGray}
               />
-              <TextInput
+              <LabSelect
                 label="Unit"
-                placeholder="—"
-                value={concentrationMgPerMl !== undefined ? 'mL' : ''}
+                data={VOLUME_UNITS}
+                value={units.concentrationVolume}
+                onChange={(v) => setUnit('concentrationVolume', v ?? 'ml')}
+                w={96}
                 aria-label="Concentration: volume unit"
-                {...outputUnitYellow}
               />
             </Group>
             <OutputCheck outputFeedback={outputFeedback} />
           </Group>
         </div>
       </Stack>
+
+      <IssueList issues={issues} />
     </Paper>
   );
 }

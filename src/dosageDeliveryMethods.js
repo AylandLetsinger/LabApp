@@ -5,6 +5,7 @@ export const DOSAGE_DELIVERY_METHODS = [
   { slug: 'intraperitoneal-injection', label: 'Intraperitoneal Injection' },
   { slug: 'subcutaneous-injection', label: 'Subcutaneous Injection' },
   { slug: 'intracranial-injection-infusion', label: 'Intracranial Injection/Infusion' },
+  { slug: 'mealworm', label: 'Mealworm (oral)' },
   { slug: 'drinking-fluid', label: 'Drinking Fluid' },
   { slug: 'solid', label: 'Solid' },
   { slug: 'iv-infusion', label: 'IV Infusion' },

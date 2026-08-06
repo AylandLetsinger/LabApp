@@ -1,0 +1,152 @@
+import { Group, NumberInput, Paper, Table, Text } from '@mantine/core';
+import IssueList from './IssueList';
+import { computeMealwormDosingTable } from '../../dosage/computeMealwormOutputs';
+import { roundTo } from '../../dosage/numberUtils';
+import { errorColor, inputFieldColor } from '../../theme';
+
+const inputBlue = {
+  variant: 'filled',
+  color: inputFieldColor,
+};
+
+/**
+ * Bench reference: the volume to load for each body weight, at one stock
+ * concentration. Print it and keep it with the worms.
+ *
+ * Only meaningful when dose scales with body mass — at a fixed absolute dose
+ * every animal gets the same volume and the table would be a single number.
+ */
+export default function MealwormDosingTable({
+  doseRateMgPerG,
+  stockConcentrationMgPerMl,
+  minBodyWeightG,
+  maxBodyWeightG,
+  stepG,
+  wormCapacityUl,
+  pipetteMinUl,
+  setFieldValue,
+  scheduleOutputFeedback,
+}) {
+  const rows = computeMealwormDosingTable({
+    doseRateMgPerG,
+    stockConcentrationMgPerMl,
+    minBodyWeightG,
+    maxBodyWeightG,
+    stepG,
+    wormCapacityUl,
+    pipetteMinUl,
+  });
+
+  const issues = [];
+  if (rows) {
+    if (rows.some((r) => r.overCapacity)) {
+      issues.push({
+        level: 'error',
+        message:
+          'Some body weights need more volume than the worm can hold. Use a more concentrated ' +
+          'stock, or a larger worm.',
+      });
+    }
+    if (rows.some((r) => r.belowPipetteMinimum)) {
+      issues.push({
+        level: 'error',
+        message:
+          'Some body weights need less volume than your pipette can deliver. Use a more dilute ' +
+          'stock.',
+      });
+    }
+  }
+
+  return (
+    <Paper p="md" radius="md" withBorder>
+      <Text fw={600} mb="sm">
+        Step 6 — Dosing table by body mass
+      </Text>
+      <Text size="sm" c="dimmed" mb="md">
+        Volume to load into one worm for each body weight, at your stock concentration. Rows outside
+        your worm capacity or pipette range are flagged in red.
+      </Text>
+
+      <Group align="flex-end" wrap="wrap" gap="sm" mb="md">
+        <NumberInput
+          label="From"
+          min={0}
+          decimalScale={2}
+          value={minBodyWeightG}
+          onChange={(value) => setFieldValue('minBodyWeightG', value)}
+          onBlur={scheduleOutputFeedback}
+          w={110}
+          {...inputBlue}
+        />
+        <NumberInput
+          label="To"
+          min={0}
+          decimalScale={2}
+          value={maxBodyWeightG}
+          onChange={(value) => setFieldValue('maxBodyWeightG', value)}
+          onBlur={scheduleOutputFeedback}
+          w={110}
+          {...inputBlue}
+        />
+        <NumberInput
+          label="Step"
+          min={0}
+          decimalScale={2}
+          value={stepG}
+          onChange={(value) => setFieldValue('stepG', value)}
+          onBlur={scheduleOutputFeedback}
+          w={110}
+          {...inputBlue}
+        />
+        <Text pb="sm" size="sm">
+          grams
+        </Text>
+      </Group>
+
+      {rows === null ? (
+        <Text size="sm" c="dimmed">
+          Enter a dose by body weight, a stock concentration, and a valid weight range to build the
+          table. (A range needing more than 200 rows is refused — increase the step.)
+        </Text>
+      ) : (
+        <Table verticalSpacing="xs" horizontalSpacing="sm" withTableBorder withColumnBorders striped>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th ta="left">Body mass</Table.Th>
+              <Table.Th ta="left">Dose</Table.Th>
+              <Table.Th ta="left">Load into worm</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {rows.map((row) => {
+              const flagged = row.overCapacity || row.belowPipetteMinimum;
+              return (
+                <Table.Tr key={row.bodyWeightG}>
+                  <Table.Td>
+                    <Text size="sm" ff="monospace">
+                      {roundTo(row.bodyWeightG, 2)} g
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" ff="monospace">
+                      {roundTo(row.doseMg, 4)} mg
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" ff="monospace" fw={600} c={flagged ? errorColor : undefined}>
+                      {roundTo(row.loadVolumeUl, 2)} µL
+                      {row.overCapacity ? ' — over capacity' : ''}
+                      {row.belowPipetteMinimum ? ' — below pipette' : ''}
+                    </Text>
+                  </Table.Td>
+                </Table.Tr>
+              );
+            })}
+          </Table.Tbody>
+        </Table>
+      )}
+
+      <IssueList issues={issues} />
+    </Paper>
+  );
+}

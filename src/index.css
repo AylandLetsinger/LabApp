@@ -100,3 +100,68 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/*
+ * Printing. The browser's own print dialog offers "Save as PDF" as a
+ * destination, so this stylesheet serves both printing and PDF export.
+ *
+ * Goal: a filled-in calculator that reads as a bench sheet. Navigation and
+ * controls are dropped; inputs keep their values but lose the interactive
+ * chrome; tables are kept whole rather than split across pages.
+ */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  :root {
+    font-size: 11pt;
+  }
+
+  #root {
+    width: 100%;
+    border-inline: none;
+    min-height: 0;
+  }
+
+  /* Interactive chrome that means nothing on paper. */
+  header,
+  .mantine-AppShell-header,
+  .no-print {
+    display: none !important;
+  }
+
+  .mantine-AppShell-main {
+    padding: 0 !important;
+  }
+
+  /* Inputs print as plain values, not as form controls. */
+  input,
+  .mantine-Input-input {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding-left: 0 !important;
+    color: #000 !important;
+    font-weight: 600;
+  }
+
+  /* Keep the yellow recipe cells legible in greyscale. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Don't split a table or a step panel across a page break. */
+  table,
+  .mantine-Paper-root {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .mantine-Paper-root {
+    border: 1px solid #999 !important;
+    box-shadow: none !important;
+    margin-bottom: 8mm;
+  }
+}

@@ -1,6 +1,7 @@
 import { Group, NumberInput, Paper, Stack, Text } from '@mantine/core';
-import { WEIGHT_UNITS } from '../../constants/doseUnits';
+import { MOUSE_WEIGHT_HINT, WEIGHT_UNITS } from '../../constants/doseUnits';
 import LabSelect from '../LabSelect';
+import IssueList from './IssueList';
 import { inputFieldColor } from '../../theme';
 
 const inputBlue = {
@@ -10,13 +11,17 @@ const inputBlue = {
 
 export default function Step3StudyParametersSection({
   volPerInjMl,
-  volPerInjG,
-  avgBodyWeightG,
+  volPerInjWeight,
+  volPerInjWeightUnit,
+  avgBodyWeight,
   avgBodyWeightUnit,
   totalInjections,
   wasteBufferPct,
+  pipetteMinUl,
+  maxVolumeRateMlPerG,
   setFieldValue,
   scheduleOutputFeedback,
+  issues,
 }) {
   return (
     <Paper p="md" radius="md" withBorder>
@@ -31,7 +36,7 @@ export default function Step3StudyParametersSection({
         <div>
           <Group align="flex-end" wrap="wrap" gap="sm">
             <NumberInput
-              label="Volume per injection (mL)"
+              label="Volume per injection"
               placeholder="mL"
               min={0}
               decimalScale={6}
@@ -44,44 +49,58 @@ export default function Step3StudyParametersSection({
               mL per
             </Text>
             <NumberInput
-              label="Body weight (g)"
-              placeholder="g"
+              label="Body weight"
+              placeholder="e.g. 10"
               min={0}
               decimalScale={6}
-              value={volPerInjG}
-              onChange={(v) => setFieldValue('volPerInjG', v)}
+              value={volPerInjWeight}
+              onChange={(v) => setFieldValue('volPerInjWeight', v)}
               onBlur={scheduleOutputFeedback}
               {...inputBlue}
             />
+            <LabSelect
+              label="Unit"
+              data={WEIGHT_UNITS}
+              value={volPerInjWeightUnit}
+              onChange={(v) => setFieldValue('volPerInjWeightUnit', v ?? 'g')}
+              onBlur={scheduleOutputFeedback}
+              w={100}
+            />
             <Text pb="sm" size="sm">
-              g body weight
+              body weight
             </Text>
           </Group>
           <Text size="xs" c="dimmed" mt={6}>
-            * recommended for mice
+            * mice tolerate about 0.1 mL per 10 g intraperitoneally
           </Text>
         </div>
 
-        <Group align="flex-end" wrap="wrap" gap="sm">
-          <NumberInput
-            label="Average body weight per subject"
-            placeholder="g"
-            min={0}
-            decimalScale={6}
-            value={avgBodyWeightG}
-            onChange={(v) => setFieldValue('avgBodyWeightG', v)}
-            onBlur={scheduleOutputFeedback}
-            {...inputBlue}
-          />
-          <LabSelect
-            label="Unit"
-            data={WEIGHT_UNITS}
-            value={avgBodyWeightUnit}
-            onChange={(v) => setFieldValue('avgBodyWeightUnit', v ?? 'g')}
-            onBlur={scheduleOutputFeedback}
-            w={100}
-          />
-        </Group>
+        <div>
+          <Group align="flex-end" wrap="wrap" gap="sm">
+            <NumberInput
+              label="Average body weight per subject"
+              placeholder="e.g. 25"
+              min={0}
+              decimalScale={6}
+              value={avgBodyWeight}
+              onChange={(v) => setFieldValue('avgBodyWeight', v)}
+              onBlur={scheduleOutputFeedback}
+              {...inputBlue}
+            />
+            <LabSelect
+              label="Unit"
+              data={WEIGHT_UNITS}
+              value={avgBodyWeightUnit}
+              onChange={(v) => setFieldValue('avgBodyWeightUnit', v ?? 'g')}
+              onBlur={scheduleOutputFeedback}
+              w={100}
+            />
+          </Group>
+          <Text size="xs" c="dimmed" mt={6}>
+            {MOUSE_WEIGHT_HINT}
+          </Text>
+        </div>
+
         <NumberInput
           label="Total number of injections"
           placeholder="count"
@@ -114,7 +133,45 @@ export default function Step3StudyParametersSection({
             * how much extra do you want to make
           </Text>
         </div>
+
+        <div>
+          <Group align="flex-end" wrap="wrap" gap="sm">
+            <NumberInput
+              label="Smallest volume your pipette can deliver"
+              placeholder="e.g. 2"
+              min={0}
+              decimalScale={3}
+              value={pipetteMinUl}
+              onChange={(v) => setFieldValue('pipetteMinUl', v)}
+              onBlur={scheduleOutputFeedback}
+              w={280}
+              {...inputBlue}
+            />
+            <Text pb="sm" size="sm">
+              µL
+            </Text>
+            <NumberInput
+              label="Max injection volume"
+              placeholder="0.01"
+              min={0}
+              decimalScale={5}
+              value={maxVolumeRateMlPerG}
+              onChange={(v) => setFieldValue('maxVolumeRateMlPerG', v)}
+              onBlur={scheduleOutputFeedback}
+              w={190}
+              {...inputBlue}
+            />
+            <Text pb="sm" size="sm">
+              mL per g body weight
+            </Text>
+          </Group>
+          <Text size="xs" c="dimmed" mt={6}>
+            * recipe volumes are rounded to your pipette; 0.01 mL/g is the usual mouse IP ceiling
+          </Text>
+        </div>
       </Stack>
+
+      <IssueList issues={issues} />
     </Paper>
   );
 }
