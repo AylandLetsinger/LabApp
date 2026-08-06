@@ -127,7 +127,7 @@ export const VEHICLES = [
         duration: 'daily dosing',
         outcome: 'Vehicle for GAT211 at 5-20 mg/kg/day; no vehicle-attributed adverse effects reported',
         verdict: 'tolerated',
-        source: HOHMANN_GAT, confidence: CONFIDENCE.low,
+        source: HOHMANN_GAT, confidence: CONFIDENCE.low, kind: 'practice',
       },
     ],
     note: 'Palatability in voluntary oral consumption is not established. A refused mealworm is a failed session, not a safety event — determine empirically.',
@@ -166,7 +166,7 @@ export const VEHICLES = [
         duration: 'daily dosing',
         outcome: 'Part of the GAT211 vehicle (1:1:8 ethanol/Emulphor/saline as 80% of the mix); no vehicle-attributed adverse effects reported',
         verdict: 'tolerated',
-        source: HOHMANN_GAT, confidence: CONFIDENCE.low,
+        source: HOHMANN_GAT, confidence: CONFIDENCE.low, kind: 'practice',
       },
     ],
     note: 'Stimulation at 16% is a behavioural confound, not sedation — relevant if your endpoint is activity.',
@@ -188,10 +188,14 @@ export const VEHICLES = [
         duration: 'daily dosing',
         outcome: 'Part of the GAT211 vehicle; no vehicle-attributed adverse effects reported',
         verdict: 'tolerated',
-        source: HOHMANN_GAT, confidence: CONFIDENCE.low,
+        source: HOHMANN_GAT, confidence: CONFIDENCE.low, kind: 'practice',
       },
     ],
-    note: 'A surfactant — keeps lipophilic compounds emulsified instead of precipitating when they meet an aqueous phase. Density is approximate.',
+    note:
+      'Polyoxyethylated (ethoxylated) castor oil — the ethoxylation is what makes it a '
+      + 'water-dispersible surfactant rather than an oil. Same class as Cremophor EL, which is '
+      + 'why they substitute for each other. Keeps lipophilic compounds emulsified instead of '
+      + 'precipitating when they meet an aqueous phase. Density is approximate.',
   },
   {
     id: 'tween80',
@@ -414,9 +418,12 @@ export function toleratedBurdenRange(vehicleId, { species = 'mouse', route = 'ip
   const vehicle = getVehicle(vehicleId);
   if (!vehicle) return undefined;
 
+  // Published practice is context, not evidence of a limit. Including it lets
+  // a vehicle in common use become its own justification, which showed up as
+  // a row reporting "delivers 424, published 424".
   const collect = (filter) =>
     vehicle.observations
-      .filter((o) => o.verdict === 'tolerated' && filter(o))
+      .filter((o) => o.verdict === 'tolerated' && o.kind !== 'practice' && filter(o))
       .map((o) => ({ observation: o, mgPerKg: observationBurdenMgPerKg(o, vehicle.densityGPerMl) }))
       .filter((x) => x.mgPerKg !== undefined)
       .sort((a, b) => a.mgPerKg - b.mgPerKg);

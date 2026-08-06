@@ -210,6 +210,105 @@ export function computeMealwormDosingTable({
 }
 
 /**
+ * Build a vehicle from the chemistry, rather than checking one the user
+ * guessed.
+ *
+ * The order matters and it is not the order a ratio table implies:
+ *
+ *   1. Solubility fixes how much primary solvent is needed. This is not a
+ *      choice — mass / solubility, and no percentage can change it.
+ *   2. That solvent volume is checked for tolerability, in mg/kg. Too high
+ *      means no vehicle built on this solvent will work at this dose; you
+ *      need a co-solvent or a solvent the drug likes better.
+ *   3. Only then does total volume matter. If the solvent volume alone is
+ *      below what the syringe can deliver, diluent is added to bring the
+ *      dose up to a volume that can actually be measured.
+ *   4. The ratio falls out of those volumes. It is an output.
+ *
+ * A drug that dissolves in the diluent needs no step 1 at all — pass no
+ * solubility and the plan is simply "one solvent, volume set by the syringe".
+ *
+ * @param {object} p
+ * @param {number} p.dosePerSubjectMg
+ * @param {number} [p.solubilityMgPerMl] Omit when the drug dissolves in the diluent.
+ * @param {number} p.syringeMinUl Smallest volume the loading tool can deliver.
+ * @param {number} p.maxVolumeUl Worm capacity, or any per-subject volume ceiling.
+ * @param {number} [p.preferredVolumeUl] A volume the user finds comfortable.
+ * @returns {object | null}
+ */
+export function computeVehiclePlan({
+  dosePerSubjectMg,
+  solubilityMgPerMl,
+  syringeMinUl,
+  maxVolumeUl,
+  preferredVolumeUl,
+}) {
+  const dose = toPositiveNumber(dosePerSubjectMg);
+  const syringeMin = toNonNegativeNumber(syringeMinUl) ?? 0;
+  const maxVolume = toPositiveNumber(maxVolumeUl);
+  const solubility = toPositiveNumber(solubilityMgPerMl);
+  const preferred = toPositiveNumber(preferredVolumeUl);
+  if (dose === undefined || maxVolume === undefined) return null;
+
+  /** @type {Issue[]} */
+  const issues = [];
+
+  // Step 1 — how much primary solvent the drug actually requires.
+  const primaryVolumeUl = solubility === undefined ? 0 : (dose / solubility) * 1000;
+
+  // Step 3 — the smallest total volume that is both measurable and sufficient.
+  const minimumWorkableUl = Math.max(primaryVolumeUl, syringeMin);
+  const suggestedVolumeUl =
+    preferred !== undefined && preferred >= minimumWorkableUl && preferred <= maxVolume
+      ? preferred
+      : minimumWorkableUl;
+
+  const diluentVolumeUl = Math.max(0, suggestedVolumeUl - primaryVolumeUl);
+
+  if (primaryVolumeUl > maxVolume) {
+    issues.push({
+      level: 'error',
+      message:
+        `Dissolving ${round(dose)} mg needs ${round(primaryVolumeUl)} µL of solvent, more than the ` +
+        `${round(maxVolume)} µL that fits. No vehicle can fix this — you need a solvent the drug ` +
+        'is more soluble in, a smaller dose, or more than one worm.',
+    });
+  } else if (minimumWorkableUl > maxVolume) {
+    issues.push({
+      level: 'error',
+      message:
+        `The smallest measurable dose is ${round(minimumWorkableUl)} µL but only ` +
+        `${round(maxVolume)} µL fits. A finer syringe or a larger worm is needed.`,
+    });
+  }
+
+  if (solubility !== undefined && primaryVolumeUl < syringeMin && primaryVolumeUl > 0) {
+    issues.push({
+      level: 'warning',
+      message:
+        `The drug needs only ${round(primaryVolumeUl)} µL of solvent, below the ${round(syringeMin)} µL ` +
+        'your syringe can measure. Diluent is required to bring the dose up to a workable volume — ' +
+        'that is what the second solvent is for.',
+    });
+  }
+
+  const totalForRatio = primaryVolumeUl + diluentVolumeUl;
+  return {
+    primaryVolumeUl,
+    diluentVolumeUl,
+    suggestedVolumeUl,
+    minimumWorkableUl,
+    /** Concentration the finished vehicle would carry. */
+    concentrationMgPerMl: suggestedVolumeUl > 0 ? dose / (suggestedVolumeUl / 1000) : undefined,
+    /** %v/v of the primary solvent — derived, never entered. */
+    primaryPercentVv: totalForRatio > 0 ? (primaryVolumeUl / totalForRatio) * 100 : 0,
+    /** Whether diluent is needed at all. */
+    needsDiluent: diluentVolumeUl > 0,
+    issues,
+  };
+}
+
+/**
  * Can the vehicle actually dissolve the drug at the concentration required?
  *
  * A drug dissolved in a primary solvent cannot be more concentrated in the
