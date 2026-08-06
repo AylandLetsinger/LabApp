@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { MantineProvider } from '@mantine/core';
 import { BrowserRouter } from 'react-router-dom';
 import '@mantine/core/styles.css';
+import './print.css';
 import App from './App';
 import { labTheme } from './theme';
 

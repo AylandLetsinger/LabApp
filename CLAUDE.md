@@ -122,13 +122,16 @@ it looks right.
 
 ## Git
 
-**Never commit to `main`.** Work on a branch, push it, open a Pull Request.
-Vercel builds every branch to its own preview URL.
+**Do not push unless the user asks.** Pushing to `main` deploys to
+thelabapp.org within about a minute — treat it as publishing, because it is.
 
-Pushing to `main` deploys to thelabapp.org within about a minute. Treat it as
-publishing, because it is.
+Committing to `main` is permitted on this project; the team decided against
+requiring pull requests. Still prefer a branch for anything substantial, and
+say why: a branch gets its own Vercel preview URL, so the user can try the
+change on a real page before it is public.
 
-Do not push unless the user asks.
+Never force-push. It is the only operation that can destroy a recoverable
+version, which is the safety net the whole workflow rests on.
 
 ## Ownership
 

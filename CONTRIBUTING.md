@@ -10,6 +10,21 @@ is. The AI will write correct-looking code quickly; the danger is no longer
 typos, it is plausible-looking wrong answers landing on the live site. Section
 3 exists for that.
 
+## Two things to know before anything else
+
+**Pull before you start.** Every session, every time. Skipping it causes almost
+every problem described further down.
+
+**Pushing straight to `main` is allowed.** It publishes to thelabapp.org in
+about a minute, so know that is what you are doing. Nothing here is permanent —
+if it goes wrong the live site rolls back in one click, and no version can be
+erased. See *When something goes wrong*.
+
+Branches are recommended, not required, and the reason benefits you rather than
+anyone else: **pushing a branch gets you a live preview URL**, so you can open
+the real thing and try it before anybody else sees it. That beats hoping you got
+it right. Sections 4 and 5 cover it.
+
 ---
 
 ## 0. Who owns what
@@ -44,15 +59,26 @@ collisions actually happen. Adding a page to the nav means editing
 ```bash
 git checkout main
 git pull
-git checkout -b short-name-for-what-youre-doing
 ```
 
 **Do not skip the pull.** Working from a stale copy is how you get conflicts.
 
+Then decide whether to branch:
+
+```bash
+git checkout -b short-name-for-what-youre-doing
+```
+
+**Branch** when the change is more than a small edit, when you want a preview
+link before it goes public, or when you want someone to look first. Your branch
+cannot affect the live site at all.
+
+**Stay on `main`** for a typo, a wording fix, or anything you are confident
+about. It goes live on merge or push, which is usually what you want for a
+one-line change.
+
 Branch names: lowercase, hyphens, describe the work.
 `molarity-calculator`, `fix-dilution-units`, `recipes-form`.
-
-Your branch is yours. You cannot break the live site from it.
 
 ---
 
@@ -114,7 +140,18 @@ If lint or build fails for you, it fails for everyone.
 
 ---
 
-## 4. Publish for review
+## 4. Publish
+
+**If you worked on `main`:**
+
+```bash
+git push
+```
+
+That is it — live in about a minute. Open the site and check the thing you
+changed actually changed.
+
+**If you worked on a branch:**
 
 ```bash
 git push -u origin your-branch-name
@@ -127,9 +164,17 @@ On github.com the repo offers a **Compare & pull request** button. Click it,
 write a sentence about what changed, create it. Vercel posts the preview link
 on the PR.
 
+A push that prints nothing has succeeded. Git is quiet on success. To confirm:
+
+```bash
+git log --oneline origin/main..HEAD
+```
+
+Empty output means everything is on GitHub.
+
 ---
 
-## 5. Review
+## 5. Review — branches only
 
 The other person opens the preview link and clicks around.
 
@@ -142,7 +187,7 @@ Two people checking one number costs a minute.
 
 ---
 
-## 6. Merge and reset
+## 6. Merge and reset — branches only
 
 Click **Merge pull request** on GitHub. Live on thelabapp.org in about a
 minute.
@@ -190,13 +235,34 @@ Decide what the file should say, delete the `<<<<<<<`, `=======` and `>>>>>>>`
 markers, save, commit. **If it looks frightening, stop and ask.** Do not guess,
 and do not let an AI resolve a conflict in dosage maths unsupervised.
 
-**You committed to `main` by accident**
-Do not force-push. Say so in chat — a commit is easy to move onto a branch as
-long as nobody has built on top of it.
+**You pushed something to `main` you did not mean to**
+This is allowed and recoverable, so do not panic and **do not force-push**.
+Either roll the site back (below) or undo the commit properly:
+
+```bash
+git revert <commit-id>
+git push
+```
+
+`revert` makes a new commit that undoes the old one. Nothing is erased, and the
+revert is itself revertable.
 
 **The live site is broken**
-Vercel dashboard → Deployments → find the last good one → **Instant Rollback**.
-Fix it properly afterwards. Rolling back first is not an admission of anything.
+Vercel dashboard → your project → **Instant Rollback** (top right, next to
+*Visit*) → pick the last good deployment. About thirty seconds, and it does not
+touch the repository.
+
+Fix it properly afterwards. Rolling back first is not an admission of anything —
+it is the correct first move.
+
+**A push seemed to do nothing**
+It probably worked. Git prints nothing on a successful push. Check with:
+
+```bash
+git log --oneline origin/main..HEAD
+```
+
+Empty output means there is nothing left to push.
 
 ---
 
