@@ -79,7 +79,7 @@ export default function DissolutionTable({
           </Group>
         )}
       </Group>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="dimmed" mb="md" className="no-print">
         Splits the total volume across your solvents. Volumes are rounded to your pipette&apos;s
         smallest increment ({pipetteMinUl} µL), and the last solvent takes up the rounding so these
         numbers always add up to the total volume.

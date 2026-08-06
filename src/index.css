@@ -109,13 +109,22 @@ code {
  * controls are dropped; inputs keep their values but lose the interactive
  * chrome; tables are kept whole rather than split across pages.
  */
+/*
+ * Printing, tuned to fit a filled-in calculator on ONE page.
+ *
+ * A bench sheet is a different document from the on-screen tool: the person
+ * holding it already knows what the fields mean, so the teaching text, the
+ * controls, and the whitespace all come out. What remains is labels, values,
+ * and any warning that was on screen.
+ */
 @media print {
   @page {
-    margin: 14mm;
+    margin: 9mm;
   }
 
   :root {
-    font-size: 11pt;
+    font-size: 8pt;
+    line-height: 1.2;
   }
 
   #root {
@@ -124,15 +133,56 @@ code {
     min-height: 0;
   }
 
-  /* Interactive chrome that means nothing on paper. */
+  /* Navigation, and anything explicitly marked as screen-only guidance. */
   header,
   .mantine-AppShell-header,
   .no-print {
     display: none !important;
   }
 
-  .mantine-AppShell-main {
+  /* Controls that do nothing on paper. The capacity slider duplicates the
+     number field beside it, so only the number survives. */
+  button,
+  .mantine-Slider-root,
+  .mantine-ActionIcon-root,
+  .mantine-Loader-root {
+    display: none !important;
+  }
+
+  .mantine-AppShell-main,
+  .mantine-Container-root {
     padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  h1 {
+    font-size: 13pt !important;
+    margin: 0 0 1.5mm !important;
+    letter-spacing: normal;
+  }
+
+  /* Panels become ruled blocks rather than cards. */
+  .mantine-Paper-root {
+    border: 1px solid #bbb !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 1.8mm 2.5mm !important;
+    margin-bottom: 1mm !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Collapse the generous on-screen spacing. */
+  .mantine-Stack-root {
+    gap: 1mm !important;
+  }
+  .mantine-Group-root {
+    gap: 1.5mm !important;
+    row-gap: 0.5mm !important;
+  }
+  .mantine-InputWrapper-root {
+    margin-bottom: 0 !important;
+    line-height: 1.1 !important;
   }
 
   /* Inputs print as plain values, not as form controls. */
@@ -141,27 +191,42 @@ code {
     border: none !important;
     background: transparent !important;
     box-shadow: none !important;
-    padding-left: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
     color: #000 !important;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 8.5pt !important;
+  }
+
+  .mantine-InputWrapper-label {
+    font-size: 7pt !important;
+    font-weight: 400 !important;
+    margin-bottom: 0 !important;
+    color: #555 !important;
+  }
+
+  /* Tables: keep the data, drop the padding. */
+  table {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    font-size: 8pt;
+  }
+  th,
+  td {
+    padding: 0.6mm 1.5mm !important;
+  }
+
+  /* Warnings still matter on paper — just smaller. */
+  .mantine-Alert-root {
+    padding: 1.5mm 2mm !important;
+    margin-top: 1.5mm !important;
+    font-size: 7.5pt !important;
   }
 
   /* Keep the yellow recipe cells legible in greyscale. */
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-  }
-
-  /* Don't split a table or a step panel across a page break. */
-  table,
-  .mantine-Paper-root {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .mantine-Paper-root {
-    border: 1px solid #999 !important;
-    box-shadow: none !important;
-    margin-bottom: 8mm;
   }
 }

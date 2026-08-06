@@ -29,7 +29,7 @@ export default function Step2DosageTypeSection({
       <Text fw={600} mb="sm">
         Step 2 — Dosage type
       </Text>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="dimmed" mb="md" className="no-print">
         Choose how dose is specified, then enter the values (highlighted fields).
       </Text>
 

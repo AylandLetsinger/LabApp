@@ -62,7 +62,7 @@ export default function MealwormDosingTable({
       <Text fw={600} mb="sm">
         Step 6 — Dosing table by body mass
       </Text>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="dimmed" mb="md" className="no-print">
         Volume to load into one worm for each body weight, at your stock concentration. Rows outside
         your worm capacity or pipette range are flagged in red.
       </Text>

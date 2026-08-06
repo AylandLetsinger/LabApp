@@ -28,7 +28,7 @@ export default function Step3StudyParametersSection({
       <Text fw={600} mb="sm">
         Step 3 — Study parameters
       </Text>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="dimmed" mb="md" className="no-print">
         Enter study parameters (all user inputs below).
       </Text>
 
@@ -70,7 +70,7 @@ export default function Step3StudyParametersSection({
               body weight
             </Text>
           </Group>
-          <Text size="xs" c="dimmed" mt={6}>
+          <Text size="xs" c="dimmed" mt={6} className="no-print">
             * mice tolerate about 0.1 mL per 10 g intraperitoneally
           </Text>
         </div>
@@ -96,7 +96,7 @@ export default function Step3StudyParametersSection({
               w={100}
             />
           </Group>
-          <Text size="xs" c="dimmed" mt={6}>
+          <Text size="xs" c="dimmed" mt={6} className="no-print">
             {MOUSE_WEIGHT_HINT}
           </Text>
         </div>
@@ -129,7 +129,7 @@ export default function Step3StudyParametersSection({
               %
             </Text>
           </Group>
-          <Text size="xs" c="dimmed" mt={6}>
+          <Text size="xs" c="dimmed" mt={6} className="no-print">
             * how much extra do you want to make
           </Text>
         </div>
@@ -165,7 +165,7 @@ export default function Step3StudyParametersSection({
               mL per g body weight
             </Text>
           </Group>
-          <Text size="xs" c="dimmed" mt={6}>
+          <Text size="xs" c="dimmed" mt={6} className="no-print">
             * recipe volumes are rounded to your pipette; 0.01 mL/g is the usual mouse IP ceiling
           </Text>
         </div>

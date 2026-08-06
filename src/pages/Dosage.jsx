@@ -44,7 +44,7 @@ export default function Dosage() {
 
       {Form ? (
         <>
-          <Text size="sm" c="dimmed" maw={640}>
+          <Text size="sm" c="dimmed" maw={640} className="no-print">
             {implemented.intro}
           </Text>
           <Form />

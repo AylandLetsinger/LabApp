@@ -68,7 +68,7 @@ export default function Step4Outputs({
           </Group>
         )}
       </Group>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="dimmed" mb="md" className="no-print">
         Calculated results (grey fields). Change any unit to suit your balance or pipette — the
         underlying calculation is unaffected.
       </Text>

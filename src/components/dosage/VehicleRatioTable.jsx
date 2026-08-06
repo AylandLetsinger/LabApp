@@ -70,7 +70,7 @@ export default function VehicleRatioTable({ rows, onRowsChange, route, stepLabel
       <Text fw={600} mb="sm">
         {stepLabel}
       </Text>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="dimmed" mb="md" className="no-print">
         Enter ratio parts per solvent — 1 : 1 : 18 gives 5% / 5% / 90%. %(v/v) is each part divided
         by the sum of parts. Limits are published guidelines for the{' '}
         <strong>{route === 'ip' ? 'intraperitoneal' : 'oral'}</strong> route; hover one to see its
@@ -185,7 +185,7 @@ export default function VehicleRatioTable({ rows, onRowsChange, route, stepLabel
       {notes.length > 0 && (
         <div style={{ marginTop: 'var(--mantine-spacing-sm)' }}>
           {notes.map(({ label, note }) => (
-            <Text key={label} size="xs" c="dimmed" mt={4}>
+            <Text key={label} size="xs" c="dimmed" mt={4} className="no-print">
               <strong>{label}:</strong> {note}
             </Text>
           ))}

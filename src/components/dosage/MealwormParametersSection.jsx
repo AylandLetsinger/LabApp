@@ -42,7 +42,7 @@ export default function MealwormParametersSection({
       <Text fw={600} mb="sm">
         Step 3 — Mealworm loading
       </Text>
-      <Text size="sm" c="dimmed" mb="md">
+      <Text size="sm" c="dimmed" mb="md" className="no-print">
         One loaded mealworm per mouse. Choose what you want to hold fixed; the calculator solves for
         the other.
       </Text>
@@ -64,7 +64,7 @@ export default function MealwormParametersSection({
               { value: 'volume', label: 'Volume to load' },
             ]}
           />
-          <Text size="xs" c="dimmed" mt={6}>
+          <Text size="xs" c="dimmed" mt={6} className="no-print">
             {mode === 'concentration'
               ? '* every mouse gets the same absolute dose, so every worm gets the same volume'
               : '* dose scales with body mass: mix one stock, vary the volume per worm'}
@@ -102,7 +102,7 @@ export default function MealwormParametersSection({
             mb="xl"
             aria-label="Mealworm loading capacity in microlitres"
           />
-          <Text size="xs" c="dimmed">
+          <Text size="xs" c="dimmed" className="no-print">
             * the most liquid a worm absorbs before it leaks — depends on worm size
           </Text>
         </div>
@@ -124,7 +124,7 @@ export default function MealwormParametersSection({
                 µL
               </Text>
             </Group>
-            <Text size="xs" c="dimmed" mt={6}>
+            <Text size="xs" c="dimmed" mt={6} className="no-print">
               * must not exceed the loading capacity above
             </Text>
           </div>
@@ -146,7 +146,7 @@ export default function MealwormParametersSection({
                 mg per mL
               </Text>
             </Group>
-            <Text size="xs" c="dimmed" mt={6}>
+            <Text size="xs" c="dimmed" mt={6} className="no-print">
               * see the workable range below before committing to a value
             </Text>
           </div>
@@ -173,7 +173,7 @@ export default function MealwormParametersSection({
               w={100}
             />
           </Group>
-          <Text size="xs" c="dimmed" mt={6}>
+          <Text size="xs" c="dimmed" mt={6} className="no-print">
             {MOUSE_WEIGHT_HINT}
           </Text>
         </div>

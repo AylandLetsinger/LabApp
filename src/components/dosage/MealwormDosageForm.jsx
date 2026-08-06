@@ -207,7 +207,7 @@ export default function MealwormDosageForm() {
         <Text fw={600} mb="sm">
           Step 4 — Output
         </Text>
-        <Text size="sm" c="dimmed" mb="md">
+        <Text size="sm" c="dimmed" mb="md" className="no-print">
           {isConcentrationMode
             ? 'Load the same volume into every worm; mix the solution at the concentration below.'
             : 'Mix one stock at your chosen concentration; load the volume below into each worm.'}
