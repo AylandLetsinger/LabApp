@@ -144,8 +144,6 @@ export default function IntraperitonealDosageForm() {
 
   return (
     <Stack gap="lg" mt="md">
-      <PrintActions title="intraperitoneal injection calculator" />
-
       <Step2DosageTypeSection
         dosageType={v.dosageType}
         dosePerSubject={v.dosePerSubject}
@@ -205,6 +203,7 @@ export default function IntraperitonealDosageForm() {
         pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
         stepLabel="Step 6 — Dissolution & vehicle volumes"
       />
+      <PrintActions title="intraperitoneal injection calculator" />
     </Stack>
   );
 }

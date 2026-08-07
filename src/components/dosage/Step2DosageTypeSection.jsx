@@ -50,6 +50,7 @@ export default function Step2DosageTypeSection({
             placeholder="e.g. 0.5"
             min={0}
             decimalScale={6}
+            w={120}
             value={dosePerSubject}
             onChange={(v) => setFieldValue('dosePerSubject', v)}
             onBlur={scheduleOutputFeedback}
@@ -76,6 +77,7 @@ export default function Step2DosageTypeSection({
             placeholder="e.g. 20"
             min={0}
             decimalScale={6}
+            w={120}
             value={doseAmount}
             onChange={(v) => setFieldValue('doseAmount', v)}
             onBlur={scheduleOutputFeedback}
@@ -97,6 +99,7 @@ export default function Step2DosageTypeSection({
             placeholder="e.g. 1"
             min={0}
             decimalScale={6}
+            w={120}
             value={bodyWeightAmount}
             onChange={(v) => setFieldValue('bodyWeightAmount', v)}
             onBlur={scheduleOutputFeedback}

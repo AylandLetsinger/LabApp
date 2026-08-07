@@ -1,7 +1,7 @@
 import { Group, Loader, Paper, Table, Text, ThemeIcon } from '@mantine/core';
 import { IconCheck } from '@tabler/icons-react';
 import IssueList from './IssueList';
-import { computeVehicleVolumes } from '../../dosage/computeVehicleVolumes';
+import { computeVehicleVolumes, primarySolventVolumeMl } from '../../dosage/computeVehicleVolumes';
 import { roundTo } from '../../dosage/numberUtils';
 import { getVehicle } from '../../dosage/vehicles';
 import { errorColor } from '../../theme';
@@ -42,6 +42,22 @@ export default function DissolutionTable({
 
   const issues = [];
   if (volumes) {
+    vehicleRows.forEach((row, i) => {
+      const minMl = primarySolventVolumeMl(soluteRequiredMg, row.solubilityMgPerMl);
+      if (minMl === undefined) return;
+      if (volumes[i].exactMl < minMl - 1e-12) {
+        const vehicle = getVehicle(row.vehicleId);
+        issues.push({
+          level: 'error',
+          message:
+            `${vehicle?.label ?? 'Solvent'} gets ${roundTo(volumes[i].exactMl, 4)} mL but dissolving ` +
+            `${roundTo(soluteRequiredMg, 4)} mg needs at least ${roundTo(minMl, 4)} mL. Raise its ` +
+            'ratio, or make a larger batch.',
+        });
+      }
+    });
+  }
+  if (volumes) {
     volumes.forEach((v, i) => {
       if (v.belowPipetteMinimum) {
         const vehicle = getVehicle(vehicleRows[i].vehicleId);
@@ -79,12 +95,6 @@ export default function DissolutionTable({
           </Group>
         )}
       </Group>
-      <Text size="sm" c="dimmed" mb="md" className="no-print">
-        Splits the total volume across your solvents. Volumes are rounded to your pipette&apos;s
-        smallest increment ({pipetteMinUl} µL), and the last solvent takes up the rounding so these
-        numbers always add up to the total volume.
-      </Text>
-
       <Table verticalSpacing="xs" horizontalSpacing="sm" withTableBorder withColumnBorders>
         <Table.Tbody>
           <Table.Tr>
@@ -112,6 +122,9 @@ export default function DissolutionTable({
 
           {vehicleRows.map((row, index) => {
             const vehicle = getVehicle(row.vehicleId);
+            const minForBatchMl = ready
+              ? primarySolventVolumeMl(soluteRequiredMg, row.solubilityMgPerMl)
+              : undefined;
             const volume = ready ? formatVolume(volumes[index].displayMl) : null;
             const flagged = volumes?.[index]?.belowPipetteMinimum;
             return (
@@ -134,6 +147,11 @@ export default function DissolutionTable({
                 <Table.Td>
                   <Text size="sm" fw={500}>
                     {vehicle?.label ?? 'Solvent'}
+                    {minForBatchMl !== undefined && (
+                      <Text component="span" size="xs" c="dimmed">
+                        {'  '}(needs ≥ {roundTo(minForBatchMl, 4)} mL to dissolve)
+                      </Text>
+                    )}
                   </Text>
                 </Table.Td>
               </Table.Tr>

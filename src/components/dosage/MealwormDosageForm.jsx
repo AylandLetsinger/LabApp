@@ -191,8 +191,6 @@ export default function MealwormDosageForm() {
 
   return (
     <Stack gap="lg" mt="md">
-      <PrintActions title="mealworm oral dosing calculator" />
-
       <Step2DosageTypeSection
         stepLabel="Step 1 — Dosage type"
         dosageType={v.dosageType}
@@ -303,6 +301,7 @@ export default function MealwormDosageForm() {
           scheduleOutputFeedback={scheduleOutputFeedback}
         />
       )}
+      <PrintActions title="mealworm oral dosing calculator" />
     </Stack>
   );
 }

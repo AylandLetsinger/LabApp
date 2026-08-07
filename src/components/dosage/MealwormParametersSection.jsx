@@ -112,7 +112,7 @@ export default function MealwormParametersSection({
             aria-label="Mealworm loading capacity in microlitres"
           />
           <Text size="xs" c="dimmed" className="no-print">
-            * the most liquid a worm absorbs before it leaks — depends on worm size
+            * the most liquid a worm absorbs before it leaks
           </Text>
         </div>
 

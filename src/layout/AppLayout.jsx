@@ -51,7 +51,7 @@ export default function AppLayout() {
       }}
     >
       <AppShell.Header px="md" style={{ display: 'flex', alignItems: 'center' }}>
-        <Group justify="space-between" wrap="nowrap" gap="sm" w="100%" maw={1126} mx="auto">
+        <Group justify="center" wrap="nowrap" gap="sm" w="100%" maw={1126} mx="auto" pos="relative">
           <Title
             order={2}
             size="h4"
@@ -62,6 +62,7 @@ export default function AppLayout() {
             THE LAB APP
           </Title>
 
+          <div style={{ position: 'absolute', right: 0 }}>
           {isNarrow ? (
             <Menu
               shadow="md"
@@ -119,6 +120,7 @@ export default function AppLayout() {
               ))}
             </Group>
           )}
+          </div>
         </Group>
       </AppShell.Header>
 

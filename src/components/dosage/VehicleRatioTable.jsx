@@ -181,15 +181,12 @@ export default function VehicleRatioTable({
           </Text>
         )}
       </Group>
-      <Text size="xs" c="dimmed" mb="md" className="no-print">
-        * filled in for you and refreshed when the table changes. Raise it to dilute.
-      </Text>
 
-      <Table.ScrollContainer minWidth={620}>
+      <Table.ScrollContainer minWidth={760}>
         <Table verticalSpacing="sm" horizontalSpacing="sm" withTableBorder withColumnBorders>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th ta="left">SOLVENT</Table.Th>
+              <Table.Th ta="left" miw={150}>SOLVENT</Table.Th>
               <Table.Th ta="left" w={105}>solubility<br />(mg/mL)</Table.Th>
               <Table.Th ta="left" w={90}>min needed</Table.Th>
               <Table.Th ta="left" w={80}>ratio</Table.Th>
@@ -307,7 +304,7 @@ export default function VehicleRatioTable({
                           {burden === undefined ? '—' : roundTo(burden, 1)}
                         </Text>
                       </AutoValue>
-                      <Tooltip label={`${published}${observations ? `\n\n${observations}` : ''}${note}`} multiline w={430} withArrow>
+                      <Tooltip label={`${published}${observations ? `\n\n${observations}` : ''}${note}`} multiline w={430} withArrow events={{ hover: true, focus: true, touch: true }}>
                         <IconInfoCircle size={14} opacity={0.5} style={{ cursor: 'help' }} />
                       </Tooltip>
                     </Group>
