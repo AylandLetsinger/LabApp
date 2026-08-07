@@ -1,4 +1,4 @@
-import { Group, NumberInput, Paper, SegmentedControl, Slider, Stack, Text } from '@mantine/core';
+import { Group, NumberInput, Paper, Slider, Stack, Text } from '@mantine/core';
 import { MOUSE_WEIGHT_HINT, WEIGHT_UNITS } from '../../constants/doseUnits';
 import LabSelect from '../LabSelect';
 import IssueList from './IssueList';
@@ -17,16 +17,12 @@ const CAPACITY_MARKS = [
 ];
 
 /**
- * Mealworm loading parameters.
- *
- * The mode toggle is the important control: it selects which quantity you
- * hold fixed and which one the calculator solves for. Those correspond to the
- * two ways a dosing session actually runs.
+ * Mealworm loading parameters — the physical constraints of the session,
+ * independent of whether the drug starts as powder, stock, or a finished
+ * solution.
  */
 export default function MealwormParametersSection({
-  mode,
   wormCapacityUl,
-  stockConcentrationMgPerMl,
   avgBodyWeight,
   avgBodyWeightUnit,
   totalDoses,
@@ -53,36 +49,7 @@ export default function MealwormParametersSection({
       <Text fw={600} mb="sm">
         Step 2 — Dosing Parameters
       </Text>
-      <Text size="sm" c="dimmed" mb="md" className="no-print">
-        You know the dose each subject needs. Either fix how much liquid goes into a worm and let
-        the calculator work out the concentration to mix, or fix a stock concentration and let it
-        work out the volume.
-      </Text>
-
       <Stack gap="md">
-        <div>
-          <Text size="sm" fw={500} mb={6}>
-            What should the calculator solve for?
-          </Text>
-          <SegmentedControl
-            color={navActiveColor}
-            value={mode}
-            onChange={(value) => {
-              setFieldValue('mode', value);
-              scheduleOutputFeedback();
-            }}
-            data={[
-              { value: 'concentration', label: 'Concentration to mix' },
-              { value: 'volume', label: 'Volume to load' },
-            ]}
-          />
-          <Text size="xs" c="dimmed" mt={6} className="no-print">
-            {mode === 'concentration'
-              ? '* every subject gets the same absolute dose, so every worm gets the same volume'
-              : '* dose scales with body mass: mix one stock, vary the volume per worm'}
-          </Text>
-        </div>
-
         <div>
           <Group align="flex-end" wrap="wrap" gap="sm" mb={4}>
             <NumberInput
@@ -151,26 +118,6 @@ export default function MealwormParametersSection({
             </Text>
           </Group>
         </div>
-        {mode === 'volume' && (
-          <div>
-            <Group align="flex-end" wrap="wrap" gap="sm">
-              <NumberInput
-                label="Stock concentration you will make"
-                placeholder="e.g. 10"
-                min={0}
-                decimalScale={6}
-                value={stockConcentrationMgPerMl}
-                onChange={(value) => setFieldValue('stockConcentrationMgPerMl', value)}
-                onBlur={scheduleOutputFeedback}
-                w={280}
-                {...inputBlue}
-              />
-              <Text pb="sm" size="sm">
-                mg per mL
-              </Text>
-            </Group>
-          </div>
-        )}
 
         <div>
           <Group align="flex-end" wrap="wrap" gap="sm">

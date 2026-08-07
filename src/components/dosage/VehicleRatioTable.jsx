@@ -47,6 +47,9 @@ export default function VehicleRatioTable({
   volumePerDoseUl,
   onVolumePerDoseChange,
   volumeLabel = 'Volume loaded per worm',
+  stockAvailableMl,
+  onStockAvailableChange,
+  totalStockNeededMl,
 }) {
   const setRow = (index, patch) =>
     onRowsChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
@@ -178,6 +181,17 @@ export default function VehicleRatioTable({
     );
   }
 
+  const stockHave = Number(stockAvailableMl);
+  if (Number.isFinite(stockHave) && stockHave > 0 && Number.isFinite(totalStockNeededMl) && totalStockNeededMl > stockHave) {
+    issues.push({
+      level: 'error',
+      message:
+        `This batch needs ${roundTo(totalStockNeededMl, 4)} mL of stock but you have ` +
+        `${roundTo(stockHave, 4)} mL — short by ${roundTo(totalStockNeededMl - stockHave, 4)} mL. ` +
+        'Make fewer dosages, reduce the waste buffer, or make more stock.',
+    });
+  }
+
   if (rows.length !== new Set(rows.map((r) => r.vehicleId)).size) {
     issues.push({ level: 'error', message: 'The same solvent is listed more than once.' });
   }
@@ -188,9 +202,9 @@ export default function VehicleRatioTable({
         {stepLabel}
       </Text>
       <Text size="sm" c="dimmed" mb="md" className="no-print">
-        Ratio sets every volume. Adding a <strong>solubility</strong> tells the calculator the
-        minimum that solvent needs to dissolve the dose — it does not lock the volume, so you can
-        carry more than the minimum if your protocol does.{' '}
+        Ratio sets every volume. A <strong>solubility</strong> — or, for a stock row, its{' '}
+        <strong>concentration</strong> — tells the calculator the minimum volume that row must
+        occupy. It does not lock the volume, so you can carry more if your protocol does.{' '}
         <strong>Your IACUC protocol governs, not this table.</strong>
       </Text>
 
@@ -199,7 +213,7 @@ export default function VehicleRatioTable({
           <Table.Thead>
             <Table.Tr>
               <Table.Th ta="left" miw={150}>SOLVENT</Table.Th>
-              <Table.Th ta="left" w={105}>solubility<br />(mg/mL)</Table.Th>
+              <Table.Th ta="left" w={110}>solubility /<br />stock conc.</Table.Th>
               <Table.Th ta="left" w={105}>required<br />(per dose)</Table.Th>
               <Table.Th ta="left" w={80}>ratio</Table.Th>
               <Table.Th ta="left" w={78}>%(v/v)</Table.Th>
@@ -257,19 +271,24 @@ export default function VehicleRatioTable({
                       value={row.vehicleId}
                       onChange={(value) => setRow(index, { vehicleId: value ?? row.vehicleId })}
                       onBlur={onBlur}
-                      aria-label={`Solvent ${index + 1}`}
+                      label={row.isStock ? 'stock, dissolved in' : undefined}
+                      aria-label={row.isStock ? 'What the stock is dissolved in' : `Solvent ${index + 1}`}
                       searchable
                     />
                   </Table.Td>
                   <Table.Td>
                     <NumberInput
-                      placeholder="n/a"
+                      placeholder={row.isStock ? 'stock mg/mL' : 'n/a'}
                       min={0}
                       decimalScale={4}
                       value={row.solubilityMgPerMl ?? ''}
                       onChange={(value) => setRow(index, { solubilityMgPerMl: value })}
                       onBlur={onBlur}
-                      aria-label={`Drug solubility in solvent ${index + 1}`}
+                      aria-label={
+                        row.isStock
+                          ? 'Stock concentration'
+                          : `Drug solubility in solvent ${index + 1}`
+                      }
                       hideControls
                     />
                   </Table.Td>
@@ -327,7 +346,7 @@ export default function VehicleRatioTable({
                       color="gray"
                       aria-label={`Remove solvent ${index + 1}`}
                       onClick={() => removeRow(index)}
-                      disabled={rows.length <= 1}
+                      disabled={rows.length <= 1 || row.isStock}
                     >
                       <IconTrash size={16} />
                     </ActionIcon>
@@ -375,6 +394,30 @@ export default function VehicleRatioTable({
           </Text>
         )}
       </Group>
+
+      {onStockAvailableChange && (
+        <Group align="flex-end" wrap="wrap" gap="sm" mt="sm">
+          <NumberInput
+            label="How much stock do you have?"
+            placeholder="optional"
+            min={0}
+            decimalScale={4}
+            value={stockAvailableMl}
+            onChange={onStockAvailableChange}
+            onBlur={onBlur}
+            w={200}
+            variant="filled"
+          />
+          <Text pb="sm" size="sm">
+            mL
+          </Text>
+          {Number.isFinite(totalStockNeededMl) && (
+            <Text pb="sm" size="sm" c="dimmed">
+              this batch needs <strong>{roundTo(totalStockNeededMl, 4)} mL</strong>
+            </Text>
+          )}
+        </Group>
+      )}
 
       {/* Last thing in the step, directly under the control most likely to
           have caused it: change, then consequence, with nothing shifting

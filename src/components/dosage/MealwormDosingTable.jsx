@@ -26,6 +26,7 @@ export default function MealwormDosingTable({
   pipetteMinUl,
   setFieldValue,
   scheduleOutputFeedback,
+  stepLabel = 'Step 5 — Dosing table by body mass',
 }) {
   const rows = computeMealwormDosingTable({
     doseRateMgPerG,
@@ -60,7 +61,7 @@ export default function MealwormDosingTable({
   return (
     <Paper p="md" radius="md" withBorder>
       <Text fw={600} mb="sm">
-        Step 6 — Dosing table by body mass
+        {stepLabel}
       </Text>
       <Text size="sm" c="dimmed" mb="md" className="no-print">
         Volume to load into one worm for each body weight, at your stock concentration. Rows outside

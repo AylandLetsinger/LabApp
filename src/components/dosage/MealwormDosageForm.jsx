@@ -1,32 +1,46 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Paper, Stack, Text } from '@mantine/core';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { computeDosePerAvgSubjectMg } from '../../dosage/computeDosePerAvgSubject';
-import {
-  computeDoseRateMgPerG,
-  computeMealwormConcentrationMode,
-  computeMealwormVolumeMode,
-  computeWorkableConcentrationWindow,
-} from '../../dosage/computeMealwormOutputs';
+import { computeDoseRateMgPerG } from '../../dosage/computeMealwormOutputs';
 import { computeSoluteRequiredMg } from '../../dosage/computeSolutionOutputs';
-import { suggestedDoseVolumeUl } from '../../dosage/computeVehicleVolumes';
-import { roundTo, toOptionalNumber } from '../../dosage/numberUtils';
+import {
+  computeVehicleVolumes,
+  suggestedDoseVolumeUl,
+} from '../../dosage/computeVehicleVolumes';
+import { roundTo, toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
 import { volumeToMl, weightToKg } from '../../dosage/unitConversions';
-import { DEFAULT_ORAL_VEHICLE_ROWS } from '../../dosage/vehicles';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import Step2DosageTypeSection from './Step2DosageTypeSection';
 import MealwormParametersSection from './MealwormParametersSection';
 import MealwormDosingTable from './MealwormDosingTable';
 import RecipeNarrative from './RecipeNarrative';
+import PreparationModeControl from './PreparationModeControl';
+import { PREPARATION_MODES } from '../../dosage/preparationModes';
+import WorkingSolutionSection from './WorkingSolutionSection';
 import VehicleRatioTable from './VehicleRatioTable';
 import DissolutionTable from './DissolutionTable';
 import PrintActions from './PrintActions';
 
+/** Powder: one solvent to start with, and the user adds what they need. */
+const POWDER_ROWS = [{ vehicleId: 'saline', parts: '1' }];
+
+/**
+ * Stock: the first row IS the stock. Its concentration plays exactly the part
+ * solubility plays for powder — volume required = dose / concentration — so
+ * the whole vehicle table works on it unchanged. `vehicleId` records what the
+ * stock is dissolved in, which is what lets the solvent it carries appear in
+ * the burden and miscibility checks instead of vanishing.
+ */
+const STOCK_ROWS = [
+  { vehicleId: 'dmso', parts: '1', solubilityMgPerMl: '', isStock: true },
+  { vehicleId: 'saline', parts: '9' },
+];
+
 export default function MealwormDosageForm() {
   const form = useForm({
     initialValues: {
-      mode: 'concentration',
+      preparation: PREPARATION_MODES.none,
       dosageType: 'by-body-weight',
       dosePerSubject: '',
       dosePerSubjectUnit: 'mg',
@@ -36,13 +50,15 @@ export default function MealwormDosageForm() {
       bodyWeightUnit: 'kg',
       wormCapacityUl: 250,
       loadVolumeUl: '',
-      stockConcentrationMgPerMl: '',
+      stockAvailableMl: '',
+      workingConcentrationMgPerMl: '',
+      workingAvailableMl: '',
       avgBodyWeight: '',
       avgBodyWeightUnit: 'g',
       totalDoses: '',
       wasteBufferPct: 0,
-      // Two different tools with two different floors: the insulin syringe
-      // loads the worm, the pipette makes up the vehicle.
+      // Two tools, two floors: the insulin syringe loads the worm, the pipette
+      // makes up the vehicle.
       syringeMinUl: 25,
       pipetteMinUl: 2,
       minBodyWeightG: 18,
@@ -52,7 +68,7 @@ export default function MealwormDosageForm() {
   });
   const v = form.values;
 
-  const [vehicleRows, setVehicleRows] = useState(DEFAULT_ORAL_VEHICLE_ROWS);
+  const [vehicleRows, setVehicleRows] = useState(POWDER_ROWS);
   const [outputFeedback, scheduleOutputFeedback] = useOutputFeedback();
   const [units, setUnits] = useState({
     dosePerSubject: 'mg',
@@ -65,6 +81,18 @@ export default function MealwormDosageForm() {
     narrativeConcVolume: 'ml',
   });
   const setUnit = (key, value) => setUnits((prev) => ({ ...prev, [key]: value }));
+
+  const isStock = v.preparation === PREPARATION_MODES.stock;
+  const isWorking = v.preparation === PREPARATION_MODES.working;
+  const buildsAVehicle = !isWorking;
+
+  /** Switching what you start with changes what the table means, so reset it. */
+  const changePreparation = (next) => {
+    form.setFieldValue('preparation', next);
+    if (next === PREPARATION_MODES.stock) setVehicleRows(STOCK_ROWS);
+    else if (next === PREPARATION_MODES.none) setVehicleRows(POWDER_ROWS);
+    scheduleOutputFeedback();
+  };
 
   const dosePerSubjectMg = useMemo(
     () =>
@@ -98,54 +126,11 @@ export default function MealwormDosageForm() {
     [v.dosageType, v.doseAmount, v.doseUnit, v.bodyWeightAmount, v.bodyWeightUnit],
   );
 
-  const concentrationMode = useMemo(
-    () =>
-      computeMealwormConcentrationMode({
-        dosePerSubjectMg,
-        loadVolumeUl: v.loadVolumeUl,
-        wormCapacityUl: v.wormCapacityUl,
-        pipetteMinUl: v.syringeMinUl,
-        totalDoses: v.totalDoses,
-        wasteBufferPct: v.wasteBufferPct,
-      }),
-    [
-      dosePerSubjectMg, v.loadVolumeUl, v.wormCapacityUl, v.syringeMinUl,
-      v.totalDoses, v.wasteBufferPct,
-    ],
-  );
-
-  const volumeMode = useMemo(
-    () =>
-      computeMealwormVolumeMode({
-        dosePerSubjectMg,
-        stockConcentrationMgPerMl: v.stockConcentrationMgPerMl,
-        wormCapacityUl: v.wormCapacityUl,
-        pipetteMinUl: v.syringeMinUl,
-      }),
-    [dosePerSubjectMg, v.stockConcentrationMgPerMl, v.wormCapacityUl, v.syringeMinUl],
-  );
-
-  const window = useMemo(
-    () =>
-      computeWorkableConcentrationWindow({
-        doseRateMgPerG,
-        minBodyWeightG: v.minBodyWeightG,
-        maxBodyWeightG: v.maxBodyWeightG,
-        wormCapacityUl: v.wormCapacityUl,
-        pipetteMinUl: v.syringeMinUl,
-      }),
-    [doseRateMgPerG, v.minBodyWeightG, v.maxBodyWeightG, v.wormCapacityUl, v.syringeMinUl],
-  );
-
-  const isConcentrationMode = v.mode === 'concentration';
-
-  // The batch to mix. In volume mode the per-worm volume is what was solved
-  // for, so the batch is built from that instead of a typed volume.
   const suggestedUl = suggestedDoseVolumeUl(vehicleRows, dosePerSubjectMg, Number(v.syringeMinUl));
 
   // Keep the dose volume a REAL value in the field rather than a placeholder,
-  // so the stepper arrows increment from it instead of jumping to zero. It is
-  // overwritten whenever the suggestion moves; the field flashes to say so.
+  // so the stepper increments from it instead of jumping to zero. Rewritten
+  // whenever the suggestion moves; the field flashes to say so.
   const roundedSuggestion = suggestedUl > 0 ? roundTo(suggestedUl, 3) : '';
   useEffect(() => {
     if (roundedSuggestion !== '') form.setFieldValue('loadVolumeUl', roundedSuggestion);
@@ -153,9 +138,8 @@ export default function MealwormDosageForm() {
   }, [roundedSuggestion]);
 
   const typedUl = toOptionalNumber(v.loadVolumeUl);
-  const effectiveLoadUl = isConcentrationMode
-    ? (typedUl !== undefined && typedUl > 0 ? typedUl : suggestedUl || undefined)
-    : volumeMode.loadVolumeUl;
+  const effectiveLoadUl = typedUl !== undefined && typedUl > 0 ? typedUl : suggestedUl || undefined;
+
   const totalVolumeMl = useMemo(() => {
     const loadMl = volumeToMl(effectiveLoadUl, 'ul');
     const doses = toOptionalNumber(v.totalDoses);
@@ -169,10 +153,18 @@ export default function MealwormDosageForm() {
     [dosePerSubjectMg, v.totalDoses, v.wasteBufferPct],
   );
 
-  // What the plan actually delivers per kilogram, derived from the dose and
-  // the subject's mass rather than read back from the input. In per-subject
-  // mode nobody entered a rate, and that is exactly when it is worth seeing —
-  // protocols are written in mg/kg.
+  /** How much stock the whole batch consumes — the stock row's share of it. */
+  const totalStockNeededMl = useMemo(() => {
+    if (!isStock || totalVolumeMl === undefined) return undefined;
+    const split = computeVehicleVolumes(totalVolumeMl, vehicleRows);
+    const index = vehicleRows.findIndex((row) => row.isStock);
+    if (!split || index === -1) return undefined;
+    return split.rows[index].exactMl;
+  }, [isStock, totalVolumeMl, vehicleRows]);
+
+  // Delivered per kilogram, derived rather than read back from the input, so
+  // it is present even when nobody entered a rate. Protocols are written in
+  // mg/kg, which is exactly when that matters.
   const achievedDoseRateMgPerKg = useMemo(() => {
     const kg = weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit);
     if (dosePerSubjectMg === undefined || kg === undefined || kg <= 0) return undefined;
@@ -180,16 +172,29 @@ export default function MealwormDosageForm() {
   }, [dosePerSubjectMg, v.avgBodyWeight, v.avgBodyWeightUnit]);
 
   const parameterIssues = useMemo(() => {
-    const issues = [];
     const doses = toOptionalNumber(v.totalDoses);
     if (doses !== undefined && doses === 0) {
-      issues.push({
-        level: 'error',
-        message: 'Number of dosages is 0, so every batch figure below is zero. Enter at least 1.',
-      });
+      return [
+        {
+          level: 'error',
+          message: 'Number of dosages is 0, so every batch figure below is zero. Enter at least 1.',
+        },
+      ];
     }
-    return issues;
+    return [];
   }, [v.totalDoses]);
+
+  /** In working mode the concentration is given; otherwise it is derived. */
+  const concentrationMgPerMl = isWorking
+    ? toPositiveNumber(v.workingConcentrationMgPerMl)
+    : dosePerSubjectMg !== undefined && effectiveLoadUl > 0
+      ? dosePerSubjectMg / (effectiveLoadUl / 1000)
+      : undefined;
+
+  const workingVolumePerDoseUl =
+    isWorking && dosePerSubjectMg !== undefined && concentrationMgPerMl !== undefined
+      ? (dosePerSubjectMg / concentrationMgPerMl) * 1000
+      : undefined;
 
   return (
     <Stack gap="lg" mt="md">
@@ -204,13 +209,11 @@ export default function MealwormDosageForm() {
         bodyWeightUnit={v.bodyWeightUnit}
         setFieldValue={form.setFieldValue}
         scheduleOutputFeedback={scheduleOutputFeedback}
+        footer={<PreparationModeControl value={v.preparation} onChange={changePreparation} />}
       />
 
       <MealwormParametersSection
-        mode={v.mode}
         wormCapacityUl={v.wormCapacityUl}
-        loadVolumeUl={v.loadVolumeUl}
-        stockConcentrationMgPerMl={v.stockConcentrationMgPerMl}
         avgBodyWeight={v.avgBodyWeight}
         avgBodyWeightUnit={v.avgBodyWeightUnit}
         totalDoses={v.totalDoses}
@@ -222,78 +225,83 @@ export default function MealwormDosageForm() {
         issues={parameterIssues}
       />
 
-      <VehicleRatioTable
-        rows={vehicleRows}
-        onRowsChange={setVehicleRows}
-        route="oral"
-        stepLabel="Step 3 — Vehicle formulation"
-        onBlur={scheduleOutputFeedback}
-        dosePerSubjectMg={dosePerSubjectMg}
-        bodyWeightKg={weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit)}
-        pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
-        syringeMinUl={toOptionalNumber(v.syringeMinUl) ?? 0}
-        maxVolumeUl={toOptionalNumber(v.wormCapacityUl)}
-        volumePerDoseUl={v.loadVolumeUl}
-        onVolumePerDoseChange={(value) => form.setFieldValue('loadVolumeUl', value)}
-        volumeLabel="Volume loaded per worm"
-      />
-
-      {!isConcentrationMode && window && (
-        <Alert
-          color={window.feasible ? 'blue' : 'red'}
-          variant="light"
-          icon={<IconInfoCircle size={18} />}
-          title="Workable stock concentration"
-        >
-          {window.feasible ? (
-            <Text size="sm">
-              For {v.minBodyWeightG}–{v.maxBodyWeightG} g subjects, a {v.wormCapacityUl} µL worm and
-              a {v.syringeMinUl} µL syringe, your stock must be between{' '}
-              <strong>{roundTo(window.minMgPerMl, 3)} mg/mL</strong> and{' '}
-              <strong>
-                {Number.isFinite(window.maxMgPerMl)
-                  ? `${roundTo(window.maxMgPerMl, 3)} mg/mL`
-                  : 'no upper limit'}
-              </strong>
-              . Outside that range some subjects cannot be dosed accurately.
-            </Text>
-          ) : (
-            <Text size="sm">
-              No stock concentration works for this combination. The heaviest subject needs more
-              volume than the worm holds, while the lightest needs less than the syringe can
-              deliver. Use a larger worm, a finer syringe, or a narrower weight range.
-            </Text>
-          )}
-        </Alert>
+      {isWorking ? (
+        <WorkingSolutionSection
+          stepLabel="Step 3 — Your working solution"
+          concentrationMgPerMl={v.workingConcentrationMgPerMl}
+          availableMl={v.workingAvailableMl}
+          dosePerSubjectMg={dosePerSubjectMg}
+          totalDoses={v.totalDoses}
+          wasteBufferPct={v.wasteBufferPct}
+          syringeMinUl={toOptionalNumber(v.syringeMinUl) ?? 0}
+          maxVolumeUl={toOptionalNumber(v.wormCapacityUl)}
+          setFieldValue={form.setFieldValue}
+          scheduleOutputFeedback={scheduleOutputFeedback}
+        />
+      ) : (
+        <VehicleRatioTable
+          rows={vehicleRows}
+          onRowsChange={setVehicleRows}
+          route="oral"
+          stepLabel={isStock ? 'Step 3 — Dilution' : 'Step 3 — Vehicle formulation'}
+          onBlur={scheduleOutputFeedback}
+          dosePerSubjectMg={dosePerSubjectMg}
+          bodyWeightKg={weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit)}
+          pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
+          syringeMinUl={toOptionalNumber(v.syringeMinUl) ?? 0}
+          maxVolumeUl={toOptionalNumber(v.wormCapacityUl)}
+          volumePerDoseUl={v.loadVolumeUl}
+          onVolumePerDoseChange={(value) => form.setFieldValue('loadVolumeUl', value)}
+          volumeLabel="Volume loaded per worm"
+          stockAvailableMl={isStock ? v.stockAvailableMl : undefined}
+          onStockAvailableChange={
+            isStock ? (value) => form.setFieldValue('stockAvailableMl', value) : undefined
+          }
+          totalStockNeededMl={totalStockNeededMl}
+        />
       )}
 
-      <DissolutionTable
-        outputFeedback={outputFeedback}
-        totalVolumeMl={totalVolumeMl}
-        soluteRequiredMg={soluteRequiredMg}
-        vehicleRows={vehicleRows}
-        pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
-        stepLabel="Step 4 — Recipe"
-        footer={
-          <RecipeNarrative
-            volumePerDoseMl={volumeToMl(effectiveLoadUl, 'ul')}
-            dosePerSubjectMg={dosePerSubjectMg}
-            concentrationMgPerMl={
-              isConcentrationMode
-                ? concentrationMode.requiredConcentrationMgPerMl
-                : toOptionalNumber(v.stockConcentrationMgPerMl)
-            }
-            doseRateMgPerKg={achievedDoseRateMgPerKg}
-            units={units}
-            setUnit={setUnit}
-          />
-        }
-      />
+      {buildsAVehicle && (
+        <DissolutionTable
+          outputFeedback={outputFeedback}
+          totalVolumeMl={totalVolumeMl}
+          soluteRequiredMg={soluteRequiredMg}
+          vehicleRows={vehicleRows}
+          pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
+          stepLabel="Step 4 — Recipe"
+          soluteLabel={isStock ? 'of stock solution' : 'of your solute'}
+          soluteIsVolume={isStock}
+          soluteVolumeMl={totalStockNeededMl}
+          footer={
+            <RecipeNarrative
+              volumePerDoseMl={volumeToMl(effectiveLoadUl, 'ul')}
+              dosePerSubjectMg={dosePerSubjectMg}
+              concentrationMgPerMl={concentrationMgPerMl}
+              doseRateMgPerKg={achievedDoseRateMgPerKg}
+              units={units}
+              setUnit={setUnit}
+            />
+          }
+        />
+      )}
 
-      {!isConcentrationMode && (
+      {isWorking && (
+        <RecipeNarrative
+          volumePerDoseMl={
+            workingVolumePerDoseUl === undefined ? undefined : workingVolumePerDoseUl / 1000
+          }
+          dosePerSubjectMg={dosePerSubjectMg}
+          concentrationMgPerMl={concentrationMgPerMl}
+          doseRateMgPerKg={achievedDoseRateMgPerKg}
+          units={units}
+          setUnit={setUnit}
+        />
+      )}
+
+      {v.dosageType === 'by-body-weight' && (
         <MealwormDosingTable
           doseRateMgPerG={doseRateMgPerG}
-          stockConcentrationMgPerMl={v.stockConcentrationMgPerMl}
+          stockConcentrationMgPerMl={concentrationMgPerMl}
           minBodyWeightG={v.minBodyWeightG}
           maxBodyWeightG={v.maxBodyWeightG}
           stepG={v.stepG}
@@ -301,8 +309,10 @@ export default function MealwormDosageForm() {
           pipetteMinUl={v.syringeMinUl}
           setFieldValue={form.setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}
+          stepLabel={`Step ${isWorking ? 4 : 5} — Dosing table by body mass`}
         />
       )}
+
       <PrintActions title="mealworm oral dosing calculator" />
     </Stack>
   );

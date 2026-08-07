@@ -24,6 +24,7 @@ export default function Step2DosageTypeSection({
   bodyWeightUnit,
   setFieldValue,
   scheduleOutputFeedback,
+  footer,
 }) {
   return (
     <Paper p="md" radius="md" withBorder>
@@ -115,6 +116,8 @@ export default function Step2DosageTypeSection({
           />
         </Group>
       )}
+
+      {footer}
     </Paper>
   );
 }

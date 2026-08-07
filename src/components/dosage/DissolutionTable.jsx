@@ -31,6 +31,9 @@ export default function DissolutionTable({
   pipetteMinUl,
   stepLabel,
   footer,
+  soluteLabel = 'of your solute',
+  soluteIsVolume = false,
+  soluteVolumeMl,
 }) {
   // The batch is the per-dose vehicle scaled up, so the same ratio applies.
   const split = computeVehicleVolumes(totalVolumeMl, vehicleRows, {
@@ -43,6 +46,7 @@ export default function DissolutionTable({
   const issues = [];
   if (volumes) {
     vehicleRows.forEach((row, i) => {
+      if (row.isStock) return;
       const minMl = primarySolventVolumeMl(soluteRequiredMg, row.solubilityMgPerMl);
       if (minMl === undefined) return;
       if (volumes[i].exactMl < minMl - 1e-12) {
@@ -100,29 +104,32 @@ export default function DissolutionTable({
           <Table.Tr>
             <Table.Td miw={90}>
               <Text size="sm" fw={500}>
-                Dissolve
+                {soluteIsVolume ? 'Take' : 'Dissolve'}
               </Text>
             </Table.Td>
             <Table.Td style={cellValueBg} ta="right" maw={160}>
               <Text size="sm" fw={500} ff="monospace">
-                {ready ? roundTo(soluteRequiredMg, 4) : '—'}
+                {soluteIsVolume
+                  ? (Number.isFinite(soluteVolumeMl) ? roundTo(soluteVolumeMl, 4) : '—')
+                  : (ready ? roundTo(soluteRequiredMg, 4) : '—')}
               </Text>
             </Table.Td>
             <Table.Td style={cellUnitBg} miw={56}>
               <Text size="sm" fw={500}>
-                mg
+                {soluteIsVolume ? 'mL' : 'mg'}
               </Text>
             </Table.Td>
             <Table.Td>
               <Text size="sm" fw={500}>
-                of your solute
+                {soluteLabel}
               </Text>
             </Table.Td>
           </Table.Tr>
 
           {vehicleRows.map((row, index) => {
+            if (row.isStock) return null;
             const vehicle = getVehicle(row.vehicleId);
-            const minForBatchMl = ready
+            const minForBatchMl = ready && !row.isStock
               ? primarySolventVolumeMl(soluteRequiredMg, row.solubilityMgPerMl)
               : undefined;
             const volume = ready ? formatVolume(volumes[index].displayMl) : null;
