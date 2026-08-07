@@ -150,11 +150,15 @@ export default function VehicleRatioTable({
       const routeNote = range.exactRoute ? '' : ' (from another route — none published for this one)';
 
       if (verdict === 'above-highest') {
+        // Not an impossibility. The formulation is perfectly makeable; it is
+        // simply outside what anyone has published, which is a judgement for
+        // the user and their protocol rather than a verdict from a table.
         issues.push({
-          level: 'error',
+          level: 'warning',
           message:
             `${vehicle.label}: ${roundTo(burden, 1)} mg/kg per subject, above everything published ` +
-            `for a mouse${routeNote}, the highest being ${roundTo(range.highest.mgPerKg, 1)} mg/kg.`,
+            `for a mouse${routeNote}, the highest being ${roundTo(range.highest.mgPerKg, 1)} mg/kg. ` +
+            'Makeable, but unsupported by the data here — justify it in your protocol.',
         });
       } else if (verdict === 'above-lowest') {
         issues.push({
