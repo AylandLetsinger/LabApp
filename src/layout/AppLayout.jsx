@@ -51,18 +51,24 @@ export default function AppLayout() {
       }}
     >
       <AppShell.Header px="md" style={{ display: 'flex', alignItems: 'center' }}>
-        <Group justify="center" wrap="nowrap" gap="sm" w="100%" maw={1126} mx="auto" pos="relative">
+        <Group justify="space-between" wrap="nowrap" gap="sm" w="100%" maw={1126} mx="auto" pos="relative">
           <Title
             order={2}
             size="h4"
             component={Link}
             to="/"
-            style={{ textDecoration: 'none', color: 'var(--mantine-color-black)', whiteSpace: 'nowrap' }}
+            style={{
+              textDecoration: 'none',
+              color: 'var(--mantine-color-black)',
+              whiteSpace: 'nowrap',
+              flex: isNarrow ? undefined : '0 0 33%',
+              margin: isNarrow ? '0 auto' : undefined,
+            }}
           >
             THE LAB APP
           </Title>
 
-          <div style={{ position: 'absolute', right: 0 }}>
+          <div style={isNarrow ? { position: 'absolute', right: 0 } : undefined}>
           {isNarrow ? (
             <Menu
               shadow="md"

@@ -75,8 +75,21 @@ export default function VehicleRatioTable({
     const currentUl = split.rows.map((r) => r.exactMl * 1000);
     const fixedUl = currentUl.slice(0, -1).reduce((sum, ul) => sum + ul, 0);
     const lastUl = Math.max(0, nextUl - fixedUl);
-    const nextParts = [...currentUl.slice(0, -1), lastUl];
-    onRowsChange(rows.map((row, i) => ({ ...row, parts: roundTo(nextParts[i], 4) })));
+    const nextUlPerRow = [...currentUl.slice(0, -1), lastUl];
+
+    // Rewrite the parts on the SCALE the user was already using. Writing raw
+    // microlitres would turn 5:2:2:16 into 25:10:10:81 — the same proportions
+    // expressed five times larger, which reads as the table having jumped.
+    // Holding parts-per-microlitre constant gives 5:2:2:16.2 instead: decimal,
+    // but recognisably the recipe they started from.
+    const currentTotalUl = currentUl.reduce((sum, ul) => sum + ul, 0);
+    const currentTotalParts = rows.reduce((sum, row) => sum + (Number(row.parts) || 0), 0);
+    const partsPerUl =
+      currentTotalUl > 0 && currentTotalParts > 0 ? currentTotalParts / currentTotalUl : 1;
+
+    onRowsChange(
+      rows.map((row, i) => ({ ...row, parts: roundTo(nextUlPerRow[i] * partsPerUl, 4) })),
+    );
     onVolumePerDoseChange(nextValue);
   };
 

@@ -50,6 +50,7 @@ export default function RecipeNarrative({
   );
 
   return (
+    <>
     <Group gap={6} align="center" wrap="wrap" mt="md">
       <Text size="sm">Each dose of</Text>
       <Text size="sm" fw={700} ff="monospace">
@@ -72,15 +73,14 @@ export default function RecipeNarrative({
       {unitPicker('narrativeConcVolume', VOLUME_UNITS, 'Concentration volume unit')}
       <Text size="sm">solution</Text>
 
-      {Number.isFinite(doseRateMgPerKg) && (
-        <>
-          <Text size="sm">at</Text>
-          <Text size="sm" fw={700} ff="monospace">
-            {roundTo(doseRateMgPerKg, 4)} mg/kg
-          </Text>
-        </>
-      )}
       <Text size="sm">.</Text>
     </Group>
+
+    {Number.isFinite(doseRateMgPerKg) && (
+      <Text size="sm" mt={6}>
+        A <strong>{roundTo(doseRateMgPerKg, 4)} mg/kg</strong> dose on average.
+      </Text>
+    )}
+    </>
   );
 }

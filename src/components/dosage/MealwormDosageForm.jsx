@@ -169,6 +169,16 @@ export default function MealwormDosageForm() {
     [dosePerSubjectMg, v.totalDoses, v.wasteBufferPct],
   );
 
+  // What the plan actually delivers per kilogram, derived from the dose and
+  // the subject's mass rather than read back from the input. In per-subject
+  // mode nobody entered a rate, and that is exactly when it is worth seeing —
+  // protocols are written in mg/kg.
+  const achievedDoseRateMgPerKg = useMemo(() => {
+    const kg = weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit);
+    if (dosePerSubjectMg === undefined || kg === undefined || kg <= 0) return undefined;
+    return dosePerSubjectMg / kg;
+  }, [dosePerSubjectMg, v.avgBodyWeight, v.avgBodyWeightUnit]);
+
   const parameterIssues = useMemo(() => {
     const issues = [];
     const doses = toOptionalNumber(v.totalDoses);
@@ -273,7 +283,7 @@ export default function MealwormDosageForm() {
                 ? concentrationMode.requiredConcentrationMgPerMl
                 : toOptionalNumber(v.stockConcentrationMgPerMl)
             }
-            doseRateMgPerKg={doseRateMgPerG === undefined ? undefined : doseRateMgPerG * 1000}
+            doseRateMgPerKg={achievedDoseRateMgPerKg}
             units={units}
             setUnit={setUnit}
           />
