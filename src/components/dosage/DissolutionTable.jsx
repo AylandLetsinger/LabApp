@@ -1,7 +1,7 @@
 import { Group, Loader, Paper, Table, Text, ThemeIcon } from '@mantine/core';
 import { IconCheck } from '@tabler/icons-react';
 import IssueList from './IssueList';
-import { computeVehicleVolumes, primarySolventVolumeMl } from '../../dosage/computeVehicleVolumes';
+import { computeVehicleVolumes } from '../../dosage/computeVehicleVolumes';
 import { roundTo } from '../../dosage/numberUtils';
 import { getVehicle } from '../../dosage/vehicles';
 import { errorColor } from '../../theme';
@@ -32,30 +32,15 @@ export default function DissolutionTable({
   stepLabel,
   summary,
 }) {
-  const pipetteStepMl = pipetteMinUl > 0 ? pipetteMinUl / 1000 : 0;
-  // The batch is scaled up from the per-dose plan, so a solvent fixed by
-  // solubility is fixed here too — against the whole batch's solute mass.
-  const split = computeVehicleVolumes(
-    totalVolumeMl,
-    vehicleRows.map((r) => ({
-      parts: r.parts,
-      fixedVolumeMl: primarySolventVolumeMl(soluteRequiredMg, r.solubilityMgPerMl),
-    })),
-    { pipetteStepMl },
-  );
+  // The batch is the per-dose vehicle scaled up, so the same ratio applies.
+  const split = computeVehicleVolumes(totalVolumeMl, vehicleRows, {
+    pipetteMinMl: pipetteMinUl > 0 ? pipetteMinUl / 1000 : 0,
+  });
   const volumes = split?.rows ?? null;
 
   const ready = volumes !== null && soluteRequiredMg !== undefined && Number.isFinite(soluteRequiredMg);
 
   const issues = [];
-  if (split && split.overflowMl > 0) {
-    issues.push({
-      level: 'error',
-      message:
-        `Dissolving the batch needs ${roundTo(split.overflowMl, 4)} mL more solvent than the total ` +
-        'volume allows. Make a larger batch, or use a solvent the drug is more soluble in.',
-    });
-  }
   if (volumes) {
     volumes.forEach((v, i) => {
       if (v.belowPipetteMinimum) {
@@ -156,6 +141,29 @@ export default function DissolutionTable({
               </Table.Tr>
             );
           })}
+
+          <Table.Tr>
+            <Table.Td miw={90}>
+              <Text size="sm" fw={700}>
+                Total
+              </Text>
+            </Table.Td>
+            <Table.Td style={cellValueBg} ta="right" maw={160}>
+              <Text size="sm" fw={700} ff="monospace">
+                {ready ? formatVolume(totalVolumeMl).value : '—'}
+              </Text>
+            </Table.Td>
+            <Table.Td style={cellUnitBg} miw={56}>
+              <Text size="sm" fw={700}>
+                {ready ? formatVolume(totalVolumeMl).unit : '—'}
+              </Text>
+            </Table.Td>
+            <Table.Td>
+              <Text size="sm" fw={700}>
+                of working solution
+              </Text>
+            </Table.Td>
+          </Table.Tr>
         </Table.Tbody>
       </Table>
 

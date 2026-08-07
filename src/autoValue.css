@@ -1,0 +1,46 @@
+/*
+ * Flash for values the calculator fills in by itself.
+ *
+ * Derived numbers move when inputs elsewhere change, sometimes off screen.
+ * A brief highlight is what tells the reader which figure just moved.
+ */
+.auto-value {
+  display: inline-block;
+  border-radius: 3px;
+  animation: auto-value-flash 900ms ease-out;
+}
+
+@keyframes auto-value-flash {
+  0% {
+    background-color: var(--mantine-color-yellow-3, #ffe066);
+    box-shadow: 0 0 0 3px var(--mantine-color-yellow-3, #ffe066);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+/* An input whose value the calculator just overwrote. */
+.auto-input input {
+  animation: auto-input-flash 900ms ease-out;
+}
+
+@keyframes auto-input-flash {
+  0% { border-color: var(--mantine-color-yellow-6, #fab005); }
+  100% { border-color: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auto-value,
+  .auto-input input {
+    animation: none;
+  }
+}
+
+@media print {
+  .auto-value,
+  .auto-input input {
+    animation: none;
+  }
+}

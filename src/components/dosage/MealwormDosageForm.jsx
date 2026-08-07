@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Paper, Stack, Text } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
@@ -137,7 +137,17 @@ export default function MealwormDosageForm() {
 
   // The batch to mix. In volume mode the per-worm volume is what was solved
   // for, so the batch is built from that instead of a typed volume.
-  const suggestedUl = suggestedDoseVolumeUl(vehicleRows, dosePerSubjectMg, Number(v.syringeMinUl), Number(v.pipetteMinUl));
+  const suggestedUl = suggestedDoseVolumeUl(vehicleRows, dosePerSubjectMg, Number(v.syringeMinUl));
+
+  // Keep the dose volume a REAL value in the field rather than a placeholder,
+  // so the stepper arrows increment from it instead of jumping to zero. It is
+  // overwritten whenever the suggestion moves; the field flashes to say so.
+  const roundedSuggestion = suggestedUl > 0 ? roundTo(suggestedUl, 3) : '';
+  useEffect(() => {
+    if (roundedSuggestion !== '') form.setFieldValue('loadVolumeUl', roundedSuggestion);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roundedSuggestion]);
+
   const typedUl = toOptionalNumber(v.loadVolumeUl);
   const effectiveLoadUl = isConcentrationMode
     ? (typedUl !== undefined && typedUl > 0 ? typedUl : suggestedUl || undefined)
