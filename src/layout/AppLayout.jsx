@@ -51,7 +51,10 @@ export default function AppLayout() {
       }}
     >
       <AppShell.Header px="md" style={{ display: 'flex', alignItems: 'center' }}>
-        <Group justify="space-between" wrap="nowrap" gap="sm" w="100%" maw={1126} mx="auto" pos="relative">
+        {/* Title left, navigation right, at every width. Centring the title
+            while the nav was absolutely positioned let the two overlap once
+            the nav grew, and the conditional was doing nothing else useful. */}
+        <Group justify="space-between" wrap="nowrap" gap="sm" w="100%" maw={1126} mx="auto">
           <Title
             order={2}
             size="h4"
@@ -61,14 +64,12 @@ export default function AppLayout() {
               textDecoration: 'none',
               color: 'var(--mantine-color-black)',
               whiteSpace: 'nowrap',
-              flex: isNarrow ? undefined : '0 0 33%',
-              margin: isNarrow ? '0 auto' : undefined,
             }}
           >
             THE LAB APP
           </Title>
 
-          <div style={isNarrow ? { position: 'absolute', right: 0 } : undefined}>
+          <div>
           {isNarrow ? (
             <Menu
               shadow="md"

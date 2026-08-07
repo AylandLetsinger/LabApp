@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Group, List, Paper, Text, UnstyledButton } from '@mantine/core';
+import { Group, Paper, Stack, Text, UnstyledButton } from '@mantine/core';
 import { IconAlertTriangle, IconChevronDown, IconChevronRight, IconInfoCircle } from '@tabler/icons-react';
 import { errorColor } from '../../theme';
 
@@ -76,20 +76,21 @@ export default function IssueList({ issues, mt = 'sm' }) {
       </UnstyledButton>
 
       {expanded && (
-        // Bullets render outside the content box, so the padding has to clear
-        // them or they sit on the panel border.
-        <List size="sm" spacing={6} mt={8} pl="lg" pr="xs">
-          {errors.map((issue) => (
-            <List.Item key={issue.message} c={errorColor}>
-              {issue.message}
-            </List.Item>
+        // No list markers. A bullet is drawn outside the item's content box,
+        // so it escapes the panel however much padding the list is given.
+        // A marker that is simply text cannot.
+        <Stack gap={6} mt={8} px={6}>
+          {[...errors, ...warnings].map((issue) => (
+            <Group key={issue.message} gap={8} wrap="nowrap" align="flex-start">
+              <Text size="sm" c={issue.level === 'error' ? errorColor : 'orange.7'} lh={1.45}>
+                •
+              </Text>
+              <Text size="sm" c={issue.level === 'error' ? errorColor : 'dimmed'}>
+                {issue.message}
+              </Text>
+            </Group>
           ))}
-          {warnings.map((issue) => (
-            <List.Item key={issue.message} c="dimmed">
-              {issue.message}
-            </List.Item>
-          ))}
-        </List>
+        </Stack>
       )}
     </Paper>
   );

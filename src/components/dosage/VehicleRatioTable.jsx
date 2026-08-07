@@ -350,8 +350,6 @@ export default function VehicleRatioTable({
         Add solvent
       </Button>
 
-      <IssueList issues={issues} />
-
       <Group align="flex-end" wrap="wrap" gap="sm" mb={4}>
         <NumberInput
           label={volumeLabel}
@@ -378,6 +376,10 @@ export default function VehicleRatioTable({
         )}
       </Group>
 
+      {/* Last thing in the step, directly under the control most likely to
+          have caused it: change, then consequence, with nothing shifting
+          between the two. */}
+      <IssueList issues={issues} />
     </Paper>
   );
 }
