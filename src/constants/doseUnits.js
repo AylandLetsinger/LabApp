@@ -1,8 +1,16 @@
-/** Mass units for drug amount (dose) — reuse across calculators. */
+/*
+ * Unit lists are ordered largest to smallest, always. A dropdown that jumps
+ * mg -> µg -> g makes the reader check every entry; one that descends lets
+ * them stop as soon as they pass what they wanted.
+ */
+
+/** Mass units for drug amount (dose). */
 export const DOSE_UNITS = [
+  { value: 'g', label: 'g' },
   { value: 'mg', label: 'mg' },
   { value: 'ug', label: 'µg' },
-  { value: 'g', label: 'g' },
+  { value: 'ng', label: 'ng' },
+  { value: 'pg', label: 'pg' },
 ];
 
 /** Mass units for subject body weight, paired with dose fields. */
@@ -13,9 +21,9 @@ export const WEIGHT_UNITS = [
 
 /** Volume units for solution outputs. */
 export const VOLUME_UNITS = [
+  { value: 'l', label: 'L' },
   { value: 'ml', label: 'mL' },
   { value: 'ul', label: 'µL' },
-  { value: 'l', label: 'L' },
 ];
 
 /**

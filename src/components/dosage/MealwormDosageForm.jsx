@@ -32,7 +32,7 @@ export default function MealwormDosageForm() {
       doseAmount: '',
       doseUnit: 'mg',
       bodyWeightAmount: '',
-      bodyWeightUnit: 'g',
+      bodyWeightUnit: 'kg',
       wormCapacityUl: 250,
       loadVolumeUl: '',
       stockConcentrationMgPerMl: '',
@@ -173,11 +173,6 @@ export default function MealwormDosageForm() {
   return (
     <Stack gap="lg" mt="md">
       <PrintActions title="mealworm oral dosing calculator" />
-
-      <Alert color="blue" variant="light" icon={<IconInfoCircle size={18} />}>
-        This calculator works out what to <strong>load into the worm</strong>. Whether the mouse eats
-        it is a bench observation, not a calculation — record consumption separately.
-      </Alert>
 
       <Step2DosageTypeSection
         dosageType={v.dosageType}

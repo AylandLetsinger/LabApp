@@ -32,23 +32,16 @@ export default function Dosage() {
   return (
     <Container size="md" py="xl">
       <Title order={1} mb="md">
-        Dosage Calculator
+        {deliveryLabel ? `Dosage Calculator — ${deliveryLabel}` : 'Dosage Calculator'}
       </Title>
-      {deliveryLabel ? (
-        <Text mb="sm">Delivery method: {deliveryLabel}</Text>
-      ) : (
+      {!deliveryLabel && (
         <Text c="dimmed" mb="sm">
           Choose a delivery method from the Dosage menu.
         </Text>
       )}
 
       {Form ? (
-        <>
-          <Text size="sm" c="dimmed" maw={640} className="no-print">
-            {implemented.intro}
-          </Text>
-          <Form />
-        </>
+        <Form />
       ) : method ? (
         <Text c="dimmed">Dosage workflow and inputs for this delivery method will go here.</Text>
       ) : null}

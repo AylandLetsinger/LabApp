@@ -1,4 +1,4 @@
-import { Button, Group, Text } from '@mantine/core';
+import { Button, Group } from '@mantine/core';
 import { IconPrinter } from '@tabler/icons-react';
 
 /**
@@ -14,11 +14,7 @@ import { IconPrinter } from '@tabler/icons-react';
  */
 export default function PrintActions({ title }) {
   return (
-    <Group justify="space-between" align="center" wrap="wrap" gap="sm" className="no-print">
-      <Text size="xs" c="dimmed">
-        Choose &quot;Save as PDF&quot; in the print dialog to keep a copy. Inputs and results print;
-        navigation and buttons do not.
-      </Text>
+    <Group justify="flex-end" align="center" wrap="wrap" gap="sm" className="no-print">
       <Button
         variant="light"
         leftSection={<IconPrinter size={16} />}

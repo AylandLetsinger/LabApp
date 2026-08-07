@@ -17,35 +17,28 @@ import { toOptionalNumber } from './numberUtils';
 /** @typedef {'kg' | 'g'} WeightUnit */
 /** @typedef {'ml' | 'ul' | 'l'} VolumeUnit */
 
+/** Milligrams in one of each supported mass unit. */
+const MG_PER_MASS_UNIT = {
+  g: 1000,
+  mg: 1,
+  ug: 1e-3,
+  ng: 1e-6,
+  pg: 1e-9,
+};
+
 /** Convert a mass amount to milligrams. */
 export function massToMg(amount, unit) {
   const n = toOptionalNumber(amount);
-  if (n === undefined) return undefined;
-  switch (unit) {
-    case 'mg':
-      return n;
-    case 'ug':
-      return n / 1000;
-    case 'g':
-      return n * 1000;
-    default:
-      return undefined;
-  }
+  const factor = MG_PER_MASS_UNIT[unit];
+  if (n === undefined || factor === undefined) return undefined;
+  return n * factor;
 }
 
 /** Convert milligrams to the given mass unit. */
 export function mgToMassUnit(mg, unit) {
-  if (mg === undefined || !Number.isFinite(mg)) return undefined;
-  switch (unit) {
-    case 'mg':
-      return mg;
-    case 'ug':
-      return mg * 1000;
-    case 'g':
-      return mg / 1000;
-    default:
-      return undefined;
-  }
+  const factor = MG_PER_MASS_UNIT[unit];
+  if (mg === undefined || !Number.isFinite(mg) || factor === undefined) return undefined;
+  return mg / factor;
 }
 
 /** Convert a body weight to kilograms. */

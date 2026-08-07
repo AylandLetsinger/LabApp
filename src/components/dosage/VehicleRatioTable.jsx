@@ -134,6 +134,9 @@ export default function VehicleRatioTable({
     .map((v) => ({ label: v.label, note: v.note }));
 
   const anyFixed = split?.rows.some((r) => r.isFixed);
+  // A single diluent takes the whole remainder regardless of its ratio, so
+  // showing an editable ratio there implies a control that does nothing.
+  const diluentCount = split ? split.rows.filter((r) => !r.isFixed).length : rows.length;
 
   return (
     <Paper p="md" radius="md" withBorder>
@@ -152,7 +155,8 @@ export default function VehicleRatioTable({
         <Table.Thead>
           <Table.Tr>
             <Table.Th ta="left">SOLVENT</Table.Th>
-            <Table.Th ta="left" w={130}>solubility<br />(mg/mL)</Table.Th>
+            <Table.Th ta="left" w={120}>solubility<br />(mg/mL)</Table.Th>
+            <Table.Th ta="left" w={100}>min needed<br />(per dose)</Table.Th>
             <Table.Th ta="left" w={90}>ratio</Table.Th>
             <Table.Th ta="left" w={100}>volume<br />(per dose)</Table.Th>
             <Table.Th ta="left" w={80}>%(v/v)</Table.Th>
@@ -165,6 +169,8 @@ export default function VehicleRatioTable({
           {rows.map((row, index) => {
             const vehicle = getVehicle(row.vehicleId);
             const cell = split?.rows[index];
+            const minNeededMl = primarySolventVolumeMl(dosePerSubjectMg, row.solubilityMgPerMl);
+            const minNeededUl = minNeededMl === undefined ? undefined : minNeededMl * 1000;
             const range = toleratedBurdenRange(row.vehicleId, { route });
             const burden =
               canComputeBurden && cell
@@ -219,12 +225,28 @@ export default function VehicleRatioTable({
                   />
                 </Table.Td>
                 <Table.Td>
+                  <Text size="sm" ff="monospace" c={cell?.isFixed ? undefined : 'dimmed'}>
+                    {minNeededUl === undefined ? '—' : `${roundTo(minNeededUl, 2)} µL`}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
                   {cell?.isFixed ? (
                     <Text size="xs" c="dimmed" ta="center">
                       set by
                       <br />
                       solubility
                     </Text>
+                  ) : diluentCount === 1 ? (
+                    <Tooltip
+                      label="The only diluent takes whatever volume is left, so a ratio would change nothing. Add a second diluent to split the remainder."
+                      multiline
+                      w={280}
+                      withArrow
+                    >
+                      <Text size="xs" c="dimmed" ta="center" style={{ cursor: 'help' }}>
+                        remainder
+                      </Text>
+                    </Tooltip>
                   ) : (
                     <NumberInput
                       placeholder="-"

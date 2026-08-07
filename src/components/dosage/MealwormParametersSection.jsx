@@ -38,14 +38,23 @@ export default function MealwormParametersSection({
   scheduleOutputFeedback,
   issues,
 }) {
+  // What the waste buffer actually buys, in the unit the user thinks in.
+  const plannedDoses = Number(totalDoses);
+  const wastePct = Number(wasteBufferPct);
+  const spareDoses =
+    Number.isFinite(plannedDoses) && plannedDoses > 0 && Number.isFinite(wastePct) && wastePct > 0
+      ? Math.floor(plannedDoses * (1 + wastePct / 100)) - plannedDoses
+      : undefined;
+
   return (
     <Paper p="md" radius="md" withBorder>
       <Text fw={600} mb="sm">
         Step 3 — Mealworm loading
       </Text>
       <Text size="sm" c="dimmed" mb="md" className="no-print">
-        One loaded mealworm per mouse. Choose what you want to hold fixed; the calculator solves for
-        the other.
+        You know the dose each subject needs. Either fix how much liquid goes into a worm and let
+        the calculator work out the concentration to mix, or fix a stock concentration and let it
+        work out the volume.
       </Text>
 
       <Stack gap="md">
@@ -67,7 +76,7 @@ export default function MealwormParametersSection({
           />
           <Text size="xs" c="dimmed" mt={6} className="no-print">
             {mode === 'concentration'
-              ? '* every mouse gets the same absolute dose, so every worm gets the same volume'
+              ? '* every subject gets the same absolute dose, so every worm gets the same volume'
               : '* dose scales with body mass: mix one stock, vary the volume per worm'}
           </Text>
         </div>
@@ -108,6 +117,38 @@ export default function MealwormParametersSection({
           </Text>
         </div>
 
+        <div>
+          <Group align="flex-end" wrap="wrap" gap="sm">
+            <NumberInput
+              label="Syringe minimum (loading the worm)"
+              placeholder="e.g. 25"
+              min={0}
+              decimalScale={3}
+              value={syringeMinUl}
+              onChange={(value) => setFieldValue('syringeMinUl', value)}
+              onBlur={scheduleOutputFeedback}
+              w={240}
+              {...inputBlue}
+            />
+            <Text pb="sm" size="sm">
+              µL
+            </Text>
+            <NumberInput
+              label="Pipette minimum (mixing the vehicle)"
+              placeholder="e.g. 2"
+              min={0}
+              decimalScale={3}
+              value={pipetteMinUl}
+              onChange={(value) => setFieldValue('pipetteMinUl', value)}
+              onBlur={scheduleOutputFeedback}
+              w={240}
+              {...inputBlue}
+            />
+            <Text pb="sm" size="sm">
+              µL
+            </Text>
+          </Group>
+        </div>
         {mode === 'concentration' ? (
           <div>
             <Group align="flex-end" wrap="wrap" gap="sm">
@@ -180,13 +221,14 @@ export default function MealwormParametersSection({
         </div>
 
         <NumberInput
-          label="Total number of loaded worms to prepare"
+          label="Total number of dosages to prepare"
           placeholder="count"
           min={0}
           allowDecimal={false}
           value={totalDoses}
           onChange={(value) => setFieldValue('totalDoses', value)}
           onBlur={scheduleOutputFeedback}
+          w={260}
           {...inputBlue}
         />
 
@@ -205,43 +247,14 @@ export default function MealwormParametersSection({
           <Text pb="sm" size="sm">
             %
           </Text>
+          {spareDoses !== undefined && (
+            <Text pb="sm" size="sm" c="dimmed">
+              &rarr; enough for <strong>{plannedDoses + spareDoses}</strong> dosages,{' '}
+              {spareDoses} spare
+            </Text>
+          )}
         </Group>
 
-        <div>
-          <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Syringe minimum (loading the worm)"
-              placeholder="e.g. 25"
-              min={0}
-              decimalScale={3}
-              value={syringeMinUl}
-              onChange={(value) => setFieldValue('syringeMinUl', value)}
-              onBlur={scheduleOutputFeedback}
-              w={240}
-              {...inputBlue}
-            />
-            <Text pb="sm" size="sm">
-              µL
-            </Text>
-            <NumberInput
-              label="Pipette minimum (mixing the vehicle)"
-              placeholder="e.g. 2"
-              min={0}
-              decimalScale={3}
-              value={pipetteMinUl}
-              onChange={(value) => setFieldValue('pipetteMinUl', value)}
-              onBlur={scheduleOutputFeedback}
-              w={240}
-              {...inputBlue}
-            />
-            <Text pb="sm" size="sm">
-              µL
-            </Text>
-          </Group>
-          <Text size="xs" c="dimmed" mt={6} className="no-print">
-            * two different tools: the syringe loads the worm, the pipette makes the solution
-          </Text>
-        </div>
       </Stack>
 
       <IssueList issues={issues} />
