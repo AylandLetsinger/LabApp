@@ -34,7 +34,6 @@ export default function MealwormParametersSection({
   wasteBufferPct,
   pipetteMinUl,
   syringeMinUl,
-  solubilityMgPerMl,
   setFieldValue,
   scheduleOutputFeedback,
   issues,
@@ -207,28 +206,6 @@ export default function MealwormParametersSection({
             %
           </Text>
         </Group>
-
-        <div>
-          <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Drug solubility in your primary solvent"
-              placeholder="e.g. 20"
-              min={0}
-              decimalScale={4}
-              value={solubilityMgPerMl}
-              onChange={(value) => setFieldValue('solubilityMgPerMl', value)}
-              onBlur={scheduleOutputFeedback}
-              w={260}
-              {...inputBlue}
-            />
-            <Text pb="sm" size="sm">
-              mg per mL
-            </Text>
-          </Group>
-          <Text size="xs" c="dimmed" mt={6} className="no-print">
-            * from the vendor, e.g. 20 mg/mL in DMSO — sets the strongest solution you can make
-          </Text>
-        </div>
 
         <div>
           <Group align="flex-end" wrap="wrap" gap="sm">

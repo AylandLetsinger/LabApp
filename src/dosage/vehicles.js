@@ -36,17 +36,6 @@ const CASTRO_1995 = 'Castro et al. 1995, Pharmacol Biochem Behav (PMID 7617697)'
 const CAMBRIDGE = 'Cambridge MedChem Consulting — formulation ranges, not safety limits';
 
 /**
- * Published practice rather than a tolerability study: a vehicle used in real
- * work with no vehicle-attributed adverse effects reported. Weaker evidence
- * than a dose-ranging experiment, but it calibrates what a field actually
- * does, which the toxicology tables alone can make look impossible.
- *
- * 20% DMSO with 80% of a 1:1:8 ethanol/Emulphor/saline mix, i.p. at 5 mL/kg
- * — so 20% DMSO, 8% ethanol, 8% Emulphor, 64% saline.
- */
-const HOHMANN_GAT = 'Hohmann lab, GAT211 in vivo studies — published vehicle, not a tolerability study';
-
-/**
  * @typedef {object} Observation
  * @property {'mouse'|'rat'|'other'} species
  * @property {'ip'|'oral'|'iv'|'sc'} route
@@ -122,13 +111,6 @@ export const VEHICLES = [
         verdict: 'tolerated',
         source: CASTRO_1995, confidence: CONFIDENCE.moderate,
       },
-      {
-        species: 'mouse', route: 'ip', percentVv: 20, volumeMlPerKg: 5,
-        duration: 'daily dosing',
-        outcome: 'Vehicle for GAT211 at 5-20 mg/kg/day; no vehicle-attributed adverse effects reported',
-        verdict: 'tolerated',
-        source: HOHMANN_GAT, confidence: CONFIDENCE.low, kind: 'practice',
-      },
     ],
     note: 'Palatability in voluntary oral consumption is not established. A refused mealworm is a failed session, not a safety event — determine empirically.',
     miscibility: {
@@ -161,13 +143,6 @@ export const VEHICLES = [
         verdict: 'tolerated',
         source: CASTRO_1995, confidence: CONFIDENCE.moderate,
       },
-      {
-        species: 'mouse', route: 'ip', percentVv: 8, volumeMlPerKg: 5,
-        duration: 'daily dosing',
-        outcome: 'Part of the GAT211 vehicle (1:1:8 ethanol/Emulphor/saline as 80% of the mix); no vehicle-attributed adverse effects reported',
-        verdict: 'tolerated',
-        source: HOHMANN_GAT, confidence: CONFIDENCE.low, kind: 'practice',
-      },
     ],
     note: 'Stimulation at 16% is a behavioural confound, not sedation — relevant if your endpoint is activity.',
   },
@@ -182,13 +157,6 @@ export const VEHICLES = [
         duration: 'acute', outcome: 'No effect on locomotor activity at any concentration tested (2-32%). True ceiling above 32%, not established.',
         verdict: 'tolerated',
         source: CASTRO_1995, confidence: CONFIDENCE.moderate,
-      },
-      {
-        species: 'mouse', route: 'ip', percentVv: 8, volumeMlPerKg: 5,
-        duration: 'daily dosing',
-        outcome: 'Part of the GAT211 vehicle; no vehicle-attributed adverse effects reported',
-        verdict: 'tolerated',
-        source: HOHMANN_GAT, confidence: CONFIDENCE.low, kind: 'practice',
       },
     ],
     note:

@@ -1,7 +1,7 @@
 import { Group, Loader, Paper, Table, Text, ThemeIcon } from '@mantine/core';
 import { IconCheck } from '@tabler/icons-react';
 import IssueList from './IssueList';
-import { computeVehicleVolumes } from '../../dosage/computeVehicleVolumes';
+import { computeVehicleVolumes, primarySolventVolumeMl } from '../../dosage/computeVehicleVolumes';
 import { roundTo } from '../../dosage/numberUtils';
 import { getVehicle } from '../../dosage/vehicles';
 import { errorColor } from '../../theme';
@@ -32,15 +32,29 @@ export default function DissolutionTable({
   stepLabel,
 }) {
   const pipetteStepMl = pipetteMinUl > 0 ? pipetteMinUl / 1000 : 0;
-  const volumes = computeVehicleVolumes(
+  // The batch is scaled up from the per-dose plan, so a solvent fixed by
+  // solubility is fixed here too — against the whole batch's solute mass.
+  const split = computeVehicleVolumes(
     totalVolumeMl,
-    vehicleRows.map((r) => r.parts),
+    vehicleRows.map((r) => ({
+      parts: r.parts,
+      fixedVolumeMl: primarySolventVolumeMl(soluteRequiredMg, r.solubilityMgPerMl),
+    })),
     { pipetteStepMl },
   );
+  const volumes = split?.rows ?? null;
 
   const ready = volumes !== null && soluteRequiredMg !== undefined && Number.isFinite(soluteRequiredMg);
 
   const issues = [];
+  if (split && split.overflowMl > 0) {
+    issues.push({
+      level: 'error',
+      message:
+        `Dissolving the batch needs ${roundTo(split.overflowMl, 4)} mL more solvent than the total ` +
+        'volume allows. Make a larger batch, or use a solvent the drug is more soluble in.',
+    });
+  }
   if (volumes) {
     volumes.forEach((v, i) => {
       if (v.belowPipetteMinimum) {

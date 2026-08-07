@@ -9,12 +9,10 @@ import {
   computeMealwormVolumeMode,
   computeWorkableConcentrationWindow,
 } from '../../dosage/computeMealwormOutputs';
-import { checkSolubilityCeiling } from '../../dosage/computeMealwormOutputs';
 import { computeSoluteRequiredMg } from '../../dosage/computeSolutionOutputs';
-import { computeVehiclePercents } from '../../dosage/computeVehicleVolumes';
 import { roundTo, toOptionalNumber } from '../../dosage/numberUtils';
 import { volumeToMl, weightToKg } from '../../dosage/unitConversions';
-import { DEFAULT_ORAL_VEHICLE_ROWS, getVehicle } from '../../dosage/vehicles';
+import { DEFAULT_ORAL_VEHICLE_ROWS } from '../../dosage/vehicles';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import Step2DosageTypeSection from './Step2DosageTypeSection';
 import MealwormParametersSection from './MealwormParametersSection';
@@ -42,7 +40,6 @@ export default function MealwormDosageForm() {
       avgBodyWeightUnit: 'g',
       totalDoses: '',
       wasteBufferPct: '',
-      solubilityMgPerMl: '',
       // Two different tools with two different floors: the insulin syringe
       // loads the worm, the pipette makes up the vehicle.
       syringeMinUl: 25,
@@ -153,36 +150,6 @@ export default function MealwormDosageForm() {
     [dosePerSubjectMg, v.totalDoses, v.wasteBufferPct],
   );
 
-  /**
-   * Can the vehicle dissolve the drug at the concentration this plan needs?
-   * The primary solvent is taken to be the first non-aqueous row of the
-   * vehicle — the one the drug is actually dissolved in.
-   */
-  const requiredConcentrationMgPerMl = isConcentrationMode
-    ? concentrationMode.requiredConcentrationMgPerMl
-    : toOptionalNumber(v.stockConcentrationMgPerMl);
-
-  const primarySolvent = useMemo(() => {
-    const percents = computeVehiclePercents(vehicleRows.map((r) => r.parts));
-    if (!percents) return undefined;
-    const index = vehicleRows.findIndex((r) => {
-      const vehicle = getVehicle(r.vehicleId);
-      return vehicle && !vehicle.isAqueous;
-    });
-    if (index === -1) return undefined;
-    return { vehicle: getVehicle(vehicleRows[index].vehicleId), percentVv: percents[index] };
-  }, [vehicleRows]);
-
-  const solubility = useMemo(
-    () =>
-      checkSolubilityCeiling({
-        requiredConcentrationMgPerMl,
-        solubilityMgPerMl: v.solubilityMgPerMl,
-        primarySolventPercentVv: primarySolvent?.percentVv,
-      }),
-    [requiredConcentrationMgPerMl, v.solubilityMgPerMl, primarySolvent],
-  );
-
   const parameterIssues = useMemo(() => {
     const issues = [];
     const doses = toOptionalNumber(v.totalDoses);
@@ -235,7 +202,6 @@ export default function MealwormDosageForm() {
         wasteBufferPct={v.wasteBufferPct}
         pipetteMinUl={v.pipetteMinUl}
         syringeMinUl={v.syringeMinUl}
-        solubilityMgPerMl={v.solubilityMgPerMl}
         setFieldValue={form.setFieldValue}
         scheduleOutputFeedback={scheduleOutputFeedback}
         issues={parameterIssues}
@@ -296,36 +262,6 @@ export default function MealwormDosageForm() {
           />
         </Stack>
 
-        {solubility && primarySolvent && (
-          <Alert
-            color={solubility.achievable ? 'blue' : 'red'}
-            variant="light"
-            mt="md"
-            icon={<IconInfoCircle size={18} />}
-            title={solubility.achievable ? 'Solubility check' : 'This vehicle cannot dissolve the drug'}
-          >
-            {solubility.achievable ? (
-              <Text size="sm">
-                At {roundTo(primarySolvent.percentVv, 1)}% {primarySolvent.vehicle.label}, the
-                strongest solution you can make is{' '}
-                <strong>{roundTo(solubility.ceilingMgPerMl, 3)} mg/mL</strong>. This plan needs{' '}
-                {roundTo(solubility.requiredMgPerMl, 3)} mg/mL, so it fits.
-              </Text>
-            ) : (
-              <Text size="sm">
-                This plan needs <strong>{roundTo(solubility.requiredMgPerMl, 3)} mg/mL</strong>, but
-                at {roundTo(primarySolvent.percentVv, 1)}% {primarySolvent.vehicle.label} the ceiling
-                is <strong>{roundTo(solubility.ceilingMgPerMl, 3)} mg/mL</strong> — solubility ×
-                solvent fraction. Raise {primarySolvent.vehicle.label} to at least{' '}
-                <strong>{roundTo(solubility.minSolventFraction, 1)}%</strong>, load a larger volume
-                per worm, or find a solvent the drug is more soluble in. A surfactant can beat this
-                ceiling by holding the compound in emulsion, so treat it as &quot;check at the
-                bench&quot; rather than proof it is impossible.
-              </Text>
-            )}
-          </Alert>
-        )}
-
         {!isConcentrationMode && window && (
           <Alert
             color={window.feasible ? 'blue' : 'red'}
@@ -364,8 +300,10 @@ export default function MealwormDosageForm() {
         route="oral"
         stepLabel="Step 5 — Vehicle ratio"
         onBlur={scheduleOutputFeedback}
+        dosePerSubjectMg={dosePerSubjectMg}
         volumePerSubjectMl={volumeToMl(effectiveLoadUl, 'ul')}
         bodyWeightKg={weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit)}
+        pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
       />
 
       <DissolutionTable

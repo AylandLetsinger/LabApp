@@ -191,8 +191,10 @@ export default function IntraperitonealDosageForm() {
         route="ip"
         stepLabel="Step 5 — Vehicle ratio"
         onBlur={scheduleOutputFeedback}
+        dosePerSubjectMg={dosePerAvgSubjectMg}
         volumePerSubjectMl={outputs.volumePerAvgSubjectMl}
         bodyWeightKg={weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit)}
+        pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
       />
 
       <DissolutionTable

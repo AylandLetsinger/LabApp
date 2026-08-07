@@ -1,85 +1,121 @@
 /**
- * Split a working-solution volume across vehicle solvents by ratio parts.
+ * Split a dose volume across vehicle solvents.
  *
- * Two guarantees this module makes, both of which the previous version broke
- * at the display layer:
+ * Two kinds of row, and the distinction is the whole point:
  *
- *   1. The volumes shown to the user sum exactly to the total volume. The
- *      last row absorbs all rounding error, so a recipe always adds up.
- *   2. Any row the user cannot physically pipette is reported, not silently
- *      rounded to zero. Telling someone to add "0 uL" of a solvent the
- *      vehicle requires is worse than telling them the plan is unworkable.
+ *   A solvent the drug is dissolved IN has its volume fixed by chemistry —
+ *   mass / solubility. It is not a share of anything and no ratio can change
+ *   it. Pass it as `fixedVolumeMl`.
+ *
+ *   Every other solvent is diluent, and those DO share what is left over,
+ *   in proportion to their ratio parts.
+ *
+ * When no row is fixed this behaves exactly as a plain ratio split, which is
+ * what a user who already has a vehicle recipe expects.
+ *
+ * Percentages are computed from the resulting volumes rather than from the
+ * ratio parts, so they stay correct when the two kinds of row are mixed.
+ *
+ * Two guarantees, both of which an earlier version broke at the display layer:
+ *   1. Displayed volumes sum exactly to the total.
+ *   2. A row too small to measure is reported, never rounded silently to zero.
  */
 import { roundToStep, toNonNegativeNumber } from './numberUtils';
 
 /**
  * @typedef {object} VehicleVolumeRow
- * @property {number} exactMl Unrounded share of the total.
- * @property {number} displayMl Rounded to what a pipette can deliver.
- * @property {number} percentVv Share of the vehicle, as a percentage.
- * @property {boolean} belowPipetteMinimum Too small to measure accurately.
+ * @property {number} exactMl
+ * @property {number} displayMl Rounded to what the pipette can deliver.
+ * @property {number} percentVv Share of the finished vehicle.
+ * @property {boolean} isFixed Volume set by solubility rather than by ratio.
+ * @property {boolean} belowPipetteMinimum
  */
 
 /**
  * @param {number | undefined} totalVolumeMl
- * @param {unknown[]} ratioPartsInOrder Ratio parts, in UI row order.
+ * @param {Array<{parts?: unknown, fixedVolumeMl?: number}>} rows In UI order.
  * @param {object} [options]
- * @param {number} [options.pipetteStepMl] Smallest deliverable increment.
- * @returns {VehicleVolumeRow[] | null} null if the inputs cannot produce a split.
+ * @param {number} [options.pipetteStepMl]
+ * @returns {{ rows: VehicleVolumeRow[], overflowMl: number } | null}
  */
-export function computeVehicleVolumes(totalVolumeMl, ratioPartsInOrder, options = {}) {
+export function computeVehicleVolumes(totalVolumeMl, rows, options = {}) {
   const { pipetteStepMl = 0 } = options;
 
   if (totalVolumeMl === undefined || !Number.isFinite(totalVolumeMl) || totalVolumeMl <= 0) {
     return null;
   }
-  if (ratioPartsInOrder.length === 0) return null;
+  if (rows.length === 0) return null;
 
-  const parts = ratioPartsInOrder.map(toNonNegativeNumber);
-  if (parts.some((v) => v === undefined)) return null;
+  const fixed = rows.map((r) =>
+    Number.isFinite(r.fixedVolumeMl) && r.fixedVolumeMl >= 0 ? r.fixedVolumeMl : undefined,
+  );
+  const fixedTotal = fixed.reduce((sum, v) => sum + (v ?? 0), 0);
 
-  const totalParts = parts.reduce((sum, v) => sum + v, 0);
-  if (totalParts <= 0) return null;
+  // Diluent rows share whatever the fixed solvents leave behind.
+  const diluentIndexes = rows.map((_, i) => i).filter((i) => fixed[i] === undefined);
+  const parts = diluentIndexes.map((i) => toNonNegativeNumber(rows[i].parts));
+  if (parts.some((p) => p === undefined)) return null;
+  const partsTotal = parts.reduce((sum, p) => sum + p, 0);
 
-  // Exact shares first. The last row is the remainder so the exact volumes
-  // sum to the total without floating-point drift.
-  const exact = [];
-  let allocated = 0;
-  for (let i = 0; i < parts.length - 1; i += 1) {
-    const ml = totalVolumeMl * (parts[i] / totalParts);
-    exact.push(ml);
-    allocated += ml;
+  // Nothing to share out, and nothing that wants a share: a single fixed row.
+  if (diluentIndexes.length > 0 && partsTotal <= 0 && fixedTotal <= 0) return null;
+
+  const remainingMl = totalVolumeMl - fixedTotal;
+  const overflowMl = remainingMl < 0 ? -remainingMl : 0;
+
+  const exact = new Array(rows.length).fill(0);
+  fixed.forEach((v, i) => {
+    if (v !== undefined) exact[i] = v;
+  });
+
+  if (diluentIndexes.length > 0 && partsTotal > 0 && remainingMl > 0) {
+    let allocated = 0;
+    diluentIndexes.forEach((rowIndex, n) => {
+      const isLast = n === diluentIndexes.length - 1;
+      // The last diluent absorbs float drift so the exact volumes sum true.
+      const ml = isLast ? remainingMl - allocated : remainingMl * (parts[n] / partsTotal);
+      exact[rowIndex] = ml;
+      allocated += ml;
+    });
   }
-  exact.push(totalVolumeMl - allocated);
 
-  // Rounded shares, using the same remainder trick so the DISPLAYED volumes
-  // also sum to the total. Rounding every row independently would not.
-  const display = [];
-  let displayAllocated = 0;
-  for (let i = 0; i < exact.length - 1; i += 1) {
-    const ml = roundToStep(exact[i], pipetteStepMl);
-    display.push(ml);
-    displayAllocated += ml;
-  }
-  display.push(totalVolumeMl - displayAllocated);
+  // Round for display, again letting one row absorb the error so the printed
+  // recipe adds up. A fixed row is never the absorber — its value is chemistry.
+  const display = exact.map((ml) => roundToStep(ml, pipetteStepMl));
+  const absorber =
+    diluentIndexes.length > 0 ? diluentIndexes[diluentIndexes.length - 1] : exact.length - 1;
+  const displayedOthers = display.reduce((sum, ml, i) => (i === absorber ? sum : sum + ml), 0);
+  display[absorber] = totalVolumeMl - displayedOthers;
 
-  return exact.map((exactMl, i) => ({
-    exactMl,
-    displayMl: display[i],
-    percentVv: (parts[i] / totalParts) * 100,
-    // A row is unpipettable when it is a real, required volume that falls
-    // below the smallest increment the pipette can deliver. Zero parts are
-    // deliberate omissions, not problems.
-    belowPipetteMinimum:
-      pipetteStepMl > 0 && exactMl > 0 && exactMl < pipetteStepMl,
-  }));
+  const volumeTotal = exact.reduce((sum, ml) => sum + ml, 0);
+
+  return {
+    overflowMl,
+    rows: exact.map((exactMl, i) => ({
+      exactMl,
+      displayMl: display[i],
+      percentVv: volumeTotal > 0 ? (exactMl / volumeTotal) * 100 : 0,
+      isFixed: fixed[i] !== undefined,
+      belowPipetteMinimum: pipetteStepMl > 0 && exactMl > 0 && exactMl < pipetteStepMl,
+    })),
+  };
 }
 
 /**
- * Percentage of each solvent in the vehicle, independent of total volume.
+ * Volume of primary solvent a dose requires, in mL. Chemistry, not choice.
  *
- * @param {unknown[]} ratioPartsInOrder
- * @returns {number[] | null}
+ * @returns {number | undefined} undefined when no solubility is given, which
+ *   means the drug dissolves in the diluent and needs no primary solvent.
+ */
+export function primarySolventVolumeMl(doseMg, solubilityMgPerMl) {
+  const dose = toNonNegativeNumber(doseMg);
+  const solubility = toNonNegativeNumber(solubilityMgPerMl);
+  if (dose === undefined || solubility === undefined || solubility <= 0) return undefined;
+  return dose / solubility;
+}
+
+/**
+ * Percentages from ratio parts alone, for callers with no volume context.
  */
 export function computeVehiclePercents(ratioPartsInOrder) {
   if (ratioPartsInOrder.length === 0) return null;
