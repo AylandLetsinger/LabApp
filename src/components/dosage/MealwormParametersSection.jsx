@@ -26,7 +26,6 @@ const CAPACITY_MARKS = [
 export default function MealwormParametersSection({
   mode,
   wormCapacityUl,
-  loadVolumeUl,
   stockConcentrationMgPerMl,
   avgBodyWeight,
   avgBodyWeightUnit,
@@ -49,7 +48,7 @@ export default function MealwormParametersSection({
   return (
     <Paper p="md" radius="md" withBorder>
       <Text fw={600} mb="sm">
-        Step 3 — Mealworm loading
+        Step 2 — Dosing Parameters
       </Text>
       <Text size="sm" c="dimmed" mb="md" className="no-print">
         You know the dose each subject needs. Either fix how much liquid goes into a worm and let
@@ -149,28 +148,7 @@ export default function MealwormParametersSection({
             </Text>
           </Group>
         </div>
-        {mode === 'concentration' ? (
-          <div>
-            <Group align="flex-end" wrap="wrap" gap="sm">
-              <NumberInput
-                label="Volume loaded per mealworm"
-                placeholder="e.g. 50"
-                min={0}
-                decimalScale={3}
-                value={loadVolumeUl}
-                onChange={(value) => setFieldValue('loadVolumeUl', value)}
-                onBlur={scheduleOutputFeedback}
-                {...inputBlue}
-              />
-              <Text pb="sm" size="sm">
-                µL
-              </Text>
-            </Group>
-            <Text size="xs" c="dimmed" mt={6} className="no-print">
-              * must not exceed the loading capacity above
-            </Text>
-          </div>
-        ) : (
+        {mode === 'volume' && (
           <div>
             <Group align="flex-end" wrap="wrap" gap="sm">
               <NumberInput
@@ -188,9 +166,6 @@ export default function MealwormParametersSection({
                 mg per mL
               </Text>
             </Group>
-            <Text size="xs" c="dimmed" mt={6} className="no-print">
-              * see the workable range below before committing to a value
-            </Text>
           </div>
         )}
 

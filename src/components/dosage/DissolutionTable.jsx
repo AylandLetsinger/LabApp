@@ -30,6 +30,7 @@ export default function DissolutionTable({
   vehicleRows,
   pipetteMinUl,
   stepLabel,
+  summary,
 }) {
   const pipetteStepMl = pipetteMinUl > 0 ? pipetteMinUl / 1000 : 0;
   // The batch is scaled up from the per-dose plan, so a solvent fixed by
@@ -93,6 +94,8 @@ export default function DissolutionTable({
           </Group>
         )}
       </Group>
+      {summary}
+
       <Text size="sm" c="dimmed" mb="md" className="no-print">
         Splits the total volume across your solvents. Volumes are rounded to your pipette&apos;s
         smallest increment ({pipetteMinUl} µL), and the last solvent takes up the rounding so these

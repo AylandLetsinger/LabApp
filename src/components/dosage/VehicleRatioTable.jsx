@@ -12,7 +12,11 @@ import {
   relevantObservations,
   toleratedBurdenRange,
 } from '../../dosage/vehicles';
-import { computeVehicleVolumes, primarySolventVolumeMl } from '../../dosage/computeVehicleVolumes';
+import {
+  computeVehicleVolumes,
+  primarySolventVolumeMl,
+  suggestedDoseVolumeUl,
+} from '../../dosage/computeVehicleVolumes';
 import { roundTo } from '../../dosage/numberUtils';
 import { errorColor } from '../../theme';
 
@@ -42,10 +46,21 @@ export default function VehicleRatioTable({
   stepLabel,
   onBlur,
   dosePerSubjectMg,
-  volumePerSubjectMl,
   bodyWeightKg,
   pipetteMinUl = 0,
+  syringeMinUl = 0,
+  maxVolumeUl,
+  volumePerDoseUl,
+  onVolumePerDoseChange,
+  volumeLabel = 'Volume loaded per worm',
 }) {
+  // How much of the dose volume is spoken for by chemistry: solvents the drug
+  // must dissolve in. Everything above this is the user's to choose.
+  const suggestedUl = suggestedDoseVolumeUl(rows, dosePerSubjectMg, syringeMinUl, pipetteMinUl);
+  const hasSuggestion = suggestedUl > 0;
+  const typedUl = Number(volumePerDoseUl);
+  const effectiveUl = Number.isFinite(typedUl) && typedUl > 0 ? typedUl : suggestedUl;
+  const volumePerSubjectMl = effectiveUl > 0 ? effectiveUl / 1000 : undefined;
   const setRow = (index, patch) =>
     onRowsChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
 
@@ -124,6 +139,24 @@ export default function VehicleRatioTable({
     );
   }
 
+  if (Number.isFinite(maxVolumeUl) && maxVolumeUl > 0 && effectiveUl > maxVolumeUl) {
+    issues.push({
+      level: 'error',
+      message:
+        `${roundTo(effectiveUl, 2)} µL per dose exceeds the ${roundTo(maxVolumeUl, 2)} µL that fits. ` +
+        'Reduce the volume, use a solvent the drug is more soluble in, or use a larger worm.',
+    });
+  }
+
+  if (syringeMinUl > 0 && effectiveUl > 0 && effectiveUl < syringeMinUl) {
+    issues.push({
+      level: 'error',
+      message:
+        `${roundTo(effectiveUl, 2)} µL is below the ${roundTo(syringeMinUl, 2)} µL your syringe can ` +
+        'measure. Add diluent to bring the dose up to a volume you can actually deliver.',
+    });
+  }
+
   if (rows.length !== new Set(rows.map((r) => r.vehicleId)).size) {
     issues.push({ level: 'error', message: 'The same solvent is listed more than once.' });
   }
@@ -149,6 +182,35 @@ export default function VehicleRatioTable({
         solubility blank on a row and it becomes diluent, sharing what is left by its ratio parts.
         Blank everywhere and this is an ordinary ratio table.{' '}
         <strong>Your IACUC protocol governs, not this table.</strong>
+      </Text>
+
+      <Group align="flex-end" wrap="wrap" gap="sm" mb={4}>
+        <NumberInput
+          label={volumeLabel}
+          placeholder={hasSuggestion ? `${roundTo(suggestedUl, 2)}` : 'µL'}
+          min={0}
+          decimalScale={3}
+          value={volumePerDoseUl}
+          onChange={onVolumePerDoseChange}
+          onBlur={onBlur}
+          w={220}
+          variant="filled"
+        />
+        <Text pb="sm" size="sm">
+          µL
+        </Text>
+        {hasSuggestion && (
+          <Text pb="sm" size="sm" c="dimmed">
+            smallest workable: <strong>{roundTo(suggestedUl, 2)} µL</strong>
+            {Number.isFinite(maxVolumeUl) && maxVolumeUl > 0
+              ? ` · ceiling: ${roundTo(maxVolumeUl, 2)} µL`
+              : ''}
+          </Text>
+        )}
+      </Group>
+      <Text size="xs" c="dimmed" mb="md" className="no-print">
+        * leave blank to use the smallest workable volume. Raise it to dilute the solvents; the
+        table below moves as you do.
       </Text>
 
       <Table verticalSpacing="sm" horizontalSpacing="sm" withTableBorder withColumnBorders>

@@ -72,3 +72,16 @@ export function roundToStep(n, step) {
   if (!Number.isFinite(step) || step <= 0) return n;
   return Math.round(n / step) * step;
 }
+
+/**
+ * Round UP to the nearest achievable step.
+ *
+ * Used for a solvent volume set by solubility: rounding such a volume down
+ * would deliver less solvent than the drug needs to dissolve, so the error
+ * has to go the safe way.
+ */
+export function ceilToStep(n, step) {
+  if (!Number.isFinite(step) || step <= 0) return n;
+  // Nudge away from float noise so 0.025 / 0.002 does not land at 12.4999999.
+  return Math.ceil(n / step - 1e-9) * step;
+}

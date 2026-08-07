@@ -14,6 +14,7 @@ const inputBlue = {
 };
 
 export default function Step2DosageTypeSection({
+  stepLabel = 'Step 1 — Dosage type',
   dosageType,
   dosePerSubject,
   dosePerSubjectUnit,
@@ -27,7 +28,7 @@ export default function Step2DosageTypeSection({
   return (
     <Paper p="md" radius="md" withBorder>
       <Text fw={600} mb="sm">
-        Step 2 — Dosage type
+        {stepLabel}
       </Text>
       <Text size="sm" c="dimmed" mb="md" className="no-print">
         Choose how dose is specified, then enter the values (highlighted fields).

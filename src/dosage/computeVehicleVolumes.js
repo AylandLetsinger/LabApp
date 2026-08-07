@@ -20,7 +20,7 @@
  *   1. Displayed volumes sum exactly to the total.
  *   2. A row too small to measure is reported, never rounded silently to zero.
  */
-import { roundToStep, toNonNegativeNumber } from './numberUtils';
+import { ceilToStep, roundToStep, toNonNegativeNumber } from './numberUtils';
 
 /**
  * @typedef {object} VehicleVolumeRow
@@ -79,18 +79,28 @@ export function computeVehicleVolumes(totalVolumeMl, rows, options = {}) {
     });
   }
 
-  // Round for display, again letting one row absorb the error so the printed
-  // recipe adds up. A fixed row is never the absorber — its value is chemistry.
-  const display = exact.map((ml) => roundToStep(ml, pipetteStepMl));
+  // Round for display, letting one row absorb the error so the printed recipe
+  // adds up. A fixed row is never the absorber — its value is chemistry — and
+  // it rounds UP, because rounding a solubility-derived volume down would
+  // deliver less solvent than the drug needs to dissolve.
+  const display = exact.map((ml, i) =>
+    fixed[i] !== undefined ? ceilToStep(ml, pipetteStepMl) : roundToStep(ml, pipetteStepMl),
+  );
   const absorber =
     diluentIndexes.length > 0 ? diluentIndexes[diluentIndexes.length - 1] : exact.length - 1;
   const displayedOthers = display.reduce((sum, ml, i) => (i === absorber ? sum : sum + ml), 0);
-  display[absorber] = totalVolumeMl - displayedOthers;
+  // Never show a negative volume: if rounding the fixed rows up overruns the
+  // dose volume, that is a real shortfall and belongs in overflowMl.
+  const absorbed = totalVolumeMl - displayedOthers;
+  display[absorber] = Math.max(0, absorbed);
+  const roundingShortfallMl = absorbed < 0 ? -absorbed : 0;
 
   const volumeTotal = exact.reduce((sum, ml) => sum + ml, 0);
 
   return {
-    overflowMl,
+    // The two overflows measure the same gap, one before rounding and one
+    // after, so report the larger rather than their sum.
+    overflowMl: Math.max(overflowMl, roundingShortfallMl),
     rows: exact.map((exactMl, i) => ({
       exactMl,
       displayMl: display[i],
@@ -112,6 +122,29 @@ export function primarySolventVolumeMl(doseMg, solubilityMgPerMl) {
   const solubility = toNonNegativeNumber(solubilityMgPerMl);
   if (dose === undefined || solubility === undefined || solubility <= 0) return undefined;
   return dose / solubility;
+}
+
+/**
+ * The smallest dose volume that both dissolves the drug and can be measured.
+ *
+ * Shared by the form and the vehicle table so the two cannot drift: the form
+ * needs it to size the batch, the table needs it to fill its own input.
+ *
+ * @param {Array<{solubilityMgPerMl?: unknown}>} rows
+ * @param {number | undefined} dosePerSubjectMg
+ * @param {number} syringeMinUl
+ * @returns {number} Microlitres. Zero when nothing is known yet.
+ */
+export function suggestedDoseVolumeUl(rows, dosePerSubjectMg, syringeMinUl, pipetteMinUl = 0) {
+  const step = toNonNegativeNumber(pipetteMinUl) ?? 0;
+  const fixedUl = rows.reduce((sum, row) => {
+    const ml = primarySolventVolumeMl(dosePerSubjectMg, row.solubilityMgPerMl);
+    if (ml === undefined) return sum;
+    // Match what the recipe will actually instruct: rounded up to the pipette.
+    return sum + ceilToStep(ml * 1000, step);
+  }, 0);
+  const floor = toNonNegativeNumber(syringeMinUl) ?? 0;
+  return Math.max(fixedUl, floor);
 }
 
 /**

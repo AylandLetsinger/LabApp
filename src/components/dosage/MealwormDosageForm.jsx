@@ -10,6 +10,7 @@ import {
   computeWorkableConcentrationWindow,
 } from '../../dosage/computeMealwormOutputs';
 import { computeSoluteRequiredMg } from '../../dosage/computeSolutionOutputs';
+import { suggestedDoseVolumeUl } from '../../dosage/computeVehicleVolumes';
 import { roundTo, toOptionalNumber } from '../../dosage/numberUtils';
 import { volumeToMl, weightToKg } from '../../dosage/unitConversions';
 import { DEFAULT_ORAL_VEHICLE_ROWS } from '../../dosage/vehicles';
@@ -136,7 +137,11 @@ export default function MealwormDosageForm() {
 
   // The batch to mix. In volume mode the per-worm volume is what was solved
   // for, so the batch is built from that instead of a typed volume.
-  const effectiveLoadUl = isConcentrationMode ? toOptionalNumber(v.loadVolumeUl) : volumeMode.loadVolumeUl;
+  const suggestedUl = suggestedDoseVolumeUl(vehicleRows, dosePerSubjectMg, Number(v.syringeMinUl), Number(v.pipetteMinUl));
+  const typedUl = toOptionalNumber(v.loadVolumeUl);
+  const effectiveLoadUl = isConcentrationMode
+    ? (typedUl !== undefined && typedUl > 0 ? typedUl : suggestedUl || undefined)
+    : volumeMode.loadVolumeUl;
   const totalVolumeMl = useMemo(() => {
     const loadMl = volumeToMl(effectiveLoadUl, 'ul');
     const doses = toOptionalNumber(v.totalDoses);
@@ -175,6 +180,7 @@ export default function MealwormDosageForm() {
       <PrintActions title="mealworm oral dosing calculator" />
 
       <Step2DosageTypeSection
+        stepLabel="Step 1 — Dosage type"
         dosageType={v.dosageType}
         dosePerSubject={v.dosePerSubject}
         dosePerSubjectUnit={v.dosePerSubjectUnit}
@@ -202,104 +208,50 @@ export default function MealwormDosageForm() {
         issues={parameterIssues}
       />
 
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={600} mb="sm">
-          Step 4 — Output
-        </Text>
-        <Text size="sm" c="dimmed" mb="md" className="no-print">
-          {isConcentrationMode
-            ? 'Load the same volume into every worm; mix the solution at the concentration below.'
-            : 'Mix one stock at your chosen concentration; load the volume below into each worm.'}
-        </Text>
-
-        <Stack gap="md">
-          <DosageOutputRow
-            label="Dose loaded per subject"
-            canonicalValue={dosePerSubjectMg}
-            kind="mass"
-            unit={units.dosePerSubject}
-            onUnitChange={(u) => setUnit('dosePerSubject', u)}
-          />
-
-          {isConcentrationMode ? (
-            <DosageOutputRow
-              label="Concentration to mix (per mL)"
-              canonicalValue={concentrationMode.requiredConcentrationMgPerMl}
-              kind="mass"
-              unit={units.solute}
-              onUnitChange={(u) => setUnit('solute', u)}
-              decimals={6}
-            />
-          ) : (
-            <DosageOutputRow
-              label="Volume to load per worm"
-              canonicalValue={volumeToMl(volumeMode.loadVolumeUl, 'ul')}
-              kind="volume"
-              unit={units.loadVolume}
-              onUnitChange={(u) => setUnit('loadVolume', u)}
-            />
-          )}
-
-          <DosageOutputRow
-            label="Total solution to prepare"
-            canonicalValue={totalVolumeMl}
-            kind="volume"
-            unit={units.totalVolume}
-            onUnitChange={(u) => setUnit('totalVolume', u)}
-          />
-
-          <DosageOutputRow
-            label="Total solute required"
-            canonicalValue={soluteRequiredMg}
-            kind="mass"
-            unit={units.solute}
-            onUnitChange={(u) => setUnit('solute', u)}
-          />
-        </Stack>
-
-        {!isConcentrationMode && window && (
-          <Alert
-            color={window.feasible ? 'blue' : 'red'}
-            variant="light"
-            mt="md"
-            icon={<IconInfoCircle size={18} />}
-            title="Workable stock concentration"
-          >
-            {window.feasible ? (
-              <Text size="sm">
-                For {v.minBodyWeightG}–{v.maxBodyWeightG} g subjects, a {v.wormCapacityUl} µL worm
-                and a {v.syringeMinUl} µL syringe, your stock must be between{' '}
-                <strong>{roundTo(window.minMgPerMl, 3)} mg/mL</strong> and{' '}
-                <strong>
-                  {Number.isFinite(window.maxMgPerMl) ? `${roundTo(window.maxMgPerMl, 3)} mg/mL` : 'no upper limit'}
-                </strong>
-                . Outside that range some animals cannot be dosed accurately.
-              </Text>
-            ) : (
-              <Text size="sm">
-                No stock concentration works for this combination. The heaviest subject needs more
-                volume than the worm holds, while the lightest needs less than the pipette can
-                deliver. Use a larger worm, a finer pipette, or a narrower weight range.
-              </Text>
-            )}
-          </Alert>
-        )}
-
-        {/* Loading problems are reported against the Step 3 inputs that cause
-            them, so they are deliberately not repeated here. */}
-      </Paper>
-
       <VehicleRatioTable
         rows={vehicleRows}
         onRowsChange={setVehicleRows}
         route="oral"
-        stepLabel="Step 5 — Vehicle ratio"
+        stepLabel="Step 3 — Vehicle formulation"
         onBlur={scheduleOutputFeedback}
         dosePerSubjectMg={dosePerSubjectMg}
-        volumePerSubjectMl={volumeToMl(effectiveLoadUl, 'ul')}
         bodyWeightKg={weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit)}
         pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
+        syringeMinUl={toOptionalNumber(v.syringeMinUl) ?? 0}
+        maxVolumeUl={toOptionalNumber(v.wormCapacityUl)}
+        volumePerDoseUl={v.loadVolumeUl}
+        onVolumePerDoseChange={(value) => form.setFieldValue('loadVolumeUl', value)}
+        volumeLabel="Volume loaded per worm"
       />
+
+      {!isConcentrationMode && window && (
+        <Alert
+          color={window.feasible ? 'blue' : 'red'}
+          variant="light"
+          icon={<IconInfoCircle size={18} />}
+          title="Workable stock concentration"
+        >
+          {window.feasible ? (
+            <Text size="sm">
+              For {v.minBodyWeightG}–{v.maxBodyWeightG} g subjects, a {v.wormCapacityUl} µL worm and
+              a {v.syringeMinUl} µL syringe, your stock must be between{' '}
+              <strong>{roundTo(window.minMgPerMl, 3)} mg/mL</strong> and{' '}
+              <strong>
+                {Number.isFinite(window.maxMgPerMl)
+                  ? `${roundTo(window.maxMgPerMl, 3)} mg/mL`
+                  : 'no upper limit'}
+              </strong>
+              . Outside that range some subjects cannot be dosed accurately.
+            </Text>
+          ) : (
+            <Text size="sm">
+              No stock concentration works for this combination. The heaviest subject needs more
+              volume than the worm holds, while the lightest needs less than the syringe can
+              deliver. Use a larger worm, a finer syringe, or a narrower weight range.
+            </Text>
+          )}
+        </Alert>
+      )}
 
       <DissolutionTable
         outputFeedback={outputFeedback}
@@ -307,7 +259,44 @@ export default function MealwormDosageForm() {
         soluteRequiredMg={soluteRequiredMg}
         vehicleRows={vehicleRows}
         pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
-        stepLabel="Step 5b — Dissolution & vehicle volumes"
+        stepLabel="Step 4 — Recipe"
+        summary={
+          <Stack gap="md" mb="md">
+            <DosageOutputRow
+              label="Dose loaded per subject"
+              canonicalValue={dosePerSubjectMg}
+              kind="mass"
+              unit={units.dosePerSubject}
+              onUnitChange={(u) => setUnit('dosePerSubject', u)}
+            />
+            <DosageOutputRow
+              label={isConcentrationMode ? 'Concentration to mix (per mL)' : 'Stock concentration'}
+              canonicalValue={
+                isConcentrationMode
+                  ? concentrationMode.requiredConcentrationMgPerMl
+                  : toOptionalNumber(v.stockConcentrationMgPerMl)
+              }
+              kind="mass"
+              unit={units.solute}
+              onUnitChange={(u) => setUnit('solute', u)}
+              decimals={6}
+            />
+            <DosageOutputRow
+              label="Volume per dose"
+              canonicalValue={volumeToMl(effectiveLoadUl, 'ul')}
+              kind="volume"
+              unit={units.loadVolume}
+              onUnitChange={(u) => setUnit('loadVolume', u)}
+            />
+            <DosageOutputRow
+              label="Total solution to prepare"
+              canonicalValue={totalVolumeMl}
+              kind="volume"
+              unit={units.totalVolume}
+              onUnitChange={(u) => setUnit('totalVolume', u)}
+            />
+          </Stack>
+        }
       />
 
       {!isConcentrationMode && (
