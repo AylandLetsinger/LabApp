@@ -30,7 +30,7 @@ export default function DissolutionTable({
   vehicleRows,
   pipetteMinUl,
   stepLabel,
-  summary,
+  footer,
 }) {
   // The batch is the per-dose vehicle scaled up, so the same ratio applies.
   const split = computeVehicleVolumes(totalVolumeMl, vehicleRows, {
@@ -79,8 +79,6 @@ export default function DissolutionTable({
           </Group>
         )}
       </Group>
-      {summary}
-
       <Text size="sm" c="dimmed" mb="md" className="no-print">
         Splits the total volume across your solvents. Volumes are rounded to your pipette&apos;s
         smallest increment ({pipetteMinUl} µL), and the last solvent takes up the rounding so these
@@ -166,6 +164,8 @@ export default function DissolutionTable({
           </Table.Tr>
         </Table.Tbody>
       </Table>
+
+      {footer}
 
       <IssueList issues={issues} />
 

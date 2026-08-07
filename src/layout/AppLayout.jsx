@@ -1,8 +1,18 @@
-import { AppShell, Button, Group, Menu, Title } from '@mantine/core';
+import { AppShell, Burger, Button, Group, Menu, Title } from '@mantine/core';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { IconChevronDown } from '@tabler/icons-react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { DOSAGE_DELIVERY_METHODS } from '../dosageDeliveryMethods';
 import { navActiveColor } from '../theme';
+
+/** Top-level sections, in nav order. */
+const SECTIONS = [
+  { to: '/about', label: 'About' },
+  { to: '/molarity', label: 'Molarity' },
+  { to: '/dilutions', label: 'Dilutions' },
+  { to: '/antibodies', label: 'Antibodies' },
+  { to: '/recipes', label: 'Recipes' },
+];
 
 function NavButton({ to, children }) {
   return (
@@ -24,10 +34,15 @@ function NavButton({ to, children }) {
 export default function AppLayout() {
   const { pathname } = useLocation();
   const dosageActive = pathname.startsWith('/dosage');
+  // Six links do not fit a phone. They used to wrap onto a second row that
+  // overflowed the fixed-height header, so those two links scrolled away with
+  // the page content instead of staying put.
+  const isNarrow = useMediaQuery('(max-width: 820px)');
+  const [menuOpen, { toggle: toggleMenu, close: closeMenu }] = useDisclosure(false);
 
   return (
     <AppShell
-      header={{ height: 72 }}
+      header={{ height: 64 }}
       padding="md"
       styles={{
         root: { backgroundColor: 'var(--mantine-color-white)' },
@@ -35,46 +50,75 @@ export default function AppLayout() {
         main: { backgroundColor: 'var(--mantine-color-white)' },
       }}
     >
-      <AppShell.Header p="md" style={{ display: 'flex', alignItems: 'center' }}>
-        <Group justify="space-between" wrap="wrap" gap="sm" w="100%" maw={1126} mx="auto">
+      <AppShell.Header px="md" style={{ display: 'flex', alignItems: 'center' }}>
+        <Group justify="space-between" wrap="nowrap" gap="sm" w="100%" maw={1126} mx="auto">
           <Title
             order={2}
-            size="h3"
+            size="h4"
             component={Link}
             to="/"
-            style={{ textDecoration: 'none', color: 'var(--mantine-color-black)' }}
+            style={{ textDecoration: 'none', color: 'var(--mantine-color-black)', whiteSpace: 'nowrap' }}
           >
             THE LAB APP
           </Title>
 
-          <Group gap="xs" wrap="wrap" justify="flex-end">
-            <NavButton to="/about">About</NavButton>
-
-            <Menu shadow="md" width={220} position="bottom-start">
+          {isNarrow ? (
+            <Menu
+              shadow="md"
+              width={220}
+              position="bottom-end"
+              opened={menuOpen}
+              onChange={toggleMenu}
+            >
               <Menu.Target>
-                <Button
-                  variant={dosageActive ? 'filled' : 'subtle'}
-                  color={dosageActive ? navActiveColor : 'gray'}
-                  size="sm"
-                  rightSection={<IconChevronDown size={14} stroke={1.5} />}
-                >
-                  Dosage
-                </Button>
+                <Burger opened={menuOpen} onClick={toggleMenu} size="sm" aria-label="Open navigation" />
               </Menu.Target>
               <Menu.Dropdown>
+                <Menu.Label>Dosage</Menu.Label>
                 {DOSAGE_DELIVERY_METHODS.map(({ slug, label }) => (
-                  <Menu.Item key={slug} component={Link} to={`/dosage/${slug}`}>
+                  <Menu.Item key={slug} component={Link} to={`/dosage/${slug}`} onClick={closeMenu}>
+                    {label}
+                  </Menu.Item>
+                ))}
+                <Menu.Divider />
+                {SECTIONS.map(({ to, label }) => (
+                  <Menu.Item key={to} component={Link} to={to} onClick={closeMenu}>
                     {label}
                   </Menu.Item>
                 ))}
               </Menu.Dropdown>
             </Menu>
+          ) : (
+            <Group gap="xs" wrap="nowrap" justify="flex-end">
+              <NavButton to="/about">About</NavButton>
 
-            <NavButton to="/molarity">Molarity</NavButton>
-            <NavButton to="/dilutions">Dilutions</NavButton>
-            <NavButton to="/antibodies">Antibodies</NavButton>
-            <NavButton to="/recipes">Recipes</NavButton>
-          </Group>
+              <Menu shadow="md" width={220} position="bottom-start">
+                <Menu.Target>
+                  <Button
+                    variant={dosageActive ? 'filled' : 'subtle'}
+                    color={dosageActive ? navActiveColor : 'gray'}
+                    size="sm"
+                    rightSection={<IconChevronDown size={14} stroke={1.5} />}
+                  >
+                    Dosage
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {DOSAGE_DELIVERY_METHODS.map(({ slug, label }) => (
+                    <Menu.Item key={slug} component={Link} to={`/dosage/${slug}`}>
+                      {label}
+                    </Menu.Item>
+                  ))}
+                </Menu.Dropdown>
+              </Menu>
+
+              {SECTIONS.filter((s) => s.to !== '/about').map(({ to, label }) => (
+                <NavButton key={to} to={to}>
+                  {label}
+                </NavButton>
+              ))}
+            </Group>
+          )}
         </Group>
       </AppShell.Header>
 

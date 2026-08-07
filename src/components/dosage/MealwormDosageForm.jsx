@@ -18,7 +18,7 @@ import useOutputFeedback from '../../hooks/useOutputFeedback';
 import Step2DosageTypeSection from './Step2DosageTypeSection';
 import MealwormParametersSection from './MealwormParametersSection';
 import MealwormDosingTable from './MealwormDosingTable';
-import DosageOutputRow from './DosageOutputRow';
+import RecipeNarrative from './RecipeNarrative';
 import VehicleRatioTable from './VehicleRatioTable';
 import DissolutionTable from './DissolutionTable';
 import PrintActions from './PrintActions';
@@ -59,6 +59,10 @@ export default function MealwormDosageForm() {
     solute: 'mg',
     loadVolume: 'ul',
     totalVolume: 'ml',
+    narrativeVolume: 'ul',
+    narrativeDose: 'mg',
+    narrativeConcMass: 'mg',
+    narrativeConcVolume: 'ml',
   });
   const setUnit = (key, value) => setUnits((prev) => ({ ...prev, [key]: value }));
 
@@ -171,19 +175,19 @@ export default function MealwormDosageForm() {
     if (doses !== undefined && doses === 0) {
       issues.push({
         level: 'error',
-        message: 'Number of loaded worms is 0, so every batch figure below is zero. Enter at least 1.',
+        message: 'Number of dosages is 0, so every batch figure below is zero. Enter at least 1.',
       });
     }
     if (v.wasteBufferPct === '' || v.wasteBufferPct === null) {
       issues.push({
         level: 'warning',
         message:
-          'Waste buffer is blank, which is treated as 0%. Loading worms wastes solution — 10% is ' +
+          'Waste buffer is blank, which is treated as 0%. Loading doses wastes solution — 10% is ' +
           'a common choice.',
       });
     }
-    return [...issues, ...(isConcentrationMode ? concentrationMode.issues : volumeMode.issues)];
-  }, [v.totalDoses, v.wasteBufferPct, isConcentrationMode, concentrationMode.issues, volumeMode.issues]);
+    return issues;
+  }, [v.totalDoses, v.wasteBufferPct]);
 
   return (
     <Stack gap="lg" mt="md">
@@ -270,42 +274,19 @@ export default function MealwormDosageForm() {
         vehicleRows={vehicleRows}
         pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
         stepLabel="Step 4 — Recipe"
-        summary={
-          <Stack gap="md" mb="md">
-            <DosageOutputRow
-              label="Dose loaded per subject"
-              canonicalValue={dosePerSubjectMg}
-              kind="mass"
-              unit={units.dosePerSubject}
-              onUnitChange={(u) => setUnit('dosePerSubject', u)}
-            />
-            <DosageOutputRow
-              label={isConcentrationMode ? 'Concentration to mix (per mL)' : 'Stock concentration'}
-              canonicalValue={
-                isConcentrationMode
-                  ? concentrationMode.requiredConcentrationMgPerMl
-                  : toOptionalNumber(v.stockConcentrationMgPerMl)
-              }
-              kind="mass"
-              unit={units.solute}
-              onUnitChange={(u) => setUnit('solute', u)}
-              decimals={6}
-            />
-            <DosageOutputRow
-              label="Volume per dose"
-              canonicalValue={volumeToMl(effectiveLoadUl, 'ul')}
-              kind="volume"
-              unit={units.loadVolume}
-              onUnitChange={(u) => setUnit('loadVolume', u)}
-            />
-            <DosageOutputRow
-              label="Total solution to prepare"
-              canonicalValue={totalVolumeMl}
-              kind="volume"
-              unit={units.totalVolume}
-              onUnitChange={(u) => setUnit('totalVolume', u)}
-            />
-          </Stack>
+        footer={
+          <RecipeNarrative
+            volumePerDoseMl={volumeToMl(effectiveLoadUl, 'ul')}
+            dosePerSubjectMg={dosePerSubjectMg}
+            concentrationMgPerMl={
+              isConcentrationMode
+                ? concentrationMode.requiredConcentrationMgPerMl
+                : toOptionalNumber(v.stockConcentrationMgPerMl)
+            }
+            doseRateMgPerKg={doseRateMgPerG === undefined ? undefined : doseRateMgPerG * 1000}
+            units={units}
+            setUnit={setUnit}
+          />
         }
       />
 
