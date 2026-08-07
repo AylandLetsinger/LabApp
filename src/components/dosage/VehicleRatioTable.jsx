@@ -59,6 +59,27 @@ export default function VehicleRatioTable({
 
   const removeRow = (index) => onRowsChange(rows.filter((_, i) => i !== index));
 
+  /**
+   * Change the dose volume, absorbing the difference into the last solvent.
+   *
+   * Every other solvent keeps the volume it already had, so raising the total
+   * dilutes rather than rescaling everything at once — which is what makes the
+   * control useful for finding a workable range.
+   */
+  const changeVolume = (nextValue) => {
+    const nextUl = Number(nextValue);
+    if (!Number.isFinite(nextUl) || nextUl <= 0 || !split || rows.length < 2) {
+      onVolumePerDoseChange(nextValue);
+      return;
+    }
+    const currentUl = split.rows.map((r) => r.exactMl * 1000);
+    const fixedUl = currentUl.slice(0, -1).reduce((sum, ul) => sum + ul, 0);
+    const lastUl = Math.max(0, nextUl - fixedUl);
+    const nextParts = [...currentUl.slice(0, -1), lastUl];
+    onRowsChange(rows.map((row, i) => ({ ...row, parts: roundTo(nextParts[i], 4) })));
+    onVolumePerDoseChange(nextValue);
+  };
+
   const suggestedUl = suggestedDoseVolumeUl(rows, dosePerSubjectMg, syringeMinUl);
   const typedUl = Number(volumePerDoseUl);
   const effectiveUl = Number.isFinite(typedUl) && typedUl > 0 ? typedUl : suggestedUl;
@@ -156,39 +177,13 @@ export default function VehicleRatioTable({
         <strong>Your IACUC protocol governs, not this table.</strong>
       </Text>
 
-      <Group align="flex-end" wrap="wrap" gap="sm" mb={4}>
-        <NumberInput
-          label={volumeLabel}
-          min={0}
-          decimalScale={3}
-          value={volumePerDoseUl}
-          onChange={onVolumePerDoseChange}
-          onBlur={onBlur}
-          w={200}
-          variant="filled"
-          className="auto-input"
-          key={`vol-${roundTo(suggestedUl, 3)}`}
-        />
-        <Text pb="sm" size="sm">
-          µL
-        </Text>
-        {suggestedUl > 0 && (
-          <Text pb="sm" size="sm" c="dimmed">
-            smallest workable: <strong>{roundTo(suggestedUl, 2)} µL</strong>
-            {Number.isFinite(maxVolumeUl) && maxVolumeUl > 0
-              ? ` · ceiling: ${roundTo(maxVolumeUl, 2)} µL`
-              : ''}
-          </Text>
-        )}
-      </Group>
-
       <Table.ScrollContainer minWidth={760}>
         <Table verticalSpacing="sm" horizontalSpacing="sm" withTableBorder withColumnBorders>
           <Table.Thead>
             <Table.Tr>
               <Table.Th ta="left" miw={150}>SOLVENT</Table.Th>
               <Table.Th ta="left" w={105}>solubility<br />(mg/mL)</Table.Th>
-              <Table.Th ta="left" w={90}>min needed</Table.Th>
+              <Table.Th ta="left" w={105}>required<br />(per dose)</Table.Th>
               <Table.Th ta="left" w={80}>ratio</Table.Th>
               <Table.Th ta="left" w={78}>%(v/v)</Table.Th>
               <Table.Th ta="left" w={92}>volume<br />(per dose)</Table.Th>
@@ -339,6 +334,33 @@ export default function VehicleRatioTable({
       </Button>
 
       <IssueList issues={issues} />
+
+      <Group align="flex-end" wrap="wrap" gap="sm" mb={4}>
+        <NumberInput
+          label={volumeLabel}
+          min={0}
+          decimalScale={3}
+          value={volumePerDoseUl}
+          onChange={changeVolume}
+          onBlur={onBlur}
+          w={200}
+          variant="filled"
+          className="auto-input"
+          key={`vol-${roundTo(suggestedUl, 3)}`}
+        />
+        <Text pb="sm" size="sm">
+          µL
+        </Text>
+        {suggestedUl > 0 && (
+          <Text pb="sm" size="sm" c="dimmed">
+            smallest workable: <strong>{roundTo(suggestedUl, 2)} µL</strong>
+            {Number.isFinite(maxVolumeUl) && maxVolumeUl > 0
+              ? ` · ceiling: ${roundTo(maxVolumeUl, 2)} µL`
+              : ''}
+          </Text>
+        )}
+      </Group>
+
     </Paper>
   );
 }

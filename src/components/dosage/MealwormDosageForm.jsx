@@ -40,7 +40,7 @@ export default function MealwormDosageForm() {
       avgBodyWeight: '',
       avgBodyWeightUnit: 'g',
       totalDoses: '',
-      wasteBufferPct: '',
+      wasteBufferPct: 0,
       // Two different tools with two different floors: the insulin syringe
       // loads the worm, the pipette makes up the vehicle.
       syringeMinUl: 25,
@@ -178,16 +178,8 @@ export default function MealwormDosageForm() {
         message: 'Number of dosages is 0, so every batch figure below is zero. Enter at least 1.',
       });
     }
-    if (v.wasteBufferPct === '' || v.wasteBufferPct === null) {
-      issues.push({
-        level: 'warning',
-        message:
-          'Waste buffer is blank, which is treated as 0%. Loading doses wastes solution — 10% is ' +
-          'a common choice.',
-      });
-    }
     return issues;
-  }, [v.totalDoses, v.wasteBufferPct]);
+  }, [v.totalDoses]);
 
   return (
     <Stack gap="lg" mt="md">

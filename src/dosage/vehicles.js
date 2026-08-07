@@ -475,8 +475,9 @@ export const DEFAULT_IP_VEHICLE_ROWS = [
   { vehicleId: 'saline', parts: '18' },
 ];
 
-/** DMSO in oil, the documented route for this compound family. */
-export const DEFAULT_ORAL_VEHICLE_ROWS = [
-  { vehicleId: 'dmso', parts: '1' },
-  { vehicleId: 'sesame-oil', parts: '9' },
-];
+/**
+ * One solvent to begin with. A drug that dissolves in saline needs nothing
+ * else, and anyone who needs a co-solvent will add it — starting with a guess
+ * about their chemistry only invites them to accept it.
+ */
+export const DEFAULT_ORAL_VEHICLE_ROWS = [{ vehicleId: 'saline', parts: '1' }];

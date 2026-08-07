@@ -38,10 +38,13 @@ export default function MealwormParametersSection({
   issues,
 }) {
   // What the waste buffer actually buys, in the unit the user thinks in.
+  // At zero it carries the recommendation instead — advice as light text beats
+  // a warning about a field nobody has reached yet.
   const plannedDoses = Number(totalDoses);
   const wastePct = Number(wasteBufferPct);
+  const bufferOff = !Number.isFinite(wastePct) || wastePct <= 0;
   const spareDoses =
-    Number.isFinite(plannedDoses) && plannedDoses > 0 && Number.isFinite(wastePct) && wastePct > 0
+    !bufferOff && Number.isFinite(plannedDoses) && plannedDoses > 0
       ? Math.floor(plannedDoses * (1 + wastePct / 100)) - plannedDoses
       : undefined;
 
@@ -222,11 +225,17 @@ export default function MealwormParametersSection({
           <Text pb="sm" size="sm">
             %
           </Text>
-          {spareDoses !== undefined && (
+          {bufferOff ? (
             <Text pb="sm" size="sm" c="dimmed">
-              &rarr; enough for <strong>{plannedDoses + spareDoses}</strong> dosages,{' '}
-              {spareDoses} spare
+              &rarr; 10% is recommended
             </Text>
+          ) : (
+            spareDoses !== undefined && (
+              <Text pb="sm" size="sm" c="dimmed">
+                &rarr; enough for <strong>{plannedDoses + spareDoses}</strong> dosages,{' '}
+                {spareDoses} spare
+              </Text>
+            )
           )}
         </Group>
 
