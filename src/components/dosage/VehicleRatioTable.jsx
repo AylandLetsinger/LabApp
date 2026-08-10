@@ -310,7 +310,7 @@ export default function VehicleRatioTable({
                       const molar = toPositiveNumber(solute.molecularWeight) !== undefined;
                       return (
                         <div key={solute.id} style={{ marginTop: s === 0 ? 0 : 8 }}>
-                          {manySolutes && (
+                          {(manySolutes || (solute.name ?? '').trim() !== '') && (
                             <Text size="xs" c="dimmed" truncate>
                               {soluteDisplayName(solute, s)}
                             </Text>

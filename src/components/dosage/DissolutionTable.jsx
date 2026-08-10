@@ -160,7 +160,12 @@ export default function DissolutionTable({
                 </Table.Td>
                 <Table.Td>
                   <Text size="sm" fw={500}>
-                    {solutes.length > 1
+                    {/*
+                      A name earns its place in the sentence whenever it exists.
+                      Only an unnamed lone solute falls back to the generic
+                      phrase — with several, "Solute 2" at least distinguishes.
+                    */}
+                    {solutes.length > 1 || (solute.name ?? '').trim() !== ''
                       ? `of ${soluteDisplayName(solute, i)}`
                       : (soluteLabel ?? 'of your solute')}
                   </Text>

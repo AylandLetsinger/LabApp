@@ -237,11 +237,6 @@ export default function MealwormDosageForm() {
         onSolutesChange={setSolutes}
         scheduleOutputFeedback={scheduleOutputFeedback}
         canAddSolutes={!isWorking}
-        addBlockedReason={
-          'A working solution has one concentration written on the bottle, so this ' +
-          'calculator can only work back to one substance from it. Switch to powder ' +
-          'or stock to formulate more than one.'
-        }
         footer={<PreparationModeControl value={v.preparation} onChange={changePreparation} />}
       />
 

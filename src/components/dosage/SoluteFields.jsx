@@ -28,15 +28,12 @@ const inputBlue = {
  * list. That is what lets the same component serve a lone drug and the third
  * member of a cocktail without a branch.
  *
- * The name field only appears once there is more than one substance to tell
- * apart. Labelling a single drug "GAT228" changes nothing the calculator says.
+ * The name is optional and always offered. It changes no arithmetic, but it
+ * does change what the recipe says: "Dissolve 25 mg of ketamine" is a printed
+ * page someone can follow at the bench, where "of your solute" is a page they
+ * have to remember the rest of.
  */
-export default function SoluteFields({
-  solute,
-  setFieldValue,
-  scheduleOutputFeedback,
-  showName = false,
-}) {
+export default function SoluteFields({ solute, setFieldValue, scheduleOutputFeedback }) {
   const {
     dosageType,
     dosePerSubject,
@@ -64,17 +61,15 @@ export default function SoluteFields({
   return (
     <>
       <Group align="flex-end" wrap="wrap" gap="sm" mb="md">
-        {showName && (
-          <TextInput
-            label="Name"
-            placeholder="e.g. ketamine"
-            value={solute.name}
-            onChange={(event) => setFieldValue('name', event.currentTarget.value)}
-            onBlur={scheduleOutputFeedback}
-            w={180}
-            {...inputBlue}
-          />
-        )}
+        <TextInput
+          label="Name"
+          placeholder="optional, e.g. ketamine"
+          value={solute.name}
+          onChange={(event) => setFieldValue('name', event.currentTarget.value)}
+          onBlur={scheduleOutputFeedback}
+          w={200}
+          {...inputBlue}
+        />
         <LabSelect
           label="Dosage type"
           data={DOSAGE_TYPE_OPTIONS}

@@ -1,7 +1,6 @@
 import { ActionIcon, Button, Divider, Group, Paper, Text } from '@mantine/core';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import SoluteFields from './SoluteFields';
-import IssueList from './IssueList';
 import { makeSolute, soluteDisplayName } from '../../dosage/solutes';
 
 /**
@@ -39,7 +38,6 @@ export default function SolutesSection({
   onSolutesChange,
   scheduleOutputFeedback,
   canAddSolutes = true,
-  addBlockedReason,
   footer,
 }) {
   const many = solutes.length > 1;
@@ -85,12 +83,16 @@ export default function SolutesSection({
             solute={solute}
             setFieldValue={setSoluteField(index)}
             scheduleOutputFeedback={scheduleOutputFeedback}
-            showName={many}
           />
         </div>
       ))}
 
-      {canAddSolutes ? (
+      {/*
+        Where a solution can only ever hold one substance, the button is simply
+        absent. Offering it and then explaining the refusal would be two steps
+        to reach the same place as none.
+      */}
+      {canAddSolutes && (
         <Button
           variant="subtle"
           size="compact-sm"
@@ -100,10 +102,6 @@ export default function SolutesSection({
         >
           Add solute
         </Button>
-      ) : (
-        addBlockedReason && (
-          <IssueList issues={[{ level: 'warning', message: addBlockedReason }]} />
-        )
       )}
 
       {footer}
