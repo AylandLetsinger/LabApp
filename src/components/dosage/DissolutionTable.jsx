@@ -3,10 +3,10 @@ import { IconCheck } from '@tabler/icons-react';
 import IssueList from './IssueList';
 import {
   computeVehicleVolumes,
-  primarySolventVolumeMl,
-  rowConcentrationMgPerMl,
+  rowRequiredVolumeMl,
 } from '../../dosage/computeVehicleVolumes';
 import { roundTo } from '../../dosage/numberUtils';
+import { soluteDisplayName } from '../../dosage/solutes';
 import { getVehicle } from '../../dosage/vehicles';
 import { errorColor } from '../../theme';
 
@@ -30,13 +30,14 @@ function formatVolume(ml) {
 export default function DissolutionTable({
   outputFeedback,
   totalVolumeMl,
-  soluteRequiredMg,
+  solutes,
+  soluteBatchMg,
+  soluteDosesMg,
   vehicleRows,
   pipetteMinUl,
   stepLabel,
   footer,
-  molecularWeight,
-  soluteLabel = 'of your solute',
+  soluteLabel,
   soluteIsVolume = false,
   soluteVolumeMl,
 }) {
@@ -46,22 +47,30 @@ export default function DissolutionTable({
   });
   const volumes = split?.rows ?? null;
 
-  const ready = volumes !== null && soluteRequiredMg !== undefined && Number.isFinite(soluteRequiredMg);
+  const ready =
+    volumes !== null && soluteBatchMg.every((mg) => mg !== undefined && Number.isFinite(mg));
+
+  // The batch is the per-dose vehicle scaled by the same factor for every
+  // solute, so a floor cleared per dose is cleared for the batch. Checking it
+  // at batch scale is what makes the message name millilitres you can measure.
+  const batchScale =
+    soluteDosesMg.length > 0 && soluteDosesMg[0] > 0 ? soluteBatchMg[0] / soluteDosesMg[0] : 1;
 
   const issues = [];
   if (volumes) {
     vehicleRows.forEach((row, i) => {
       if (row.isStock) return;
-      const minMl = primarySolventVolumeMl(soluteRequiredMg, rowConcentrationMgPerMl(row, molecularWeight));
-      if (minMl === undefined) return;
+      const perDoseMl = rowRequiredVolumeMl(row, solutes, soluteDosesMg);
+      if (perDoseMl === undefined) return;
+      const minMl = perDoseMl * batchScale;
       if (volumes[i].exactMl < minMl - 1e-12) {
         const vehicle = getVehicle(row.vehicleId);
         issues.push({
           level: 'error',
           message:
-            `${vehicle?.label ?? 'Solvent'} gets ${roundTo(volumes[i].exactMl, 4)} mL but dissolving ` +
-            `${roundTo(soluteRequiredMg, 4)} mg needs at least ${roundTo(minMl, 4)} mL. Raise its ` +
-            'ratio, or make a larger batch.',
+            `${vehicle?.label ?? 'Solvent'} gets ${roundTo(volumes[i].exactMl, 4)} mL but this batch ` +
+            `needs at least ${roundTo(minMl, 4)} mL of it to dissolve. Raise its ratio, or make a ` +
+            'larger batch.',
         });
       }
     });
@@ -106,37 +115,68 @@ export default function DissolutionTable({
       </Group>
       <Table verticalSpacing="xs" horizontalSpacing="sm" withTableBorder withColumnBorders>
         <Table.Tbody>
-          <Table.Tr>
-            <Table.Td miw={90}>
-              <Text size="sm" fw={500}>
-                {soluteIsVolume ? 'Take' : 'Dissolve'}
-              </Text>
-            </Table.Td>
-            <Table.Td style={cellValueBg} ta="right" maw={160}>
-              <Text size="sm" fw={500} ff="monospace">
-                {soluteIsVolume
-                  ? (Number.isFinite(soluteVolumeMl) ? roundTo(soluteVolumeMl, 4) : '—')
-                  : (ready ? roundTo(soluteRequiredMg, 4) : '—')}
-              </Text>
-            </Table.Td>
-            <Table.Td style={cellUnitBg} miw={56}>
-              <Text size="sm" fw={500}>
-                {soluteIsVolume ? 'mL' : 'mg'}
-              </Text>
-            </Table.Td>
-            <Table.Td>
-              <Text size="sm" fw={500}>
-                {soluteLabel}
-              </Text>
-            </Table.Td>
-          </Table.Tr>
+          {soluteIsVolume ? (
+            <Table.Tr>
+              <Table.Td miw={90}>
+                <Text size="sm" fw={500}>
+                  Take
+                </Text>
+              </Table.Td>
+              <Table.Td style={cellValueBg} ta="right" maw={160}>
+                <Text size="sm" fw={500} ff="monospace">
+                  {Number.isFinite(soluteVolumeMl) ? roundTo(soluteVolumeMl, 4) : '—'}
+                </Text>
+              </Table.Td>
+              <Table.Td style={cellUnitBg} miw={56}>
+                <Text size="sm" fw={500}>
+                  mL
+                </Text>
+              </Table.Td>
+              <Table.Td>
+                <Text size="sm" fw={500}>
+                  {soluteLabel ?? 'of stock solution'}
+                </Text>
+              </Table.Td>
+            </Table.Tr>
+          ) : (
+            // One line per substance. A combined mass would be useless at the
+            // balance, which is the only place this row gets read.
+            solutes.map((solute, i) => (
+              <Table.Tr key={solute.id}>
+                <Table.Td miw={90}>
+                  <Text size="sm" fw={500}>
+                    {i === 0 ? 'Dissolve' : 'and'}
+                  </Text>
+                </Table.Td>
+                <Table.Td style={cellValueBg} ta="right" maw={160}>
+                  <Text size="sm" fw={500} ff="monospace">
+                    {ready ? roundTo(soluteBatchMg[i], 4) : '—'}
+                  </Text>
+                </Table.Td>
+                <Table.Td style={cellUnitBg} miw={56}>
+                  <Text size="sm" fw={500}>
+                    mg
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" fw={500}>
+                    {solutes.length > 1
+                      ? `of ${soluteDisplayName(solute, i)}`
+                      : (soluteLabel ?? 'of your solute')}
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
+            ))
+          )}
 
           {vehicleRows.map((row, index) => {
             if (row.isStock) return null;
             const vehicle = getVehicle(row.vehicleId);
-            const minForBatchMl = ready && !row.isStock
-              ? primarySolventVolumeMl(soluteRequiredMg, rowConcentrationMgPerMl(row, molecularWeight))
-              : undefined;
+            const perDoseMl = rowRequiredVolumeMl(row, solutes, soluteDosesMg);
+            const minForBatchMl =
+              ready && !row.isStock && perDoseMl !== undefined
+                ? perDoseMl * batchScale
+                : undefined;
             const volume = ready ? formatVolume(volumes[index].displayMl) : null;
             const flagged = volumes?.[index]?.belowPipetteMinimum;
             return (

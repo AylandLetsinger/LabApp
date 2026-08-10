@@ -30,6 +30,7 @@ export default function RecipeNarrative({
   molecularWeight,
   units,
   setUnit,
+  perSoluteFooter,
 }) {
   const ready =
     Number.isFinite(volumePerDoseMl) &&
@@ -105,6 +106,7 @@ export default function RecipeNarrative({
         A <strong>{roundTo(doseRateMgPerKg, 4)} mg/kg</strong> dose on average.
       </Text>
     )}
+    {perSoluteFooter}
     </>
   );
 }
