@@ -28,6 +28,12 @@ export default function IntraperitonealDosageForm() {
       doseUnit: 'mg',
       bodyWeightAmount: '',
       bodyWeightUnit: 'kg',
+      molecularWeight: '',
+      doseVolume: '',
+      doseVolumeUnit: 'ul',
+      doseConcentrationValue: '',
+      doseConcentrationMassUnit: 'mg',
+      doseConcentrationVolumeUnit: 'ml',
       volPerInjMl: '',
       volPerInjWeight: '',
       volPerInjWeightUnit: 'g',
@@ -65,10 +71,18 @@ export default function IntraperitonealDosageForm() {
         avgBodyWeightUnit: v.avgBodyWeightUnit,
         dosePerSubject: v.dosePerSubject,
         dosePerSubjectUnit: v.dosePerSubjectUnit,
+        molecularWeightGPerMol: v.molecularWeight,
+        doseVolume: v.doseVolume,
+        doseVolumeUnit: v.doseVolumeUnit,
+        doseConcentrationValue: v.doseConcentrationValue,
+        doseConcentrationMassUnit: v.doseConcentrationMassUnit,
+        doseConcentrationVolumeUnit: v.doseConcentrationVolumeUnit,
       }),
     [
       v.dosageType, v.doseAmount, v.doseUnit, v.bodyWeightAmount, v.bodyWeightUnit,
       v.avgBodyWeight, v.avgBodyWeightUnit, v.dosePerSubject, v.dosePerSubjectUnit,
+      v.molecularWeight, v.doseVolume, v.doseVolumeUnit, v.doseConcentrationValue,
+      v.doseConcentrationMassUnit, v.doseConcentrationVolumeUnit,
     ],
   );
 
@@ -152,6 +166,12 @@ export default function IntraperitonealDosageForm() {
         doseUnit={v.doseUnit}
         bodyWeightAmount={v.bodyWeightAmount}
         bodyWeightUnit={v.bodyWeightUnit}
+        molecularWeight={v.molecularWeight}
+        doseVolume={v.doseVolume}
+        doseVolumeUnit={v.doseVolumeUnit}
+        doseConcentrationValue={v.doseConcentrationValue}
+        doseConcentrationMassUnit={v.doseConcentrationMassUnit}
+        doseConcentrationVolumeUnit={v.doseConcentrationVolumeUnit}
         setFieldValue={form.setFieldValue}
         scheduleOutputFeedback={scheduleOutputFeedback}
       />

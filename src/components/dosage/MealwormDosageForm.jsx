@@ -50,6 +50,11 @@ export default function MealwormDosageForm() {
       bodyWeightAmount: '',
       bodyWeightUnit: 'kg',
       molecularWeight: '',
+      doseVolume: '',
+      doseVolumeUnit: 'ul',
+      doseConcentrationValue: '',
+      doseConcentrationMassUnit: 'mg',
+      doseConcentrationVolumeUnit: 'ml',
       wormCapacityUl: 100,
       loadVolumeUl: '',
       stockAvailableMl: '',
@@ -133,11 +138,17 @@ export default function MealwormDosageForm() {
         dosePerSubject: v.dosePerSubject,
         dosePerSubjectUnit: v.dosePerSubjectUnit,
         molecularWeightGPerMol: v.molecularWeight,
+        doseVolume: v.doseVolume,
+        doseVolumeUnit: v.doseVolumeUnit,
+        doseConcentrationValue: v.doseConcentrationValue,
+        doseConcentrationMassUnit: v.doseConcentrationMassUnit,
+        doseConcentrationVolumeUnit: v.doseConcentrationVolumeUnit,
       }),
     [
       v.dosageType, v.doseAmount, v.doseUnit, v.bodyWeightAmount, v.bodyWeightUnit,
       effectiveAvgBodyWeight, v.avgBodyWeightUnit, v.dosePerSubject, v.dosePerSubjectUnit,
-      v.molecularWeight,
+      v.molecularWeight, v.doseVolume, v.doseVolumeUnit, v.doseConcentrationValue,
+      v.doseConcentrationMassUnit, v.doseConcentrationVolumeUnit,
     ],
   );
 
@@ -246,6 +257,11 @@ export default function MealwormDosageForm() {
         bodyWeightAmount={v.bodyWeightAmount}
         bodyWeightUnit={v.bodyWeightUnit}
         molecularWeight={v.molecularWeight}
+        doseVolume={v.doseVolume}
+        doseVolumeUnit={v.doseVolumeUnit}
+        doseConcentrationValue={v.doseConcentrationValue}
+        doseConcentrationMassUnit={v.doseConcentrationMassUnit}
+        doseConcentrationVolumeUnit={v.doseConcentrationVolumeUnit}
         setFieldValue={form.setFieldValue}
         scheduleOutputFeedback={scheduleOutputFeedback}
         footer={<PreparationModeControl value={v.preparation} onChange={changePreparation} />}
