@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { computeDosePerAvgSubjectMg } from '../../dosage/computeDosePerAvgSubject';
 import { computeDoseRateMgPerG } from '../../dosage/computeMealwormOutputs';
 import { computeSoluteRequiredMg } from '../../dosage/computeSolutionOutputs';
 import {
@@ -14,8 +15,8 @@ import { volumeToMl, weightToKg } from '../../dosage/unitConversions';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import SolutesSection from './SolutesSection';
 import SoluteBreakdown from './SoluteBreakdown';
-import MealwormParametersSection from './MealwormParametersSection';
-import MealwormDosingTable from './MealwormDosingTable';
+import CarrierParametersSection from './CarrierParametersSection';
+import CarrierDosingTable from './CarrierDosingTable';
 import RecipeNarrative from './RecipeNarrative';
 import PreparationModeControl from './PreparationModeControl';
 import { PREPARATION_MODES } from '../../dosage/preparationModes';
@@ -39,11 +40,16 @@ const STOCK_ROWS = [
   { vehicleId: 'saline', parts: '9' },
 ];
 
-export default function MealwormDosageForm() {
+export default function CarrierDosageForm({ carrier }) {
   const form = useForm({
     initialValues: {
       preparation: PREPARATION_MODES.none,
-      wormCapacityUl: 100,
+      capacityUl: carrier.defaultCapacityUl,
+      carrierName: '',
+      carrierAmount: '',
+      carrierAmountUnit: 'mg',
+      carrierAmountMode: 'by-body-weight',
+      carrierRefBodyWeight: 1,
       loadVolumeUl: '',
       stockAvailableMl: '',
       workingConcentrationValue: '',
@@ -57,9 +63,11 @@ export default function MealwormDosageForm() {
       subjectCount: '',
       totalDoses: '',
       wasteBufferPct: 0,
-      // Two tools, two floors: the insulin syringe loads the worm, the pipette
-      // makes up the vehicle.
-      syringeMinUl: 25,
+      // Two tools, two floors where there are two: the insulin syringe loads
+      // the worm, the pipette makes up the vehicle. Where the dose is pipetted
+      // straight onto the carrier there is only the pipette, and the syringe
+      // figure is never read.
+      syringeMinUl: carrier.defaultSyringeMinUl ?? 0,
       pipetteMinUl: 2,
       minBodyWeightG: 18,
       maxBodyWeightG: 35,
@@ -108,6 +116,49 @@ export default function MealwormDosageForm() {
   const isWorking = v.preparation === PREPARATION_MODES.working;
   const buildsAVehicle = !isWorking;
 
+  /**
+   * The smallest dose volume that can actually be delivered.
+   *
+   * A syringe loads a worm; a pipette loads a lump of peanut butter. Whichever
+   * instrument touches the carrier sets the floor, and for the pipette it is
+   * the same figure that governs mixing the vehicle — one number, read twice,
+   * rather than two fields the user has to keep in step.
+   */
+  const loadFloorUl = carrier.usesSyringe
+    ? toOptionalNumber(v.syringeMinUl) ?? 0
+    : toOptionalNumber(v.pipetteMinUl) ?? 0;
+
+  // With no syringe the pipette delivers the dose, so its minimum matters even
+  // in working mode, where there is no vehicle left to mix.
+  const showPipetteMinimum = buildsAVehicle || !carrier.usesSyringe;
+
+  /**
+   * How much carrier one subject gets, in milligrams.
+   *
+   * Structurally identical to a dose — a flat mass, or a mass per unit of body
+   * mass — so it is computed by the same function rather than by a second
+   * implementation that could drift from it.
+   */
+  const carrierAmountPerSubjectMg = useMemo(() => {
+    if (!carrier.weighed) return undefined;
+    return computeDosePerAvgSubjectMg({
+      dosageType: v.carrierAmountMode,
+      doseAmount: v.carrierAmount,
+      doseUnit: v.carrierAmountUnit,
+      refBodyWeight: v.carrierRefBodyWeight,
+      // The carrier rate is written in the same unit the body mass is entered
+      // in, so "4 mg per 1 g" cannot silently become "per 1 kg".
+      refBodyWeightUnit: v.avgBodyWeightUnit,
+      avgBodyWeight: effectiveAvgBodyWeight,
+      avgBodyWeightUnit: v.avgBodyWeightUnit,
+      dosePerSubject: v.carrierAmount,
+      dosePerSubjectUnit: v.carrierAmountUnit,
+    });
+  }, [
+    carrier.weighed, v.carrierAmountMode, v.carrierAmount, v.carrierAmountUnit,
+    v.carrierRefBodyWeight, v.avgBodyWeightUnit, effectiveAvgBodyWeight,
+  ]);
+
   /** Switching what you start with changes what the table means, so reset it. */
   const changePreparation = (next) => {
     form.setFieldValue('preparation', next);
@@ -148,7 +199,7 @@ export default function MealwormDosageForm() {
     vehicleRows,
     solutes,
     soluteDosesMg,
-    Number(v.syringeMinUl),
+    loadFloorUl,
   );
 
   // Keep the dose volume a REAL value in the field rather than a placeholder,
@@ -170,6 +221,12 @@ export default function MealwormDosageForm() {
     if (loadMl === undefined || doses === undefined || doses < 0) return undefined;
     return loadMl * doses * (1 + waste / 100);
   }, [effectiveLoadUl, v.totalDoses, v.wasteBufferPct]);
+
+  /** Carrier for the whole batch, on the same spares allowance as the solution. */
+  const totalCarrierMg = useMemo(
+    () => computeSoluteRequiredMg(carrierAmountPerSubjectMg, v.totalDoses, v.wasteBufferPct),
+    [carrierAmountPerSubjectMg, v.totalDoses, v.wasteBufferPct],
+  );
 
   /** How much of each substance the whole batch needs, in order. */
   const soluteBatchMg = useMemo(
@@ -240,8 +297,16 @@ export default function MealwormDosageForm() {
         footer={<PreparationModeControl value={v.preparation} onChange={changePreparation} />}
       />
 
-      <MealwormParametersSection
-        wormCapacityUl={v.wormCapacityUl}
+      <CarrierParametersSection
+        carrier={carrier}
+        carrierName={v.carrierName}
+        carrierAmount={v.carrierAmount}
+        carrierAmountUnit={v.carrierAmountUnit}
+        carrierAmountMode={v.carrierAmountMode}
+        carrierRefBodyWeight={v.carrierRefBodyWeight}
+        carrierAmountPerSubjectMg={carrierAmountPerSubjectMg}
+        totalCarrierMg={totalCarrierMg}
+        capacityUl={v.capacityUl}
         bodyMassMode={v.bodyMassMode}
         avgBodyWeight={v.avgBodyWeight}
         avgBodyWeightUnit={v.avgBodyWeightUnit}
@@ -255,7 +320,7 @@ export default function MealwormDosageForm() {
         setFieldValue={form.setFieldValue}
         scheduleOutputFeedback={scheduleOutputFeedback}
         issues={parameterIssues}
-        showPipetteMinimum={buildsAVehicle}
+        showPipetteMinimum={showPipetteMinimum}
       />
 
       {isWorking ? (
@@ -270,8 +335,8 @@ export default function MealwormDosageForm() {
           dosePerSubjectMg={dosePerSubjectMg}
           totalDoses={v.totalDoses}
           wasteBufferPct={v.wasteBufferPct}
-          syringeMinUl={toOptionalNumber(v.syringeMinUl) ?? 0}
-          maxVolumeUl={toOptionalNumber(v.wormCapacityUl)}
+          syringeMinUl={loadFloorUl}
+          maxVolumeUl={toOptionalNumber(v.capacityUl)}
           setFieldValue={form.setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}
         />
@@ -286,11 +351,11 @@ export default function MealwormDosageForm() {
           soluteDosesMg={soluteDosesMg}
           bodyWeightKg={weightToKg(effectiveAvgBodyWeight, v.avgBodyWeightUnit)}
           pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
-          syringeMinUl={toOptionalNumber(v.syringeMinUl) ?? 0}
-          maxVolumeUl={toOptionalNumber(v.wormCapacityUl)}
+          syringeMinUl={loadFloorUl}
+          maxVolumeUl={toOptionalNumber(v.capacityUl)}
           volumePerDoseUl={v.loadVolumeUl}
           onVolumePerDoseChange={(value) => form.setFieldValue('loadVolumeUl', value)}
-          volumeLabel="Volume loaded per worm"
+          volumeLabel={carrier.volumeLabel}
           stockAvailableMl={isStock ? v.stockAvailableMl : undefined}
           onStockAvailableChange={
             isStock ? (value) => form.setFieldValue('stockAvailableMl', value) : undefined
@@ -347,13 +412,21 @@ export default function MealwormDosageForm() {
       )}
 
       {soleSolute?.dosageType === 'by-body-weight' && (
-        <MealwormDosingTable
+        <CarrierDosingTable
           doseRateMgPerG={doseRateMgPerG}
           stockConcentrationMgPerMl={concentrationMgPerMl}
           minBodyWeightG={v.minBodyWeightG}
           maxBodyWeightG={v.maxBodyWeightG}
           stepG={v.stepG}
-          wormCapacityUl={v.wormCapacityUl}
+          carrier={carrier}
+        carrierName={v.carrierName}
+        carrierAmount={v.carrierAmount}
+        carrierAmountUnit={v.carrierAmountUnit}
+        carrierAmountMode={v.carrierAmountMode}
+        carrierRefBodyWeight={v.carrierRefBodyWeight}
+        carrierAmountPerSubjectMg={carrierAmountPerSubjectMg}
+        totalCarrierMg={totalCarrierMg}
+        capacityUl={v.capacityUl}
           syringeMinUl={v.syringeMinUl}
           setFieldValue={form.setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}
@@ -361,7 +434,7 @@ export default function MealwormDosageForm() {
         />
       )}
 
-      <PrintActions title="mealworm oral dosing calculator" />
+      <PrintActions title={carrier.printTitle} />
     </Stack>
   );
 }

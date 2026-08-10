@@ -1,7 +1,17 @@
-import { Group, NumberInput, Paper, SegmentedControl, Slider, Stack, Text } from '@mantine/core';
-import { MOUSE_WEIGHT_HINT, WEIGHT_UNITS } from '../../constants/doseUnits';
+import {
+  Group,
+  NumberInput,
+  Paper,
+  SegmentedControl,
+  Slider,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
+import { DOSE_UNITS, MOUSE_WEIGHT_HINT, WEIGHT_UNITS } from '../../constants/doseUnits';
 import LabSelect from '../LabSelect';
 import IssueList from './IssueList';
+import { roundTo } from '../../dosage/numberUtils';
 import { inputFieldColor, navActiveColor } from '../../theme';
 
 const inputBlue = {
@@ -9,20 +19,24 @@ const inputBlue = {
   color: inputFieldColor,
 };
 
-const CAPACITY_MARKS = [
-  { value: 25, label: '25' },
-  { value: 125, label: '125 (small)' },
-  { value: 250, label: '250 (large)' },
-  { value: 375, label: '375' },
-];
-
 /**
- * Mealworm loading parameters — the physical constraints of the session,
- * independent of whether the drug starts as powder, stock, or a finished
- * solution.
+ * Loading parameters — the physical constraints of the session, independent of
+ * whether the drug starts as powder, stock, or a finished solution.
+ *
+ * What the carrier is changes the labels, the capacity range, and whether a
+ * syringe is involved at all. It does not change anything below the capacity
+ * control, which is why all of that is shared rather than copied.
  */
-export default function MealwormParametersSection({
-  wormCapacityUl,
+export default function CarrierParametersSection({
+  carrier,
+  carrierName,
+  carrierAmount,
+  carrierAmountUnit,
+  carrierAmountMode,
+  carrierRefBodyWeight,
+  carrierAmountPerSubjectMg,
+  totalCarrierMg,
+  capacityUl,
   bodyMassMode,
   avgBodyWeight,
   avgBodyWeightUnit,
@@ -49,22 +63,113 @@ export default function MealwormParametersSection({
       ? Math.floor(plannedDoses * (1 + wastePct / 100)) - plannedDoses
       : undefined;
 
+  // Once the carrier has a name, use it: "loading the cookie dough" beats
+  // "loading the portion" on a page someone is following at the bench.
+  const named = (carrierName ?? '').trim();
+  const carrierNoun = named || carrier.noun;
+  const substanceNoun = named || carrier.substanceNoun || carrier.noun;
+
   return (
     <Paper p="md" radius="md" withBorder>
       <Text fw={600} mb="sm">
         Step 2 — Dosing Parameters
       </Text>
       <Stack gap="md">
+        {carrier.namable && (
+          <TextInput
+            label="What is the solid?"
+            placeholder="optional, e.g. transgenic cookie dough"
+            value={carrierName}
+            onChange={(event) => setFieldValue('carrierName', event.currentTarget.value)}
+            onBlur={scheduleOutputFeedback}
+            w={320}
+            {...inputBlue}
+          />
+        )}
+
+        {/*
+          How much carrier each subject gets. Separate from the dose volume and
+          from the drug: it is the vehicle for the vehicle, and labs specify it
+          by mass ("4 mg of dough per g of mouse") rather than by volume.
+        */}
+        {carrier.weighed && (
+          <div>
+            <SegmentedControl
+              size="xs"
+              color={navActiveColor}
+              value={carrierAmountMode}
+              onChange={(value) => {
+                setFieldValue('carrierAmountMode', value);
+                scheduleOutputFeedback();
+              }}
+              data={[
+                { value: 'by-body-weight', label: 'Per body mass' },
+                { value: 'per-subject', label: 'Flat per subject' },
+              ]}
+              mb={8}
+            />
+            <Group align="flex-end" wrap="wrap" gap="sm">
+              <NumberInput
+                label={`How much ${substanceNoun} per subject?`}
+                placeholder="e.g. 4"
+                min={0}
+                decimalScale={6}
+                value={carrierAmount}
+                onChange={(value) => setFieldValue('carrierAmount', value)}
+                onBlur={scheduleOutputFeedback}
+                w={150}
+                {...inputBlue}
+              />
+              <LabSelect
+                label="Unit"
+                data={DOSE_UNITS}
+                value={carrierAmountUnit}
+                onChange={(value) => setFieldValue('carrierAmountUnit', value ?? 'mg')}
+                onBlur={scheduleOutputFeedback}
+                w={100}
+              />
+              {carrierAmountMode === 'by-body-weight' && (
+                <>
+                  <Text pb="sm" size="sm">
+                    per
+                  </Text>
+                  <NumberInput
+                    label="Body mass"
+                    placeholder="e.g. 1"
+                    min={0}
+                    decimalScale={6}
+                    value={carrierRefBodyWeight}
+                    onChange={(value) => setFieldValue('carrierRefBodyWeight', value)}
+                    onBlur={scheduleOutputFeedback}
+                    w={130}
+                    {...inputBlue}
+                  />
+                  <Text pb="sm" size="sm">
+                    {avgBodyWeightUnit}
+                  </Text>
+                </>
+              )}
+              {carrierAmountPerSubjectMg !== undefined && (
+                <Text pb="sm" size="sm" c="dimmed">
+                  &rarr; <strong>{roundTo(carrierAmountPerSubjectMg, 4)} mg</strong> each
+                  {totalCarrierMg !== undefined &&
+                    `, ${roundTo(totalCarrierMg, 4)} mg for the batch`}
+                </Text>
+              )}
+            </Group>
+          </div>
+        )}
+
         <div>
           <Group align="flex-end" wrap="wrap" gap="sm" mb={4}>
             <NumberInput
-              label="Mealworm loading capacity"
-              min={1}
-              decimalScale={1}
-              value={wormCapacityUl}
-              onChange={(value) => setFieldValue('wormCapacityUl', value)}
+              label={carrier.capacityLabel}
+              min={0}
+              decimalScale={3}
+              value={capacityUl}
+              onChange={(value) => setFieldValue('capacityUl', value)}
               onBlur={scheduleOutputFeedback}
-              w={200}
+              w={260}
               {...inputBlue}
             />
             <Text pb="sm" size="sm">
@@ -75,49 +180,62 @@ export default function MealwormParametersSection({
               above is there so an exact value can be typed and cannot be
               nudged by accident. Both edit the same number. */}
           <Slider
-            min={25}
-            max={400}
-            step={25}
-            value={Number(wormCapacityUl) || 0}
-            onChange={(value) => setFieldValue('wormCapacityUl', value)}
+            min={carrier.capacitySlider.min}
+            max={carrier.capacitySlider.max}
+            step={carrier.capacitySlider.step}
+            value={Number(capacityUl) || 0}
+            onChange={(value) => setFieldValue('capacityUl', value)}
             onChangeEnd={scheduleOutputFeedback}
-            marks={CAPACITY_MARKS}
+            marks={carrier.capacitySlider.marks}
             color={navActiveColor}
             mb="xl"
-            aria-label="Mealworm loading capacity in microlitres"
+            aria-label={`${carrier.capacityLabel} in microlitres`}
           />
           <Text size="xs" c="dimmed" className="no-print">
-            * the most liquid a worm absorbs before it leaks
+            {carrier.capacityHint}
           </Text>
         </div>
 
         <div>
           <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Syringe minimum (loading the worm)"
-              placeholder="e.g. 25"
-              min={0}
-              decimalScale={3}
-              value={syringeMinUl}
-              onChange={(value) => setFieldValue('syringeMinUl', value)}
-              onBlur={scheduleOutputFeedback}
-              w={240}
-              {...inputBlue}
-            />
-            <Text pb="sm" size="sm">
-              µL
-            </Text>
+            {/*
+              Two instruments, two floors — but only where there are two. With
+              no syringe the pipette both mixes the vehicle and delivers the
+              dose, so one field says so rather than two saying the same number.
+            */}
+            {carrier.usesSyringe && (
+              <>
+                <NumberInput
+                  label={`Syringe minimum (loading the ${carrierNoun})`}
+                  placeholder="e.g. 25"
+                  min={0}
+                  decimalScale={3}
+                  value={syringeMinUl}
+                  onChange={(value) => setFieldValue('syringeMinUl', value)}
+                  onBlur={scheduleOutputFeedback}
+                  w={240}
+                  {...inputBlue}
+                />
+                <Text pb="sm" size="sm">
+                  µL
+                </Text>
+              </>
+            )}
             {showPipetteMinimum && (
               <>
                 <NumberInput
-                  label="Pipette minimum (mixing the vehicle)"
+                  label={
+                    carrier.usesSyringe
+                      ? 'Pipette minimum (mixing the vehicle)'
+                      : 'Pipette minimum (mixing and loading)'
+                  }
                   placeholder="e.g. 2"
                   min={0}
                   decimalScale={3}
                   value={pipetteMinUl}
                   onChange={(value) => setFieldValue('pipetteMinUl', value)}
                   onBlur={scheduleOutputFeedback}
-                  w={240}
+                  w={260}
                   {...inputBlue}
                 />
                 <Text pb="sm" size="sm">

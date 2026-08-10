@@ -11,22 +11,24 @@ const inputBlue = {
 
 /**
  * Bench reference: the volume to load for each body weight, at one stock
- * concentration. Print it and keep it with the worms.
+ * concentration. Print it and keep it with the carriers.
  *
  * Only meaningful when dose scales with body mass — at a fixed absolute dose
  * every animal gets the same volume and the table would be a single number.
  */
-export default function MealwormDosingTable({
+export default function CarrierDosingTable({
+  carrier,
   doseRateMgPerG,
   stockConcentrationMgPerMl,
   minBodyWeightG,
   maxBodyWeightG,
   stepG,
-  wormCapacityUl,
-  syringeMinUl,
+  capacityUl,
+  loadFloorUl,
   setFieldValue,
   scheduleOutputFeedback,
   stepLabel = 'Step 5 — Dosing table by body mass',
+  carrierName,
 }) {
   const rows = computeMealwormDosingTable({
     doseRateMgPerG,
@@ -34,9 +36,12 @@ export default function MealwormDosingTable({
     minBodyWeightG,
     maxBodyWeightG,
     stepG,
-    wormCapacityUl,
-    syringeMinUl,
+    wormCapacityUl: capacityUl,
+    syringeMinUl: loadFloorUl,
   });
+
+  const carrierNoun = (carrierName ?? '').trim() || carrier.noun;
+  const floorWord = carrier.usesSyringe ? 'syringe' : 'pipette';
 
   const issues = [];
   if (rows) {
@@ -44,16 +49,16 @@ export default function MealwormDosingTable({
       issues.push({
         level: 'error',
         message:
-          'Some body weights need more volume than the worm can hold. Use a more concentrated ' +
-          'solution, or a larger worm.',
+          `Some body weights need more volume than the ${carrierNoun} can hold. Use a more ` +
+          'concentrated solution, or a larger portion.',
       });
     }
     if (rows.some((r) => r.belowSyringeMinimum)) {
       issues.push({
         level: 'error',
         message:
-          'Some body weights need less volume than your syringe can deliver. Use a more dilute ' +
-          'solution, so each dose is a larger volume.',
+          `Some body weights need less volume than your ${floorWord} can deliver. Use a more ` +
+          'dilute solution, so each dose is a larger volume.',
       });
     }
   }
@@ -64,8 +69,8 @@ export default function MealwormDosingTable({
         {stepLabel}
       </Text>
       <Text size="sm" c="dimmed" mb="md" className="no-print">
-        Volume to load into one worm for each body weight, at your stock concentration. Rows outside
-        your worm capacity or syringe range are flagged in red.
+        Volume to load into one {carrierNoun} for each body weight, at your stock concentration.
+        Rows outside your capacity or {floorWord} range are flagged in red.
       </Text>
 
       <Group align="flex-end" wrap="wrap" gap="sm" mb="md">
@@ -115,7 +120,7 @@ export default function MealwormDosingTable({
             <Table.Tr>
               <Table.Th ta="left">Body mass</Table.Th>
               <Table.Th ta="left">Dose</Table.Th>
-              <Table.Th ta="left">Load into worm</Table.Th>
+              <Table.Th ta="left">{carrier.loadColumnLabel}</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -137,7 +142,7 @@ export default function MealwormDosingTable({
                     <Text size="sm" ff="monospace" fw={600} c={flagged ? errorColor : undefined}>
                       {roundTo(row.loadVolumeUl, 2)} µL
                       {row.overCapacity ? ' — over capacity' : ''}
-                      {row.belowSyringeMinimum ? ' — below syringe' : ''}
+                      {row.belowSyringeMinimum ? ` — below ${floorWord}` : ''}
                     </Text>
                   </Table.Td>
                 </Table.Tr>

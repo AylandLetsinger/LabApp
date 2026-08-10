@@ -1,7 +1,8 @@
 import { Container, Text, Title } from '@mantine/core';
 import { Navigate, useParams } from 'react-router-dom';
 import IntraperitonealDosageForm from '../components/dosage/IntraperitonealDosageForm';
-import MealwormDosageForm from '../components/dosage/MealwormDosageForm';
+import CarrierDosageForm from '../components/dosage/CarrierDosageForm';
+import { CARRIERS } from '../dosage/carriers';
 import { getDosageMethodLabel } from '../dosageDeliveryMethods';
 
 /** Delivery methods that have a working calculator, and their intro copy. */
@@ -12,9 +13,16 @@ const IMPLEMENTED_METHODS = {
       'Works out dosage and preparation volumes for intraperitoneal injection. Blue fields are your inputs; grey fields are calculated.',
   },
   mealworm: {
-    Form: MealwormDosageForm,
+    Form: CarrierDosageForm,
+    props: { carrier: CARRIERS.mealworm },
     intro:
       'Works out what to load into a mealworm for oral delivery. One worm per mouse, bounded by how much liquid the worm absorbs before it leaks.',
+  },
+  solid: {
+    Form: CarrierDosageForm,
+    props: { carrier: CARRIERS.solid },
+    intro:
+      'Works out what to load into an edible solid — peanut butter, gelatin, jelly, cookie dough. No syringe, so the pipette sets the smallest dose, and the ceiling is whatever your lab has decided a portion carries.',
   },
 };
 
@@ -41,7 +49,7 @@ export default function Dosage() {
       )}
 
       {Form ? (
-        <Form />
+        <Form {...(implemented.props ?? {})} />
       ) : method ? (
         <Text c="dimmed">Dosage workflow and inputs for this delivery method will go here.</Text>
       ) : null}
