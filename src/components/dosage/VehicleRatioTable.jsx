@@ -150,26 +150,31 @@ export default function VehicleRatioTable({
         bodyWeightKg,
       });
       const verdict = classifyBurden(burden, range);
-      const routeNote = range.exactRoute ? '' : ' (from another route — none published for this one)';
+      const routeWord = route === 'ip' ? 'intraperitoneal' : 'oral';
 
+      // Whole sentences, and only figures for THIS route. Neither of these is
+      // an impossibility: the formulation mixes fine, it is simply beyond
+      // published experience, which is the user's judgement to make.
       if (verdict === 'above-highest') {
-        // Not an impossibility. The formulation is perfectly makeable; it is
-        // simply outside what anyone has published, which is a judgement for
-        // the user and their protocol rather than a verdict from a table.
+        const ref = range.highest;
         issues.push({
           level: 'warning',
           message:
-            `${vehicle.label}: ${roundTo(burden, 1)} mg/kg per subject, above everything published ` +
-            `for a mouse${routeNote}, the highest being ${roundTo(range.highest.mgPerKg, 1)} mg/kg. ` +
-            'Makeable, but unsupported by the data here — justify it in your protocol.',
+            `This vehicle delivers ${roundTo(burden, 1)} mg/kg of ${vehicle.label} per subject, ` +
+            `which is above every published ${routeWord} figure for mice. The highest reported as ` +
+            `tolerated is ${roundTo(ref.mgPerKg, 1)} mg/kg (${ref.observation.duration}, ` +
+            `${ref.observation.source}). It is makeable — justify it in your protocol.`,
         });
       } else if (verdict === 'above-lowest') {
+        const ref = range.lowest;
         issues.push({
           level: 'warning',
           message:
-            `${vehicle.label}: ${roundTo(burden, 1)} mg/kg per subject. Published tolerated figures` +
-            `${routeNote} span ${roundTo(range.lowest.mgPerKg, 1)}–${roundTo(range.highest.mgPerKg, 1)} mg/kg, ` +
-            `so this is inside the range but above the most conservative (${range.lowest.observation.duration}).`,
+            `This vehicle delivers ${roundTo(burden, 1)} mg/kg of ${vehicle.label} per subject, ` +
+            `which is above the most conservative published ${routeWord} figure for mice of ` +
+            `${roundTo(ref.mgPerKg, 1)} mg/kg (${ref.observation.duration}, ${ref.observation.source}). ` +
+            `Published ${routeWord} figures reach ${roundTo(range.highest.mgPerKg, 1)} mg/kg, so this ` +
+            'is within reported experience but worth checking against your dosing schedule.',
         });
       }
     });
@@ -248,9 +253,9 @@ export default function VehicleRatioTable({
 
               const published =
                 range === undefined
-                  ? 'No published tolerability figure for this solvent.'
-                  : `Published tolerated: ${roundTo(range.lowest.mgPerKg, 1)}–${roundTo(range.highest.mgPerKg, 1)} mg/kg` +
-                    (range.exactRoute ? '' : ' (from another route)');
+                  ? `No published ${route === 'ip' ? 'intraperitoneal' : 'oral'} tolerability figure for this solvent in mice. Other routes, if any, are listed below.`
+                  : `Published tolerated, ${route === 'ip' ? 'intraperitoneal' : 'oral'}: ` +
+                    `${roundTo(range.lowest.mgPerKg, 1)}–${roundTo(range.highest.mgPerKg, 1)} mg/kg`;
               const observations = relevantObservations(row.vehicleId, { route })
                 .slice(0, 4)
                 .map((o) => {

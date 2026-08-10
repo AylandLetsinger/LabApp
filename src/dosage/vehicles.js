@@ -347,40 +347,13 @@ export function relevantObservations(vehicleId, { species = 'mouse', route = 'ip
 }
 
 /**
- * The tightest tolerated burden published for this species and route — the
- * number a proposed formulation should be compared against.
- *
- * Falls back to the same species by a different route when nothing exists for
- * the route asked for, flagged as `exactRoute: false` so the caller can say so.
- * That fallback matters: there is no computable oral tolerability figure for
- * DMSO in mice, which is worth surfacing rather than showing a blank.
- */
-export function tightestToleratedBurdenMgPerKg(vehicleId, { species = 'mouse', route = 'ip' } = {}) {
-  const vehicle = getVehicle(vehicleId);
-  if (!vehicle) return undefined;
-
-  const pick = (filter) => {
-    const burdens = vehicle.observations
-      .filter((o) => o.verdict === 'tolerated' && filter(o))
-      .map((o) => ({ observation: o, mgPerKg: observationBurdenMgPerKg(o, vehicle.densityGPerMl) }))
-      .filter((x) => x.mgPerKg !== undefined);
-    if (burdens.length === 0) return undefined;
-    return burdens.reduce((lo, x) => (x.mgPerKg < lo.mgPerKg ? x : lo));
-  };
-
-  const exact = pick((o) => o.species === species && o.route === route);
-  if (exact) return { ...exact, exactRoute: true };
-
-  const anyRoute = pick((o) => o.species === species);
-  if (anyRoute) return { ...anyRoute, exactRoute: false };
-
-  return undefined;
-}
-
-/**
  * Every tolerated burden published for a species and route, ascending.
- * Falls back to the same species by another route when the route asked for
- * has nothing computable.
+ *
+ * Route-strict by design. An earlier version fell back to another route when
+ * the one asked for had nothing, which meant an oral formulation was being
+ * judged against intraperitoneal figures — two different exposures, and not
+ * comparable. Where a route has no published figure the honest answer is
+ * silence, and the tooltip still shows what exists for other routes, labelled.
  */
 export function toleratedBurdenRange(vehicleId, { species = 'mouse', route = 'ip' } = {}) {
   const vehicle = getVehicle(vehicleId);
@@ -396,15 +369,10 @@ export function toleratedBurdenRange(vehicleId, { species = 'mouse', route = 'ip
       .filter((x) => x.mgPerKg !== undefined)
       .sort((a, b) => a.mgPerKg - b.mgPerKg);
 
-  let entries = collect((o) => o.species === species && o.route === route);
-  let exactRoute = true;
-  if (entries.length === 0) {
-    entries = collect((o) => o.species === species);
-    exactRoute = false;
-  }
+  const entries = collect((o) => o.species === species && o.route === route);
   if (entries.length === 0) return undefined;
 
-  return { lowest: entries[0], highest: entries[entries.length - 1], entries, exactRoute };
+  return { lowest: entries[0], highest: entries[entries.length - 1], entries };
 }
 
 /**

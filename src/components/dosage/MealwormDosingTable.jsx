@@ -23,7 +23,7 @@ export default function MealwormDosingTable({
   maxBodyWeightG,
   stepG,
   wormCapacityUl,
-  pipetteMinUl,
+  syringeMinUl,
   setFieldValue,
   scheduleOutputFeedback,
   stepLabel = 'Step 5 — Dosing table by body mass',
@@ -35,7 +35,7 @@ export default function MealwormDosingTable({
     maxBodyWeightG,
     stepG,
     wormCapacityUl,
-    pipetteMinUl,
+    syringeMinUl,
   });
 
   const issues = [];
@@ -45,15 +45,15 @@ export default function MealwormDosingTable({
         level: 'error',
         message:
           'Some body weights need more volume than the worm can hold. Use a more concentrated ' +
-          'stock, or a larger worm.',
+          'solution, or a larger worm.',
       });
     }
-    if (rows.some((r) => r.belowPipetteMinimum)) {
+    if (rows.some((r) => r.belowSyringeMinimum)) {
       issues.push({
         level: 'error',
         message:
-          'Some body weights need less volume than your pipette can deliver. Use a more dilute ' +
-          'stock.',
+          'Some body weights need less volume than your syringe can deliver. Use a more dilute ' +
+          'solution, so each dose is a larger volume.',
       });
     }
   }
@@ -65,7 +65,7 @@ export default function MealwormDosingTable({
       </Text>
       <Text size="sm" c="dimmed" mb="md" className="no-print">
         Volume to load into one worm for each body weight, at your stock concentration. Rows outside
-        your worm capacity or pipette range are flagged in red.
+        your worm capacity or syringe range are flagged in red.
       </Text>
 
       <Group align="flex-end" wrap="wrap" gap="sm" mb="md">
@@ -120,7 +120,7 @@ export default function MealwormDosingTable({
           </Table.Thead>
           <Table.Tbody>
             {rows.map((row) => {
-              const flagged = row.overCapacity || row.belowPipetteMinimum;
+              const flagged = row.overCapacity || row.belowSyringeMinimum;
               return (
                 <Table.Tr key={row.bodyWeightG}>
                   <Table.Td>
@@ -137,7 +137,7 @@ export default function MealwormDosingTable({
                     <Text size="sm" ff="monospace" fw={600} c={flagged ? errorColor : undefined}>
                       {roundTo(row.loadVolumeUl, 2)} µL
                       {row.overCapacity ? ' — over capacity' : ''}
-                      {row.belowPipetteMinimum ? ' — below pipette' : ''}
+                      {row.belowSyringeMinimum ? ' — below syringe' : ''}
                     </Text>
                   </Table.Td>
                 </Table.Tr>

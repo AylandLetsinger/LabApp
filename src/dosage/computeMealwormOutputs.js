@@ -175,7 +175,7 @@ export function computeMealwormDosingTable({
   maxBodyWeightG,
   stepG,
   wormCapacityUl,
-  pipetteMinUl,
+  syringeMinUl,
 }) {
   const rate = toPositiveNumber(doseRateMgPerG);
   const stock = toPositiveNumber(stockConcentrationMgPerMl);
@@ -183,7 +183,7 @@ export function computeMealwormDosingTable({
   const maxG = toPositiveNumber(maxBodyWeightG);
   const step = toPositiveNumber(stepG);
   const capacity = toPositiveNumber(wormCapacityUl);
-  const pipetteMin = toNonNegativeNumber(pipetteMinUl);
+  const syringeMin = toNonNegativeNumber(syringeMinUl);
 
   if (rate === undefined || stock === undefined) return null;
   if (minG === undefined || maxG === undefined || step === undefined) return null;
@@ -203,7 +203,7 @@ export function computeMealwormDosingTable({
       doseMg,
       loadVolumeUl,
       overCapacity: capacity !== undefined && loadVolumeUl > capacity,
-      belowPipetteMinimum: pipetteMin !== undefined && pipetteMin > 0 && loadVolumeUl < pipetteMin,
+      belowSyringeMinimum: syringeMin !== undefined && syringeMin > 0 && loadVolumeUl < syringeMin,
     });
   }
   return rows;

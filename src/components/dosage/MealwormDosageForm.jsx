@@ -9,7 +9,7 @@ import {
   suggestedDoseVolumeUl,
 } from '../../dosage/computeVehicleVolumes';
 import { roundTo, toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
-import { volumeToMl, weightToKg } from '../../dosage/unitConversions';
+import { massToMg, volumeToMl, weightToKg } from '../../dosage/unitConversions';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import Step2DosageTypeSection from './Step2DosageTypeSection';
 import MealwormParametersSection from './MealwormParametersSection';
@@ -48,10 +48,12 @@ export default function MealwormDosageForm() {
       doseUnit: 'mg',
       bodyWeightAmount: '',
       bodyWeightUnit: 'kg',
-      wormCapacityUl: 250,
+      wormCapacityUl: 100,
       loadVolumeUl: '',
       stockAvailableMl: '',
-      workingConcentrationMgPerMl: '',
+      workingConcentrationValue: '',
+      workingConcentrationMassUnit: 'mg',
+      workingConcentrationVolumeUnit: 'ml',
       workingAvailableMl: '',
       avgBodyWeight: '',
       avgBodyWeightUnit: 'g',
@@ -185,8 +187,15 @@ export default function MealwormDosageForm() {
   }, [v.totalDoses]);
 
   /** In working mode the concentration is given; otherwise it is derived. */
+  const workingConcentrationMgPerMl = (() => {
+    const massMg = massToMg(v.workingConcentrationValue, v.workingConcentrationMassUnit);
+    const perMl = volumeToMl(1, v.workingConcentrationVolumeUnit);
+    if (massMg === undefined || perMl === undefined || perMl <= 0) return undefined;
+    return toPositiveNumber(massMg / perMl);
+  })();
+
   const concentrationMgPerMl = isWorking
-    ? toPositiveNumber(v.workingConcentrationMgPerMl)
+    ? workingConcentrationMgPerMl
     : dosePerSubjectMg !== undefined && effectiveLoadUl > 0
       ? dosePerSubjectMg / (effectiveLoadUl / 1000)
       : undefined;
@@ -223,12 +232,15 @@ export default function MealwormDosageForm() {
         setFieldValue={form.setFieldValue}
         scheduleOutputFeedback={scheduleOutputFeedback}
         issues={parameterIssues}
+        showPipetteMinimum={buildsAVehicle}
       />
 
       {isWorking ? (
         <WorkingSolutionSection
           stepLabel="Step 3 — Your working solution"
-          concentrationMgPerMl={v.workingConcentrationMgPerMl}
+          concentrationValue={v.workingConcentrationValue}
+          concentrationMassUnit={v.workingConcentrationMassUnit}
+          concentrationVolumeUnit={v.workingConcentrationVolumeUnit}
           availableMl={v.workingAvailableMl}
           dosePerSubjectMg={dosePerSubjectMg}
           totalDoses={v.totalDoses}
@@ -306,7 +318,7 @@ export default function MealwormDosageForm() {
           maxBodyWeightG={v.maxBodyWeightG}
           stepG={v.stepG}
           wormCapacityUl={v.wormCapacityUl}
-          pipetteMinUl={v.syringeMinUl}
+          syringeMinUl={v.syringeMinUl}
           setFieldValue={form.setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}
           stepLabel={`Step ${isWorking ? 4 : 5} — Dosing table by body mass`}

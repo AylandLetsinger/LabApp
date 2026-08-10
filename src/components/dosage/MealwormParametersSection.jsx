@@ -10,10 +10,10 @@ const inputBlue = {
 };
 
 const CAPACITY_MARKS = [
-  { value: 50, label: '50' },
+  { value: 25, label: '25' },
   { value: 125, label: '125 (small)' },
   { value: 250, label: '250 (large)' },
-  { value: 350, label: '350' },
+  { value: 275, label: '275' },
 ];
 
 /**
@@ -29,6 +29,7 @@ export default function MealwormParametersSection({
   wasteBufferPct,
   pipetteMinUl,
   syringeMinUl,
+  showPipetteMinimum = true,
   setFieldValue,
   scheduleOutputFeedback,
   issues,
@@ -102,20 +103,24 @@ export default function MealwormParametersSection({
             <Text pb="sm" size="sm">
               µL
             </Text>
-            <NumberInput
-              label="Pipette minimum (mixing the vehicle)"
-              placeholder="e.g. 2"
-              min={0}
-              decimalScale={3}
-              value={pipetteMinUl}
-              onChange={(value) => setFieldValue('pipetteMinUl', value)}
-              onBlur={scheduleOutputFeedback}
-              w={240}
-              {...inputBlue}
-            />
-            <Text pb="sm" size="sm">
-              µL
-            </Text>
+            {showPipetteMinimum && (
+              <>
+                <NumberInput
+                  label="Pipette minimum (mixing the vehicle)"
+                  placeholder="e.g. 2"
+                  min={0}
+                  decimalScale={3}
+                  value={pipetteMinUl}
+                  onChange={(value) => setFieldValue('pipetteMinUl', value)}
+                  onBlur={scheduleOutputFeedback}
+                  w={240}
+                  {...inputBlue}
+                />
+                <Text pb="sm" size="sm">
+                  µL
+                </Text>
+              </>
+            )}
           </Group>
         </div>
 

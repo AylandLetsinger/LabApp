@@ -2,6 +2,9 @@ import { Group, NumberInput, Paper, Stack, Text } from '@mantine/core';
 import IssueList from './IssueList';
 import AutoValue from './AutoValue';
 import { roundTo, toPositiveNumber } from '../../dosage/numberUtils';
+import { massToMg, volumeToMl } from '../../dosage/unitConversions';
+import { DOSE_UNITS, VOLUME_UNITS } from '../../constants/doseUnits';
+import LabSelect from '../LabSelect';
 import { inputFieldColor } from '../../theme';
 
 const inputBlue = { variant: 'filled', color: inputFieldColor };
@@ -16,7 +19,9 @@ const inputBlue = { variant: 'filled', color: inputFieldColor };
  */
 export default function WorkingSolutionSection({
   stepLabel,
-  concentrationMgPerMl,
+  concentrationValue,
+  concentrationMassUnit,
+  concentrationVolumeUnit,
   availableMl,
   dosePerSubjectMg,
   totalDoses,
@@ -26,7 +31,14 @@ export default function WorkingSolutionSection({
   setFieldValue,
   scheduleOutputFeedback,
 }) {
-  const concentration = toPositiveNumber(concentrationMgPerMl);
+  // A vendor label reads "4 mg/mL" or "400 µg/100 µL"; both are the same
+  // solution. Converting on entry means neither has to be done by hand.
+  const massMg = massToMg(concentrationValue, concentrationMassUnit);
+  const perMl = volumeToMl(1, concentrationVolumeUnit);
+  const concentration =
+    massMg !== undefined && perMl !== undefined && perMl > 0
+      ? toPositiveNumber(massMg / perMl)
+      : undefined;
   const volumePerDoseUl =
     dosePerSubjectMg !== undefined && concentration !== undefined
       ? (dosePerSubjectMg / concentration) * 1000
@@ -87,15 +99,31 @@ export default function WorkingSolutionSection({
             placeholder="e.g. 4"
             min={0}
             decimalScale={6}
-            value={concentrationMgPerMl}
-            onChange={(value) => setFieldValue('workingConcentrationMgPerMl', value)}
+            value={concentrationValue}
+            onChange={(value) => setFieldValue('workingConcentrationValue', value)}
             onBlur={scheduleOutputFeedback}
-            w={200}
+            w={140}
             {...inputBlue}
           />
+          <LabSelect
+            label="Unit"
+            data={DOSE_UNITS}
+            value={concentrationMassUnit}
+            onChange={(value) => setFieldValue('workingConcentrationMassUnit', value ?? 'mg')}
+            onBlur={scheduleOutputFeedback}
+            w={96}
+          />
           <Text pb="sm" size="sm">
-            mg per mL
+            per
           </Text>
+          <LabSelect
+            label="Unit"
+            data={VOLUME_UNITS}
+            value={concentrationVolumeUnit}
+            onChange={(value) => setFieldValue('workingConcentrationVolumeUnit', value ?? 'ml')}
+            onBlur={scheduleOutputFeedback}
+            w={96}
+          />
           <NumberInput
             label="How much do you have?"
             placeholder="optional"
