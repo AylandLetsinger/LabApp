@@ -1,7 +1,11 @@
 import { Group, Loader, Paper, Table, Text, ThemeIcon } from '@mantine/core';
 import { IconCheck } from '@tabler/icons-react';
 import IssueList from './IssueList';
-import { computeVehicleVolumes, primarySolventVolumeMl } from '../../dosage/computeVehicleVolumes';
+import {
+  computeVehicleVolumes,
+  primarySolventVolumeMl,
+  rowConcentrationMgPerMl,
+} from '../../dosage/computeVehicleVolumes';
 import { roundTo } from '../../dosage/numberUtils';
 import { getVehicle } from '../../dosage/vehicles';
 import { errorColor } from '../../theme';
@@ -31,6 +35,7 @@ export default function DissolutionTable({
   pipetteMinUl,
   stepLabel,
   footer,
+  molecularWeight,
   soluteLabel = 'of your solute',
   soluteIsVolume = false,
   soluteVolumeMl,
@@ -47,7 +52,7 @@ export default function DissolutionTable({
   if (volumes) {
     vehicleRows.forEach((row, i) => {
       if (row.isStock) return;
-      const minMl = primarySolventVolumeMl(soluteRequiredMg, row.solubilityMgPerMl);
+      const minMl = primarySolventVolumeMl(soluteRequiredMg, rowConcentrationMgPerMl(row, molecularWeight));
       if (minMl === undefined) return;
       if (volumes[i].exactMl < minMl - 1e-12) {
         const vehicle = getVehicle(row.vehicleId);
@@ -130,7 +135,7 @@ export default function DissolutionTable({
             if (row.isStock) return null;
             const vehicle = getVehicle(row.vehicleId);
             const minForBatchMl = ready && !row.isStock
-              ? primarySolventVolumeMl(soluteRequiredMg, row.solubilityMgPerMl)
+              ? primarySolventVolumeMl(soluteRequiredMg, rowConcentrationMgPerMl(row, molecularWeight))
               : undefined;
             const volume = ready ? formatVolume(volumes[index].displayMl) : null;
             const flagged = volumes?.[index]?.belowPipetteMinimum;

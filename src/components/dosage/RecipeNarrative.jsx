@@ -1,8 +1,15 @@
 import { Group, Text } from '@mantine/core';
 import LabSelect from '../LabSelect';
 import { DOSE_UNITS, VOLUME_UNITS } from '../../constants/doseUnits';
-import { mgToMassUnit, mlToVolumeUnit, volumeToMl } from '../../dosage/unitConversions';
-import { roundTo } from '../../dosage/numberUtils';
+import { mlToVolumeUnit, volumeToMl } from '../../dosage/unitConversions';
+import {
+  MOLAR_AMOUNT_UNITS,
+  MOLAR_CONCENTRATION_UNITS,
+  isMolarConcentrationUnit,
+  mgPerMlToMolarConcentration,
+  mgToDrugAmountUnit,
+} from '../../dosage/molarUnits';
+import { roundTo, toPositiveNumber } from '../../dosage/numberUtils';
 
 /**
  * One sentence stating what a single dose actually is.
@@ -20,6 +27,7 @@ export default function RecipeNarrative({
   dosePerSubjectMg,
   concentrationMgPerMl,
   doseRateMgPerKg,
+  molecularWeight,
   units,
   setUnit,
 }) {
@@ -29,13 +37,25 @@ export default function RecipeNarrative({
     Number.isFinite(concentrationMgPerMl);
   if (!ready) return null;
 
+  // Molar read-back needs a molecular weight, so those units are only offered
+  // once one is given — the same gate as everywhere else.
+  const hasMolecularWeight = toPositiveNumber(molecularWeight) !== undefined;
+  const doseUnits = hasMolecularWeight ? [...DOSE_UNITS, ...MOLAR_AMOUNT_UNITS] : DOSE_UNITS;
+  const concUnits = hasMolecularWeight
+    ? [...DOSE_UNITS, ...MOLAR_CONCENTRATION_UNITS]
+    : DOSE_UNITS;
+
   const volume = mlToVolumeUnit(volumePerDoseMl, units.narrativeVolume);
-  const dose = mgToMassUnit(dosePerSubjectMg, units.narrativeDose);
-  // Concentration is stored per mL, so switching the volume unit scales it by
-  // how many mL that unit is.
-  const concentration =
-    mgToMassUnit(concentrationMgPerMl, units.narrativeConcMass) *
-    volumeToMl(1, units.narrativeConcVolume);
+  const dose = mgToDrugAmountUnit(dosePerSubjectMg, units.narrativeDose, molecularWeight);
+
+  // A molarity already says "per litre", so it takes no volume unit. Otherwise
+  // the concentration is stored per mL and switching the volume unit scales it
+  // by how many mL that unit is.
+  const concIsMolar = isMolarConcentrationUnit(units.narrativeConcMass);
+  const concentration = concIsMolar
+    ? mgPerMlToMolarConcentration(concentrationMgPerMl, units.narrativeConcMass, molecularWeight)
+    : mgToDrugAmountUnit(concentrationMgPerMl, units.narrativeConcMass, molecularWeight) *
+      volumeToMl(1, units.narrativeConcVolume);
 
   const unitPicker = (key, data, ariaLabel) => (
     <LabSelect
@@ -62,15 +82,19 @@ export default function RecipeNarrative({
       <Text size="sm" fw={700} ff="monospace">
         {roundTo(dose, 6)}
       </Text>
-      {unitPicker('narrativeDose', DOSE_UNITS, 'Unit for the dose')}
+      {unitPicker('narrativeDose', doseUnits, 'Unit for the dose')}
 
       <Text size="sm">of a</Text>
       <Text size="sm" fw={700} ff="monospace">
         {roundTo(concentration, 6)}
       </Text>
-      {unitPicker('narrativeConcMass', DOSE_UNITS, 'Concentration mass unit')}
-      <Text size="sm">per</Text>
-      {unitPicker('narrativeConcVolume', VOLUME_UNITS, 'Concentration volume unit')}
+      {unitPicker('narrativeConcMass', concUnits, 'Concentration unit')}
+      {!concIsMolar && (
+        <>
+          <Text size="sm">per</Text>
+          {unitPicker('narrativeConcVolume', VOLUME_UNITS, 'Concentration volume unit')}
+        </>
+      )}
       <Text size="sm">solution</Text>
 
       <Text size="sm">.</Text>

@@ -4,7 +4,8 @@
  * This step is route-agnostic: how much drug one animal should receive does
  * not depend on whether it arrives by syringe or inside a mealworm.
  */
-import { massToMg, weightToKg } from './unitConversions';
+import { weightToKg } from './unitConversions';
+import { drugAmountToMg } from './molarUnits';
 import { toNonNegativeNumber } from './numberUtils';
 
 /**
@@ -22,6 +23,7 @@ export function computeDosePerAvgSubjectByBodyWeight({
   refBodyWeightUnit,
   avgBodyWeight,
   avgBodyWeightUnit,
+  molecularWeightGPerMol,
 }) {
   // Reject negatives before any arithmetic: a negative dose must never reach
   // an output field looking like a real number.
@@ -29,7 +31,7 @@ export function computeDosePerAvgSubjectByBodyWeight({
   if (toNonNegativeNumber(refBodyWeight) === undefined) return undefined;
   if (toNonNegativeNumber(avgBodyWeight) === undefined) return undefined;
 
-  const doseMg = massToMg(doseAmount, doseUnit);
+  const doseMg = drugAmountToMg(doseAmount, doseUnit, molecularWeightGPerMol);
   const refKg = weightToKg(refBodyWeight, refBodyWeightUnit);
   const avgKg = weightToKg(avgBodyWeight, avgBodyWeightUnit);
   if (doseMg === undefined || refKg === undefined || avgKg === undefined) return undefined;
@@ -44,9 +46,9 @@ export function computeDosePerAvgSubjectByBodyWeight({
  *
  * @returns {number | undefined} Milligrams.
  */
-export function computeDosePerAvgSubjectFromPerSubject({ doseAmount, doseUnit }) {
+export function computeDosePerAvgSubjectFromPerSubject({ doseAmount, doseUnit, molecularWeightGPerMol }) {
   if (toNonNegativeNumber(doseAmount) === undefined) return undefined;
-  return massToMg(doseAmount, doseUnit);
+  return drugAmountToMg(doseAmount, doseUnit, molecularWeightGPerMol);
 }
 
 /**
@@ -63,12 +65,14 @@ export function computeDosePerAvgSubjectMg(p) {
       refBodyWeightUnit: p.refBodyWeightUnit,
       avgBodyWeight: p.avgBodyWeight,
       avgBodyWeightUnit: p.avgBodyWeightUnit,
+      molecularWeightGPerMol: p.molecularWeightGPerMol,
     });
   }
   if (p.dosageType === 'per-subject') {
     return computeDosePerAvgSubjectFromPerSubject({
       doseAmount: p.dosePerSubject,
       doseUnit: p.dosePerSubjectUnit,
+      molecularWeightGPerMol: p.molecularWeightGPerMol,
     });
   }
   return undefined;

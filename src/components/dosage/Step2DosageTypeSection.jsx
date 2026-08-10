@@ -1,5 +1,7 @@
 import { Group, NumberInput, Paper, Text } from '@mantine/core';
 import { DOSE_UNITS, WEIGHT_UNITS } from '../../constants/doseUnits';
+import { MOLAR_AMOUNT_UNITS } from '../../dosage/molarUnits';
+import { toPositiveNumber } from '../../dosage/numberUtils';
 import LabSelect from '../LabSelect';
 import { inputFieldColor } from '../../theme';
 
@@ -22,10 +24,17 @@ export default function Step2DosageTypeSection({
   doseUnit,
   bodyWeightAmount,
   bodyWeightUnit,
+  molecularWeight,
   setFieldValue,
   scheduleOutputFeedback,
   footer,
 }) {
+  // Molar units stay hidden until there is a molecular weight to convert with.
+  // A molar figure interpreted with the wrong weight is wrong by an arbitrary
+  // factor and looks entirely reasonable, so it is not offered as a default.
+  const massUnits = toPositiveNumber(molecularWeight)
+    ? [...DOSE_UNITS, ...MOLAR_AMOUNT_UNITS]
+    : DOSE_UNITS;
   return (
     <Paper p="md" radius="md" withBorder>
       <Text fw={600} mb="sm">
@@ -59,7 +68,7 @@ export default function Step2DosageTypeSection({
           />
           <LabSelect
             label="Unit"
-            data={DOSE_UNITS}
+            data={massUnits}
             value={dosePerSubjectUnit}
             onChange={(v) => setFieldValue('dosePerSubjectUnit', v ?? 'mg')}
             onBlur={scheduleOutputFeedback}
@@ -86,7 +95,7 @@ export default function Step2DosageTypeSection({
           />
           <LabSelect
             label="Unit"
-            data={DOSE_UNITS}
+            data={massUnits}
             value={doseUnit}
             onChange={(v) => setFieldValue('doseUnit', v ?? 'mg')}
             onBlur={scheduleOutputFeedback}
@@ -116,6 +125,28 @@ export default function Step2DosageTypeSection({
           />
         </Group>
       )}
+
+      <Group align="flex-end" wrap="wrap" gap="sm" mt="md">
+        <NumberInput
+          label="Molecular weight"
+          placeholder="optional"
+          min={0}
+          decimalScale={4}
+          value={molecularWeight}
+          onChange={(value) => setFieldValue('molecularWeight', value)}
+          onBlur={scheduleOutputFeedback}
+          w={170}
+          {...inputBlue}
+        />
+        <Text pb="sm" size="sm">
+          g/mol
+        </Text>
+        <Text pb="sm" size="sm" c="dimmed">
+          {toPositiveNumber(molecularWeight)
+            ? 'molar units available below'
+            : '→ enter one to dose or mix in molar units'}
+        </Text>
+      </Group>
 
       {footer}
     </Paper>

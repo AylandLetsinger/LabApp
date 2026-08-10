@@ -16,10 +16,15 @@ import {
 import {
   computeVehicleVolumes,
   primarySolventVolumeMl,
+  rowConcentrationMgPerMl,
   suggestedDoseVolumeUl,
 } from '../../dosage/computeVehicleVolumes';
-import { roundTo } from '../../dosage/numberUtils';
+import { roundTo, toPositiveNumber } from '../../dosage/numberUtils';
+import { MOLAR_CONCENTRATION_UNITS } from '../../dosage/molarUnits';
 import { errorColor } from '../../theme';
+
+/** mg/mL plus whatever molar units a molecular weight unlocks. */
+const CONCENTRATION_UNITS = [{ value: 'mg/ml', label: 'mg/mL' }, ...MOLAR_CONCENTRATION_UNITS];
 
 /**
  * Vehicle composition.
@@ -50,7 +55,9 @@ export default function VehicleRatioTable({
   stockAvailableMl,
   onStockAvailableChange,
   totalStockNeededMl,
+  molecularWeight,
 }) {
+  const molarAvailable = toPositiveNumber(molecularWeight) !== undefined;
   const setRow = (index, patch) =>
     onRowsChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
 
@@ -96,7 +103,7 @@ export default function VehicleRatioTable({
     onVolumePerDoseChange(nextValue);
   };
 
-  const suggestedUl = suggestedDoseVolumeUl(rows, dosePerSubjectMg, syringeMinUl);
+  const suggestedUl = suggestedDoseVolumeUl(rows, dosePerSubjectMg, syringeMinUl, molecularWeight);
   const typedUl = Number(volumePerDoseUl);
   const effectiveUl = Number.isFinite(typedUl) && typedUl > 0 ? typedUl : suggestedUl;
   const volumePerSubjectMl = effectiveUl > 0 ? effectiveUl / 1000 : undefined;
@@ -131,7 +138,7 @@ export default function VehicleRatioTable({
       if (!vehicle) return;
 
       // Solubility floor: does this solvent get enough volume to dissolve the dose?
-      const minMl = primarySolventVolumeMl(dosePerSubjectMg, row.solubilityMgPerMl);
+      const minMl = primarySolventVolumeMl(dosePerSubjectMg, rowConcentrationMgPerMl(row, molecularWeight));
       if (minMl !== undefined && split.rows[i].exactMl < minMl - 1e-12) {
         issues.push({
           level: 'error',
@@ -218,7 +225,7 @@ export default function VehicleRatioTable({
           <Table.Thead>
             <Table.Tr>
               <Table.Th ta="left" miw={150}>SOLVENT</Table.Th>
-              <Table.Th ta="left" w={110}>solubility /<br />stock conc.</Table.Th>
+              <Table.Th ta="left" w={130}>solubility /<br />stock conc.</Table.Th>
               <Table.Th ta="left" w={105}>required<br />(per dose)</Table.Th>
               <Table.Th ta="left" w={80}>ratio</Table.Th>
               <Table.Th ta="left" w={78}>%(v/v)</Table.Th>
@@ -231,7 +238,7 @@ export default function VehicleRatioTable({
             {rows.map((row, index) => {
               const vehicle = getVehicle(row.vehicleId);
               const cell = split?.rows[index];
-              const minMl = primarySolventVolumeMl(dosePerSubjectMg, row.solubilityMgPerMl);
+              const minMl = primarySolventVolumeMl(dosePerSubjectMg, rowConcentrationMgPerMl(row, molecularWeight));
               const shortOfMinimum = minMl !== undefined && cell && cell.exactMl < minMl - 1e-12;
               const range = toleratedBurdenRange(row.vehicleId, { route });
               const burden =
@@ -283,11 +290,11 @@ export default function VehicleRatioTable({
                   </Table.Td>
                   <Table.Td>
                     <NumberInput
-                      placeholder={row.isStock ? 'stock mg/mL' : 'n/a'}
+                      placeholder={row.isStock ? 'conc.' : 'n/a'}
                       min={0}
                       decimalScale={4}
-                      value={row.solubilityMgPerMl ?? ''}
-                      onChange={(value) => setRow(index, { solubilityMgPerMl: value })}
+                      value={row.concentrationValue ?? row.solubilityMgPerMl ?? ''}
+                      onChange={(value) => setRow(index, { concentrationValue: value })}
                       onBlur={onBlur}
                       aria-label={
                         row.isStock
@@ -296,6 +303,17 @@ export default function VehicleRatioTable({
                       }
                       hideControls
                     />
+                    {molarAvailable && (
+                      <LabSelect
+                        data={CONCENTRATION_UNITS}
+                        value={row.concentrationUnit ?? 'mg/ml'}
+                        onChange={(value) => setRow(index, { concentrationUnit: value ?? 'mg/ml' })}
+                        onBlur={onBlur}
+                        aria-label={`Concentration unit for solvent ${index + 1}`}
+                        size="xs"
+                        mt={4}
+                      />
+                    )}
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" ff="monospace" c={shortOfMinimum ? errorColor : 'dimmed'}>

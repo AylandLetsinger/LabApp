@@ -15,6 +15,7 @@
  * turned a 25 uL requirement into a 26 uL suggestion.
  */
 import { roundTo, toNonNegativeNumber } from './numberUtils';
+import { molarConcentrationToMgPerMl } from './molarUnits';
 
 /**
  * @typedef {object} VehicleVolumeRow
@@ -88,6 +89,19 @@ export function primarySolventVolumeMl(doseMg, solubilityMgPerMl) {
 }
 
 /**
+ * A row's concentration in mg/mL, whichever unit it was typed in.
+ *
+ * Rows predating the unit picker carry `solubilityMgPerMl` and no unit; those
+ * are already mg/mL, so the fallback keeps them working.
+ */
+export function rowConcentrationMgPerMl(row, molecularWeightGPerMol) {
+  const value = row.concentrationValue ?? row.solubilityMgPerMl;
+  const unit = row.concentrationUnit ?? 'mg/ml';
+  if (unit === 'mg/ml') return toNonNegativeNumber(value);
+  return molarConcentrationToMgPerMl(value, unit, molecularWeightGPerMol);
+}
+
+/**
  * The smallest dose volume at which every solvent still meets its minimum.
  *
  * With a ratio fixed, a solvent occupying fraction f of the vehicle reaches
@@ -97,13 +111,13 @@ export function primarySolventVolumeMl(doseMg, solubilityMgPerMl) {
  *
  * @returns {number} Microlitres. Zero when nothing is known yet.
  */
-export function suggestedDoseVolumeUl(rows, dosePerSubjectMg, syringeMinUl) {
+export function suggestedDoseVolumeUl(rows, dosePerSubjectMg, syringeMinUl, molecularWeight) {
   const parts = rows.map((r) => toNonNegativeNumber(r.parts) ?? 0);
   const partsTotal = parts.reduce((sum, p) => sum + p, 0);
 
   let requiredUl = 0;
   rows.forEach((row, i) => {
-    const ml = primarySolventVolumeMl(dosePerSubjectMg, row.solubilityMgPerMl);
+    const ml = primarySolventVolumeMl(dosePerSubjectMg, rowConcentrationMgPerMl(row, molecularWeight));
     if (ml === undefined) return;
     const fraction = partsTotal > 0 ? parts[i] / partsTotal : 0;
     // A solvent with no share of the vehicle can never meet a minimum, so it

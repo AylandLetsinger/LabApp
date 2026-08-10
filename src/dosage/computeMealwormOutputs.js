@@ -15,7 +15,8 @@
  * here. Outputs are named accordingly.
  */
 import { toNonNegativeNumber, toPositiveNumber } from './numberUtils';
-import { massToMg, volumeToMl, weightToG } from './unitConversions';
+import { volumeToMl, weightToG } from './unitConversions';
+import { drugAmountToMg } from './molarUnits';
 
 /** @typedef {{ level: 'error' | 'warning', message: string }} Issue */
 
@@ -350,9 +351,9 @@ export function checkSolubilityCeiling({
  * "0.2 mg per 10 g" and "0.02 mg per 1 g" are the same rate; both are entered
  * as an amount and a reference weight.
  */
-export function computeDoseRateMgPerG({ doseAmount, doseUnit, refBodyWeight, refBodyWeightUnit }) {
+export function computeDoseRateMgPerG({ doseAmount, doseUnit, refBodyWeight, refBodyWeightUnit, molecularWeightGPerMol }) {
   if (toNonNegativeNumber(doseAmount) === undefined) return undefined;
-  const doseMg = massToMg(doseAmount, doseUnit);
+  const doseMg = drugAmountToMg(doseAmount, doseUnit, molecularWeightGPerMol);
   const refG = weightToG(refBodyWeight, refBodyWeightUnit);
   if (doseMg === undefined || refG === undefined || refG <= 0) return undefined;
   return doseMg / refG;

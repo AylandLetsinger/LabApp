@@ -2,7 +2,11 @@ import { Group, NumberInput, Paper, Stack, Text } from '@mantine/core';
 import IssueList from './IssueList';
 import AutoValue from './AutoValue';
 import { roundTo, toPositiveNumber } from '../../dosage/numberUtils';
-import { massToMg, volumeToMl } from '../../dosage/unitConversions';
+import {
+  MOLAR_CONCENTRATION_UNITS,
+  concentrationToMgPerMl,
+  isMolarConcentrationUnit,
+} from '../../dosage/molarUnits';
 import { DOSE_UNITS, VOLUME_UNITS } from '../../constants/doseUnits';
 import LabSelect from '../LabSelect';
 import { inputFieldColor } from '../../theme';
@@ -22,6 +26,7 @@ export default function WorkingSolutionSection({
   concentrationValue,
   concentrationMassUnit,
   concentrationVolumeUnit,
+  molecularWeight,
   availableMl,
   dosePerSubjectMg,
   totalDoses,
@@ -31,14 +36,20 @@ export default function WorkingSolutionSection({
   setFieldValue,
   scheduleOutputFeedback,
 }) {
-  // A vendor label reads "4 mg/mL" or "400 µg/100 µL"; both are the same
-  // solution. Converting on entry means neither has to be done by hand.
-  const massMg = massToMg(concentrationValue, concentrationMassUnit);
-  const perMl = volumeToMl(1, concentrationVolumeUnit);
-  const concentration =
-    massMg !== undefined && perMl !== undefined && perMl > 0
-      ? toPositiveNumber(massMg / perMl)
-      : undefined;
+  // A label reads "4 mg/mL", "400 µg/100 µL", or "11.68 mM" — all the same
+  // solution. Converting on entry means none of them has to be done by hand.
+  const isMolar = isMolarConcentrationUnit(concentrationMassUnit);
+  const concentration = toPositiveNumber(
+    concentrationToMgPerMl(
+      concentrationValue,
+      concentrationMassUnit,
+      concentrationVolumeUnit,
+      molecularWeight,
+    ),
+  );
+  const massUnits = toPositiveNumber(molecularWeight)
+    ? [...DOSE_UNITS, ...MOLAR_CONCENTRATION_UNITS]
+    : DOSE_UNITS;
   const volumePerDoseUl =
     dosePerSubjectMg !== undefined && concentration !== undefined
       ? (dosePerSubjectMg / concentration) * 1000
@@ -107,23 +118,32 @@ export default function WorkingSolutionSection({
           />
           <LabSelect
             label="Unit"
-            data={DOSE_UNITS}
+            data={massUnits}
             value={concentrationMassUnit}
             onChange={(value) => setFieldValue('workingConcentrationMassUnit', value ?? 'mg')}
             onBlur={scheduleOutputFeedback}
             w={96}
           />
-          <Text pb="sm" size="sm">
-            per
-          </Text>
-          <LabSelect
-            label="Unit"
-            data={VOLUME_UNITS}
-            value={concentrationVolumeUnit}
-            onChange={(value) => setFieldValue('workingConcentrationVolumeUnit', value ?? 'ml')}
-            onBlur={scheduleOutputFeedback}
-            w={96}
-          />
+          {!isMolar && (
+            <>
+              <Text pb="sm" size="sm">
+                per
+              </Text>
+              <LabSelect
+                label="Unit"
+                data={VOLUME_UNITS}
+                value={concentrationVolumeUnit}
+                onChange={(value) => setFieldValue('workingConcentrationVolumeUnit', value ?? 'ml')}
+                onBlur={scheduleOutputFeedback}
+                w={96}
+              />
+            </>
+          )}
+          {isMolar && concentration !== undefined && (
+            <Text pb="sm" size="sm" c="dimmed">
+              = {roundTo(concentration, 4)} mg/mL
+            </Text>
+          )}
           <NumberInput
             label="How much do you have?"
             placeholder="optional"
