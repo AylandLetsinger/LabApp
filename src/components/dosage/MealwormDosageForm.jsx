@@ -55,8 +55,11 @@ export default function MealwormDosageForm() {
       workingConcentrationMassUnit: 'mg',
       workingConcentrationVolumeUnit: 'ml',
       workingAvailableMl: '',
+      bodyMassMode: 'average',
       avgBodyWeight: '',
       avgBodyWeightUnit: 'g',
+      totalBodyMass: '',
+      subjectCount: '',
       totalDoses: '',
       wasteBufferPct: 0,
       // Two tools, two floors: the insulin syringe loads the worm, the pipette
@@ -84,6 +87,25 @@ export default function MealwormDosageForm() {
   });
   const setUnit = (key, value) => setUnits((prev) => ({ ...prev, [key]: value }));
 
+  /**
+   * Whichever way the body mass was entered, everything downstream wants one
+   * number: the average. A total is exact when every subject was weighed, so
+   * it is worth supporting — but it is converted here rather than threaded
+   * through as a second code path.
+   */
+  const effectiveAvgBodyWeight = useMemo(() => {
+    if (v.bodyMassMode !== 'total') return v.avgBodyWeight;
+    const total = toPositiveNumber(v.totalBodyMass);
+    const subjects = toPositiveNumber(v.subjectCount);
+    if (total === undefined || subjects === undefined) return '';
+    return total / subjects;
+  }, [v.bodyMassMode, v.avgBodyWeight, v.totalBodyMass, v.subjectCount]);
+
+  const derivedAverage =
+    v.bodyMassMode === 'total' && effectiveAvgBodyWeight !== ''
+      ? roundTo(Number(effectiveAvgBodyWeight), 4)
+      : undefined;
+
   const isStock = v.preparation === PREPARATION_MODES.stock;
   const isWorking = v.preparation === PREPARATION_MODES.working;
   const buildsAVehicle = !isWorking;
@@ -104,14 +126,14 @@ export default function MealwormDosageForm() {
         doseUnit: v.doseUnit,
         refBodyWeight: v.bodyWeightAmount,
         refBodyWeightUnit: v.bodyWeightUnit,
-        avgBodyWeight: v.avgBodyWeight,
+        avgBodyWeight: effectiveAvgBodyWeight,
         avgBodyWeightUnit: v.avgBodyWeightUnit,
         dosePerSubject: v.dosePerSubject,
         dosePerSubjectUnit: v.dosePerSubjectUnit,
       }),
     [
       v.dosageType, v.doseAmount, v.doseUnit, v.bodyWeightAmount, v.bodyWeightUnit,
-      v.avgBodyWeight, v.avgBodyWeightUnit, v.dosePerSubject, v.dosePerSubjectUnit,
+      effectiveAvgBodyWeight, v.avgBodyWeightUnit, v.dosePerSubject, v.dosePerSubjectUnit,
     ],
   );
 
@@ -168,10 +190,10 @@ export default function MealwormDosageForm() {
   // it is present even when nobody entered a rate. Protocols are written in
   // mg/kg, which is exactly when that matters.
   const achievedDoseRateMgPerKg = useMemo(() => {
-    const kg = weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit);
+    const kg = weightToKg(effectiveAvgBodyWeight, v.avgBodyWeightUnit);
     if (dosePerSubjectMg === undefined || kg === undefined || kg <= 0) return undefined;
     return dosePerSubjectMg / kg;
-  }, [dosePerSubjectMg, v.avgBodyWeight, v.avgBodyWeightUnit]);
+  }, [dosePerSubjectMg, effectiveAvgBodyWeight, v.avgBodyWeightUnit]);
 
   const parameterIssues = useMemo(() => {
     const doses = toOptionalNumber(v.totalDoses);
@@ -223,8 +245,12 @@ export default function MealwormDosageForm() {
 
       <MealwormParametersSection
         wormCapacityUl={v.wormCapacityUl}
+        bodyMassMode={v.bodyMassMode}
         avgBodyWeight={v.avgBodyWeight}
         avgBodyWeightUnit={v.avgBodyWeightUnit}
+        totalBodyMass={v.totalBodyMass}
+        subjectCount={v.subjectCount}
+        derivedAverage={derivedAverage}
         totalDoses={v.totalDoses}
         wasteBufferPct={v.wasteBufferPct}
         pipetteMinUl={v.pipetteMinUl}
@@ -258,7 +284,7 @@ export default function MealwormDosageForm() {
           stepLabel={isStock ? 'Step 3 — Dilution' : 'Step 3 — Vehicle formulation'}
           onBlur={scheduleOutputFeedback}
           dosePerSubjectMg={dosePerSubjectMg}
-          bodyWeightKg={weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit)}
+          bodyWeightKg={weightToKg(effectiveAvgBodyWeight, v.avgBodyWeightUnit)}
           pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
           syringeMinUl={toOptionalNumber(v.syringeMinUl) ?? 0}
           maxVolumeUl={toOptionalNumber(v.wormCapacityUl)}

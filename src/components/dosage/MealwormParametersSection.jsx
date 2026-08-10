@@ -1,4 +1,4 @@
-import { Group, NumberInput, Paper, Slider, Stack, Text } from '@mantine/core';
+import { Group, NumberInput, Paper, SegmentedControl, Slider, Stack, Text } from '@mantine/core';
 import { MOUSE_WEIGHT_HINT, WEIGHT_UNITS } from '../../constants/doseUnits';
 import LabSelect from '../LabSelect';
 import IssueList from './IssueList';
@@ -13,7 +13,7 @@ const CAPACITY_MARKS = [
   { value: 25, label: '25' },
   { value: 125, label: '125 (small)' },
   { value: 250, label: '250 (large)' },
-  { value: 275, label: '275' },
+  { value: 375, label: '375' },
 ];
 
 /**
@@ -23,8 +23,12 @@ const CAPACITY_MARKS = [
  */
 export default function MealwormParametersSection({
   wormCapacityUl,
+  bodyMassMode,
   avgBodyWeight,
   avgBodyWeightUnit,
+  totalBodyMass,
+  subjectCount,
+  derivedAverage,
   totalDoses,
   wasteBufferPct,
   pipetteMinUl,
@@ -125,29 +129,90 @@ export default function MealwormParametersSection({
         </div>
 
         <div>
-          <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Average body weight per subject"
-              placeholder="e.g. 25"
-              min={0}
-              decimalScale={6}
-              value={avgBodyWeight}
-              onChange={(value) => setFieldValue('avgBodyWeight', value)}
-              onBlur={scheduleOutputFeedback}
-              {...inputBlue}
-            />
-            <LabSelect
-              label="Unit"
-              data={WEIGHT_UNITS}
-              value={avgBodyWeightUnit}
-              onChange={(value) => setFieldValue('avgBodyWeightUnit', value ?? 'g')}
-              onBlur={scheduleOutputFeedback}
-              w={100}
-            />
-          </Group>
-          <Text size="xs" c="dimmed" mt={6} className="no-print">
-            {MOUSE_WEIGHT_HINT}
-          </Text>
+          <SegmentedControl
+            size="xs"
+            color={navActiveColor}
+            value={bodyMassMode}
+            onChange={(value) => {
+              setFieldValue('bodyMassMode', value);
+              scheduleOutputFeedback();
+            }}
+            data={[
+              { value: 'average', label: 'Average body mass' },
+              { value: 'total', label: 'Total body mass' },
+            ]}
+            mb={8}
+          />
+          {bodyMassMode === 'total' ? (
+            <>
+              <Group align="flex-end" wrap="wrap" gap="sm">
+                <NumberInput
+                  label="Total body mass, all subjects"
+                  placeholder="e.g. 900"
+                  min={0}
+                  decimalScale={6}
+                  value={totalBodyMass}
+                  onChange={(value) => setFieldValue('totalBodyMass', value)}
+                  onBlur={scheduleOutputFeedback}
+                  w={200}
+                  {...inputBlue}
+                />
+                <LabSelect
+                  label="Unit"
+                  data={WEIGHT_UNITS}
+                  value={avgBodyWeightUnit}
+                  onChange={(value) => setFieldValue('avgBodyWeightUnit', value ?? 'g')}
+                  onBlur={scheduleOutputFeedback}
+                  w={100}
+                />
+                <NumberInput
+                  label="across how many subjects?"
+                  placeholder="e.g. 40"
+                  min={0}
+                  allowDecimal={false}
+                  value={subjectCount}
+                  onChange={(value) => setFieldValue('subjectCount', value)}
+                  onBlur={scheduleOutputFeedback}
+                  w={190}
+                  {...inputBlue}
+                />
+                {derivedAverage !== undefined && (
+                  <Text pb="sm" size="sm" c="dimmed">
+                    &rarr; <strong>{derivedAverage}</strong> {avgBodyWeightUnit} each
+                  </Text>
+                )}
+              </Group>
+              <Text size="xs" c="dimmed" mt={6} className="no-print">
+                * exact if you weighed every subject; the average is worked out for you
+              </Text>
+            </>
+          ) : (
+            <>
+              <Group align="flex-end" wrap="wrap" gap="sm">
+                <NumberInput
+                  label="Average body mass per subject"
+                  placeholder="e.g. 25"
+                  min={0}
+                  decimalScale={6}
+                  value={avgBodyWeight}
+                  onChange={(value) => setFieldValue('avgBodyWeight', value)}
+                  onBlur={scheduleOutputFeedback}
+                  {...inputBlue}
+                />
+                <LabSelect
+                  label="Unit"
+                  data={WEIGHT_UNITS}
+                  value={avgBodyWeightUnit}
+                  onChange={(value) => setFieldValue('avgBodyWeightUnit', value ?? 'g')}
+                  onBlur={scheduleOutputFeedback}
+                  w={100}
+                />
+              </Group>
+              <Text size="xs" c="dimmed" mt={6} className="no-print">
+                {MOUSE_WEIGHT_HINT}
+              </Text>
+            </>
+          )}
         </div>
 
         <NumberInput
