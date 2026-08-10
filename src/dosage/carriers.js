@@ -80,8 +80,10 @@ const SOLID = {
    */
   capacity: {
     kind: 'per-mass',
-    label: 'Most solution the solid will hold',
-    hint: '* per unit mass of solid — the ceiling follows the portion size above',
+    label: 'Max solution the solid will hold',
+    hint:
+      '* how much your lab has decided a portion carries without running or being refused ' +
+      'by the subject',
   },
   defaultCapacityUl: 100,
   usesSyringe: false,
