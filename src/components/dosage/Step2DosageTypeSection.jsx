@@ -85,9 +85,7 @@ export default function Step2DosageTypeSection({
           g/mol
         </Text>
         <Text pb="sm" size="sm" c="dimmed">
-          {mw
-            ? `→ 1 M = ${roundTo(mw, 4)} mg/mL, so mol and mM units are now selectable`
-            : '→ fill this in to write a dose or a concentration in mol or mM'}
+          {mw ? `→ 1 M = ${roundTo(mw, 4)} mg/mL` : '→ required if using molarity'}
         </Text>
       </Group>
 

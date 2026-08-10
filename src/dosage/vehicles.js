@@ -79,6 +79,17 @@ export const VEHICLES = [
     note: 'Aqueous balance of the vehicle. No ceiling applies.',
   },
   {
+    id: 'acsf',
+    label: 'ACSF (artificial cerebrospinal fluid)',
+    densityGPerMl: 1.005,
+    isAqueous: true,
+    observations: [],
+    note:
+      'Aqueous balance of the vehicle, matched to CSF ionic composition. No ' +
+      'solvent ceiling applies. Recipes vary between labs — the app treats it ' +
+      'as saline-like and does not model its salts.',
+  },
+  {
     id: 'dmso',
     label: 'DMSO (Dimethyl Sulfoxide)',
     densityGPerMl: 1.1,
