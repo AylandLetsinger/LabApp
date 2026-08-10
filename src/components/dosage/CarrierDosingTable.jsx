@@ -64,7 +64,7 @@ export default function CarrierDosingTable({
   }
 
   return (
-    <Paper p="md" radius="md" withBorder>
+    <Paper p="md" radius="md" withBorder className="allow-break">
       <Text fw={600} mb="sm">
         {stepLabel}
       </Text>

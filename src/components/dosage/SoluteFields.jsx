@@ -100,7 +100,9 @@ export default function SoluteFields({ solute, setFieldValue, scheduleOutputFeed
         <Text pb="sm" size="sm">
           g/mol
         </Text>
-        <Text pb="sm" size="sm" c="dimmed">
+        {/* The conversion is a fact worth printing; the prompt to supply one
+            is advice for someone still filling the form in. */}
+        <Text pb="sm" size="sm" c="dimmed" className={mw ? undefined : 'no-print'}>
           {mw ? `→ 1 M = ${roundTo(mw, 4)} mg/mL` : '→ required if using molarity'}
         </Text>
       </Group>

@@ -58,16 +58,29 @@ export default function RecipeNarrative({
     : mgToDrugAmountUnit(concentrationMgPerMl, units.narrativeConcMass, molecularWeight) *
       volumeToMl(1, units.narrativeConcVolume);
 
+  /**
+   * A unit, switchable on screen and printed as plain text.
+   *
+   * The dropdown itself is hidden on paper, so without the text beside it the
+   * sentence prints as "Each dose of 5 delivers 0.5 of a 100 per solution" —
+   * every number stripped of what it measures. On a bench sheet that is worse
+   * than printing nothing at all.
+   */
   const unitPicker = (key, data, ariaLabel) => (
-    <LabSelect
-      data={data}
-      value={units[key]}
-      onChange={(value) => setUnit(key, value ?? data[0].value)}
-      aria-label={ariaLabel}
-      size="xs"
-      w={72}
-      className="no-print"
-    />
+    <>
+      <LabSelect
+        data={data}
+        value={units[key]}
+        onChange={(value) => setUnit(key, value ?? data[0].value)}
+        aria-label={ariaLabel}
+        size="xs"
+        w={72}
+        className="no-print"
+      />
+      <Text component="span" size="sm" fw={700} className="print-only">
+        {data.find((d) => d.value === units[key])?.label ?? units[key]}
+      </Text>
+    </>
   );
 
   return (

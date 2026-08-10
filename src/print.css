@@ -10,9 +10,19 @@
  * index.css is not imported anywhere and has no effect on the built site —
  * putting print rules there means they silently never apply.
  */
+/* The counterpart of .no-print: text that exists only on paper, standing in
+   for a control that has been hidden. */
+.print-only {
+  display: none;
+}
+
 @media print {
   @page {
     margin: 9mm;
+  }
+
+  .print-only {
+    display: inline !important;
   }
 
   html {
@@ -34,12 +44,62 @@
   }
 
   /* Controls that do nothing on paper. The capacity slider duplicates the
-     number field beside it, so only the number survives. */
+     number field beside it, so only the number survives. Chevrons and info
+     icons point at interactions that no longer exist. */
   button,
   .mantine-Slider-root,
   .mantine-ActionIcon-root,
-  .mantine-Loader-root {
+  .mantine-Loader-root,
+  .mantine-ComboboxChevron-chevron,
+  .tabler-icon {
     display: none !important;
+  }
+
+  /* A placeholder is a prompt to type something. On paper it reads as data —
+     an empty solubility cell printed the word "n/a" as though it were one. */
+  input::placeholder {
+    color: transparent !important;
+  }
+
+  /*
+   * A segmented control prints as a dark pill with both options overlapping,
+   * and nothing says which is chosen. Only the chosen one is a fact, so only
+   * the chosen one survives.
+   */
+  .mantine-SegmentedControl-root {
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+  .mantine-SegmentedControl-indicator {
+    display: none !important;
+  }
+  .mantine-SegmentedControl-control:not([data-active='true']) {
+    display: none !important;
+  }
+  .mantine-SegmentedControl-control::before {
+    display: none !important;
+  }
+  .mantine-SegmentedControl-label {
+    color: #000 !important;
+    font-weight: 700 !important;
+    padding: 0 !important;
+  }
+
+  /*
+   * Same for the radio group: it printed all three preparation modes with
+   * their explanations and no mark against the one in use, which is a page
+   * that answers the question wrongly three times.
+   */
+  .mantine-Radio-root:not([data-checked='true']),
+  .mantine-Radio-description,
+  .mantine-Radio-inner {
+    display: none !important;
+  }
+  .mantine-Radio-label {
+    color: #000 !important;
+    font-weight: 700 !important;
+    padding-inline-start: 0 !important;
   }
 
   .mantine-AppShell-main,
@@ -117,9 +177,35 @@
     font-size: 7.5pt !important;
   }
 
-  /* Keep the yellow recipe cells legible in greyscale. */
-  * {
+  /*
+   * Keep the yellow recipe cells and the striped dosing table legible.
+   *
+   * This was `* { ... }`, which matched all ~900 elements and measured ~34 ms
+   * of the ~44 ms the print stylesheet cost to apply — and made Chrome emit a
+   * background rectangle for every one of them, which is most of why the PDF
+   * was large and slow to render. print-color-adjust is an INHERITED property,
+   * so setting it once on the body reaches every descendant anyway.
+   */
+  body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /*
+   * A long table should fill the page it starts on rather than being pushed
+   * whole onto the next one. Rows still stay intact; only the table may split.
+   */
+  .allow-break,
+  .allow-break table,
+  .allow-break tbody {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  .allow-break tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .allow-break thead {
+    display: table-header-group;
   }
 }

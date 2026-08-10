@@ -11,7 +11,7 @@ import {
 import { concentrationToMgPerMl } from '../../dosage/molarUnits';
 import { makeSolute, soluteDosesMg as computeSoluteDosesMg, totalDoseMg } from '../../dosage/solutes';
 import { roundTo, toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
-import { volumeToMl, weightToKg } from '../../dosage/unitConversions';
+import { massToMg, volumeToMl, weightToKg } from '../../dosage/unitConversions';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import SolutesSection from './SolutesSection';
 import SoluteBreakdown from './SoluteBreakdown';
@@ -45,6 +45,9 @@ export default function CarrierDosageForm({ carrier }) {
     initialValues: {
       preparation: PREPARATION_MODES.none,
       capacityUl: carrier.defaultCapacityUl,
+      absorbencyUl: '',
+      absorbencyMass: '',
+      absorbencyMassUnit: 'mg',
       carrierName: '',
       carrierAmount: '',
       carrierAmountUnit: 'mg',
@@ -157,6 +160,27 @@ export default function CarrierDosageForm({ carrier }) {
   }, [
     carrier.weighed, v.carrierAmountMode, v.carrierAmount, v.carrierAmountUnit,
     v.carrierRefBodyWeight, v.avgBodyWeightUnit, effectiveAvgBodyWeight,
+  ]);
+
+  /**
+   * The ceiling on one dose, in microlitres.
+   *
+   * A worm has a capacity; a solid has an absorbency. Dough that takes 5 uL per
+   * 100 mg takes 10 uL per 200 mg, so for a solid the ceiling is a rate times
+   * the portion each subject gets — and it follows the portion size instead of
+   * needing to be re-entered whenever that changes. With no portion given there
+   * is no ceiling, which is reported as "none" rather than as zero.
+   */
+  const capacityUl = useMemo(() => {
+    if (carrier.capacity.kind !== 'per-mass') return toOptionalNumber(v.capacityUl);
+    const perMassUl = toPositiveNumber(v.absorbencyUl);
+    const perMassMg = massToMg(v.absorbencyMass, v.absorbencyMassUnit);
+    if (perMassUl === undefined || perMassMg === undefined || perMassMg <= 0) return undefined;
+    if (carrierAmountPerSubjectMg === undefined) return undefined;
+    return (perMassUl / perMassMg) * carrierAmountPerSubjectMg;
+  }, [
+    carrier.capacity.kind, v.capacityUl, v.absorbencyUl, v.absorbencyMass,
+    v.absorbencyMassUnit, carrierAmountPerSubjectMg,
   ]);
 
   /** Switching what you start with changes what the table means, so reset it. */
@@ -306,7 +330,10 @@ export default function CarrierDosageForm({ carrier }) {
         carrierRefBodyWeight={v.carrierRefBodyWeight}
         carrierAmountPerSubjectMg={carrierAmountPerSubjectMg}
         totalCarrierMg={totalCarrierMg}
-        capacityUl={v.capacityUl}
+        capacityUl={carrier.capacity.kind === 'per-mass' ? capacityUl : v.capacityUl}
+        absorbencyUl={v.absorbencyUl}
+        absorbencyMass={v.absorbencyMass}
+        absorbencyMassUnit={v.absorbencyMassUnit}
         bodyMassMode={v.bodyMassMode}
         avgBodyWeight={v.avgBodyWeight}
         avgBodyWeightUnit={v.avgBodyWeightUnit}
@@ -336,7 +363,7 @@ export default function CarrierDosageForm({ carrier }) {
           totalDoses={v.totalDoses}
           wasteBufferPct={v.wasteBufferPct}
           syringeMinUl={loadFloorUl}
-          maxVolumeUl={toOptionalNumber(v.capacityUl)}
+          maxVolumeUl={capacityUl}
           setFieldValue={form.setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}
         />
@@ -352,7 +379,7 @@ export default function CarrierDosageForm({ carrier }) {
           bodyWeightKg={weightToKg(effectiveAvgBodyWeight, v.avgBodyWeightUnit)}
           pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
           syringeMinUl={loadFloorUl}
-          maxVolumeUl={toOptionalNumber(v.capacityUl)}
+          maxVolumeUl={capacityUl}
           volumePerDoseUl={v.loadVolumeUl}
           onVolumePerDoseChange={(value) => form.setFieldValue('loadVolumeUl', value)}
           volumeLabel={carrier.volumeLabel}
@@ -426,7 +453,10 @@ export default function CarrierDosageForm({ carrier }) {
         carrierRefBodyWeight={v.carrierRefBodyWeight}
         carrierAmountPerSubjectMg={carrierAmountPerSubjectMg}
         totalCarrierMg={totalCarrierMg}
-        capacityUl={v.capacityUl}
+        capacityUl={carrier.capacity.kind === 'per-mass' ? capacityUl : v.capacityUl}
+        absorbencyUl={v.absorbencyUl}
+        absorbencyMass={v.absorbencyMass}
+        absorbencyMassUnit={v.absorbencyMassUnit}
           syringeMinUl={v.syringeMinUl}
           setFieldValue={form.setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}

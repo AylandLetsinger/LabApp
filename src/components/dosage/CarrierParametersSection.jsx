@@ -37,6 +37,9 @@ export default function CarrierParametersSection({
   carrierAmountPerSubjectMg,
   totalCarrierMg,
   capacityUl,
+  absorbencyUl,
+  absorbencyMass,
+  absorbencyMassUnit,
   bodyMassMode,
   avgBodyWeight,
   avgBodyWeightUnit,
@@ -161,38 +164,83 @@ export default function CarrierParametersSection({
         )}
 
         <div>
-          <Group align="flex-end" wrap="wrap" gap="sm" mb={4}>
-            <NumberInput
-              label={carrier.capacityLabel}
-              min={0}
-              decimalScale={3}
-              value={capacityUl}
-              onChange={(value) => setFieldValue('capacityUl', value)}
-              onBlur={scheduleOutputFeedback}
-              w={260}
-              {...inputBlue}
-            />
-            <Text pb="sm" size="sm">
-              µL
-            </Text>
-          </Group>
-          {/* The slider is a quick way to reach the common sizes; the field
-              above is there so an exact value can be typed and cannot be
-              nudged by accident. Both edit the same number. */}
-          <Slider
-            min={carrier.capacitySlider.min}
-            max={carrier.capacitySlider.max}
-            step={carrier.capacitySlider.step}
-            value={Number(capacityUl) || 0}
-            onChange={(value) => setFieldValue('capacityUl', value)}
-            onChangeEnd={scheduleOutputFeedback}
-            marks={carrier.capacitySlider.marks}
-            color={navActiveColor}
-            mb="xl"
-            aria-label={`${carrier.capacityLabel} in microlitres`}
-          />
+          {carrier.capacity.kind === 'per-mass' ? (
+            <Group align="flex-end" wrap="wrap" gap="sm">
+              <NumberInput
+                label={carrier.capacity.label}
+                placeholder="e.g. 5"
+                min={0}
+                decimalScale={4}
+                value={absorbencyUl}
+                onChange={(value) => setFieldValue('absorbencyUl', value)}
+                onBlur={scheduleOutputFeedback}
+                w={230}
+                {...inputBlue}
+              />
+              <Text pb="sm" size="sm">
+                µL per
+              </Text>
+              <NumberInput
+                label="Mass of solid"
+                placeholder="e.g. 100"
+                min={0}
+                decimalScale={4}
+                value={absorbencyMass}
+                onChange={(value) => setFieldValue('absorbencyMass', value)}
+                onBlur={scheduleOutputFeedback}
+                w={130}
+                {...inputBlue}
+              />
+              <LabSelect
+                label="Unit"
+                data={DOSE_UNITS}
+                value={absorbencyMassUnit}
+                onChange={(value) => setFieldValue('absorbencyMassUnit', value ?? 'mg')}
+                onBlur={scheduleOutputFeedback}
+                w={100}
+              />
+              <Text pb="sm" size="sm" c="dimmed">
+                {capacityUl === undefined
+                  ? '→ also needs the amount above'
+                  : `→ ceiling ${roundTo(capacityUl, 3)} µL per subject`}
+              </Text>
+            </Group>
+          ) : (
+            <>
+              <Group align="flex-end" wrap="wrap" gap="sm" mb={4}>
+                <NumberInput
+                  label={carrier.capacity.label}
+                  min={0}
+                  decimalScale={3}
+                  value={capacityUl}
+                  onChange={(value) => setFieldValue('capacityUl', value)}
+                  onBlur={scheduleOutputFeedback}
+                  w={260}
+                  {...inputBlue}
+                />
+                <Text pb="sm" size="sm">
+                  µL
+                </Text>
+              </Group>
+              {/* The slider is a quick way to reach the common sizes; the field
+                  above is there so an exact value can be typed and cannot be
+                  nudged by accident. Both edit the same number. */}
+              <Slider
+                min={carrier.capacity.slider.min}
+                max={carrier.capacity.slider.max}
+                step={carrier.capacity.slider.step}
+                value={Number(capacityUl) || 0}
+                onChange={(value) => setFieldValue('capacityUl', value)}
+                onChangeEnd={scheduleOutputFeedback}
+                marks={carrier.capacity.slider.marks}
+                color={navActiveColor}
+                mb="xl"
+                aria-label={`${carrier.capacity.label} in microlitres`}
+              />
+            </>
+          )}
           <Text size="xs" c="dimmed" className="no-print">
-            {carrier.capacityHint}
+            {carrier.capacity.hint}
           </Text>
         </div>
 

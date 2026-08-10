@@ -30,18 +30,21 @@
 /** @type {Carrier} */
 const MEALWORM = {
   noun: 'worm',
-  capacityLabel: 'Mealworm loading capacity',
-  capacityHint: '* the most liquid a worm absorbs before it leaks',
-  capacitySlider: {
-    min: 25,
-    max: 400,
-    step: 25,
-    marks: [
-      { value: 25, label: '25' },
-      { value: 125, label: '125 (small)' },
-      { value: 250, label: '250 (large)' },
-      { value: 375, label: '375' },
-    ],
+  capacity: {
+    kind: 'absolute',
+    label: 'Mealworm loading capacity',
+    hint: '* the most liquid a worm absorbs before it leaks',
+    slider: {
+      min: 25,
+      max: 400,
+      step: 25,
+      marks: [
+        { value: 25, label: '25' },
+        { value: 125, label: '125 (small)' },
+        { value: 250, label: '250 (large)' },
+        { value: 375, label: '375' },
+      ],
+    },
   },
   defaultCapacityUl: 100,
   usesSyringe: true,
@@ -69,19 +72,16 @@ const MEALWORM = {
 const SOLID = {
   noun: 'portion',
   substanceNoun: 'solid',
-  capacityLabel: 'Most solution the portion will hold',
-  capacityHint:
-    '* how much your lab has decided a portion carries without running or being refused',
-  capacitySlider: {
-    min: 0,
-    max: 500,
-    step: 0.1,
-    marks: [
-      { value: 0, label: '0' },
-      { value: 100, label: '100' },
-      { value: 250, label: '250' },
-      { value: 500, label: '500' },
-    ],
+  /**
+   * A solid's capacity is a property of the material, not of the portion: dough
+   * that takes 5 uL per 100 mg takes 10 uL per 200 mg. Stating it as a rate and
+   * multiplying by the portion each subject gets means the ceiling follows the
+   * portion size instead of having to be re-entered whenever it changes.
+   */
+  capacity: {
+    kind: 'per-mass',
+    label: 'Most solution the solid will hold',
+    hint: '* per unit mass of solid — the ceiling follows the portion size above',
   },
   defaultCapacityUl: 100,
   usesSyringe: false,
