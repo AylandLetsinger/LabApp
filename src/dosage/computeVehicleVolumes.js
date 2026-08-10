@@ -89,16 +89,43 @@ export function primarySolventVolumeMl(doseMg, solubilityMgPerMl) {
 }
 
 /**
- * A row's concentration in mg/mL, whichever unit it was typed in.
+ * One solute's concentration in a row, in mg/mL, whichever unit it was typed in.
  *
- * Rows predating the unit picker carry `solubilityMgPerMl` and no unit; those
- * are already mg/mL, so the fallback keeps them working.
+ * Each solute dissolves at its own rate in a given solvent, so a row holds one
+ * entry per solute, keyed by solute id rather than by position — removing the
+ * first solute must not silently hand its solubility to the second.
  */
-export function rowConcentrationMgPerMl(row, molecularWeightGPerMol) {
-  const value = row.concentrationValue ?? row.solubilityMgPerMl;
-  const unit = row.concentrationUnit ?? 'mg/ml';
-  if (unit === 'mg/ml') return toNonNegativeNumber(value);
-  return molarConcentrationToMgPerMl(value, unit, molecularWeightGPerMol);
+export function rowConcentrationMgPerMl(row, soluteId, molecularWeightGPerMol) {
+  const entry = row.concentrations?.[soluteId];
+  if (entry === undefined) return undefined;
+  const unit = entry.unit ?? 'mg/ml';
+  if (unit === 'mg/ml') return toNonNegativeNumber(entry.value);
+  return molarConcentrationToMgPerMl(entry.value, unit, molecularWeightGPerMol);
+}
+
+/**
+ * How much of this solvent the dose needs, across every solute in it.
+ *
+ * ASSUMPTION, and it is worth stating: each solute is taken to dissolve
+ * independently, so a solvent volume that satisfies the hungriest solute
+ * satisfies the rest. That is the usual formulation approximation for
+ * unrelated compounds at these amounts — it is the MAXIMUM of the individual
+ * requirements, not the sum. It is optimistic where two solutes compete for
+ * the same solvation, so treat a result close to the floor with suspicion and
+ * check it at the bench.
+ *
+ * @returns {number | undefined} Millilitres, or undefined when no solute
+ *   relies on this solvent to dissolve.
+ */
+export function rowRequiredVolumeMl(row, solutes, dosesMg) {
+  let required;
+  solutes.forEach((solute, i) => {
+    const concentration = rowConcentrationMgPerMl(row, solute.id, solute.molecularWeight);
+    const ml = primarySolventVolumeMl(dosesMg[i], concentration);
+    if (ml === undefined) return;
+    required = required === undefined ? ml : Math.max(required, ml);
+  });
+  return required;
 }
 
 /**
@@ -111,13 +138,13 @@ export function rowConcentrationMgPerMl(row, molecularWeightGPerMol) {
  *
  * @returns {number} Microlitres. Zero when nothing is known yet.
  */
-export function suggestedDoseVolumeUl(rows, dosePerSubjectMg, syringeMinUl, molecularWeight) {
+export function suggestedDoseVolumeUl(rows, solutes, dosesMg, syringeMinUl) {
   const parts = rows.map((r) => toNonNegativeNumber(r.parts) ?? 0);
   const partsTotal = parts.reduce((sum, p) => sum + p, 0);
 
   let requiredUl = 0;
   rows.forEach((row, i) => {
-    const ml = primarySolventVolumeMl(dosePerSubjectMg, rowConcentrationMgPerMl(row, molecularWeight));
+    const ml = rowRequiredVolumeMl(row, solutes, dosesMg);
     if (ml === undefined) return;
     const fraction = partsTotal > 0 ? parts[i] / partsTotal : 0;
     // A solvent with no share of the vehicle can never meet a minimum, so it

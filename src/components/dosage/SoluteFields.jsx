@@ -1,4 +1,4 @@
-import { Group, NumberInput, Paper, Text } from '@mantine/core';
+import { Group, NumberInput, Text, TextInput } from '@mantine/core';
 import { DOSE_UNITS, VOLUME_UNITS, WEIGHT_UNITS } from '../../constants/doseUnits';
 import {
   MOLAR_AMOUNT_UNITS,
@@ -20,25 +20,39 @@ const inputBlue = {
   color: inputFieldColor,
 };
 
-export default function Step2DosageTypeSection({
-  stepLabel = 'Step 1 — Dosage type',
-  dosageType,
-  dosePerSubject,
-  dosePerSubjectUnit,
-  doseAmount,
-  doseUnit,
-  bodyWeightAmount,
-  bodyWeightUnit,
-  molecularWeight,
-  doseVolume,
-  doseVolumeUnit,
-  doseConcentrationValue,
-  doseConcentrationMassUnit,
-  doseConcentrationVolumeUnit,
+/**
+ * How one substance is dosed: the type, the numbers, and its molecular weight.
+ *
+ * Every field belongs to a single solute, and `setFieldValue` is scoped to that
+ * solute by the caller, so nothing here needs to know its own position in the
+ * list. That is what lets the same component serve a lone drug and the third
+ * member of a cocktail without a branch.
+ *
+ * The name field only appears once there is more than one substance to tell
+ * apart. Labelling a single drug "GAT228" changes nothing the calculator says.
+ */
+export default function SoluteFields({
+  solute,
   setFieldValue,
   scheduleOutputFeedback,
-  footer,
+  showName = false,
 }) {
+  const {
+    dosageType,
+    dosePerSubject,
+    dosePerSubjectUnit,
+    doseAmount,
+    doseUnit,
+    bodyWeightAmount,
+    bodyWeightUnit,
+    molecularWeight,
+    doseVolume,
+    doseVolumeUnit,
+    doseConcentrationValue,
+    doseConcentrationMassUnit,
+    doseConcentrationVolumeUnit,
+  } = solute;
+
   // Molar units stay hidden until there is a molecular weight to convert with.
   // A molar figure interpreted with the wrong weight is wrong by an arbitrary
   // factor and looks entirely reasonable, so it is not offered as a default.
@@ -46,23 +60,30 @@ export default function Step2DosageTypeSection({
   const massUnits = mw ? [...DOSE_UNITS, ...MOLAR_AMOUNT_UNITS] : DOSE_UNITS;
   const concentrationUnits = mw ? [...DOSE_UNITS, ...MOLAR_CONCENTRATION_UNITS] : DOSE_UNITS;
   const concentrationIsMolar = isMolarConcentrationUnit(doseConcentrationMassUnit);
-  return (
-    <Paper p="md" radius="md" withBorder>
-      <Text fw={600} mb="sm">
-        {stepLabel}
-      </Text>
-      <Text size="sm" c="dimmed" mb="md" className="no-print">
-        Choose how dose is specified, then enter the values (highlighted fields).
-      </Text>
 
-      <LabSelect
-        label="Dosage type"
-        data={DOSAGE_TYPE_OPTIONS}
-        value={dosageType}
-        onChange={(v) => setFieldValue('dosageType', v ?? 'by-body-weight')}
-        onBlur={scheduleOutputFeedback}
-        mb="md"
-      />
+  return (
+    <>
+      <Group align="flex-end" wrap="wrap" gap="sm" mb="md">
+        {showName && (
+          <TextInput
+            label="Name"
+            placeholder="e.g. ketamine"
+            value={solute.name}
+            onChange={(event) => setFieldValue('name', event.currentTarget.value)}
+            onBlur={scheduleOutputFeedback}
+            w={180}
+            {...inputBlue}
+          />
+        )}
+        <LabSelect
+          label="Dosage type"
+          data={DOSAGE_TYPE_OPTIONS}
+          value={dosageType}
+          onChange={(v) => setFieldValue('dosageType', v ?? 'by-body-weight')}
+          onBlur={scheduleOutputFeedback}
+          w={250}
+        />
+      </Group>
 
       {/*
         Molecular weight comes before the dose, because it decides which units
@@ -226,8 +247,6 @@ export default function Step2DosageTypeSection({
           </Text>
         </Group>
       )}
-
-      {footer}
-    </Paper>
+    </>
   );
 }

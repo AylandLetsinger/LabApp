@@ -33,6 +33,7 @@ export default function Step4Outputs({
   units,
   setUnit,
   issues,
+  footer,
 }) {
   // Concentration is stored as mg per mL. Rendering it in another unit pair
   // scales the mass and then scales by how many mL the chosen volume unit is.
@@ -157,6 +158,8 @@ export default function Step4Outputs({
           </Group>
         </div>
       </Stack>
+
+      {footer}
 
       <IssueList issues={issues} />
     </Paper>

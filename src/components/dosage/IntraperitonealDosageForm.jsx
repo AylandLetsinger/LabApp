@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
 import { Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { dosePerAvgSubjectDisplayUnit } from '../../dosage/computeDosePerAvgSubject';
 import {
-  computeDosePerAvgSubjectMg,
-  dosePerAvgSubjectDisplayUnit,
-} from '../../dosage/computeDosePerAvgSubject';
-import { computeInjectionSolutionOutputs } from '../../dosage/computeSolutionOutputs';
+  computeInjectionSolutionOutputs,
+  computeSoluteRequiredMg,
+} from '../../dosage/computeSolutionOutputs';
 import { toOptionalNumber, roundTo } from '../../dosage/numberUtils';
 import { weightToKg } from '../../dosage/unitConversions';
 import { DEFAULT_IP_VEHICLE_ROWS } from '../../dosage/vehicles';
 import { MOUSE_IP_MAX_VOLUME_ML_PER_G } from '../../constants/doseUnits';
+import { makeSolute, soluteDosesMg as computeSoluteDosesMg, totalDoseMg } from '../../dosage/solutes';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
-import Step2DosageTypeSection from './Step2DosageTypeSection';
+import SolutesSection from './SolutesSection';
+import SoluteBreakdown from './SoluteBreakdown';
 import Step3StudyParametersSection from './Step3StudyParametersSection';
 import Step4Outputs from './Step4Outputs';
 import VehicleRatioTable from './VehicleRatioTable';
@@ -21,20 +23,8 @@ import PrintActions from './PrintActions';
 export default function IntraperitonealDosageForm() {
   const form = useForm({
     initialValues: {
-      dosageType: 'by-body-weight',
-      dosePerSubject: '',
-      dosePerSubjectUnit: 'mg',
-      doseAmount: '',
-      doseUnit: 'mg',
-      bodyWeightAmount: '',
-      bodyWeightUnit: 'kg',
-      molecularWeight: '',
-      doseVolume: '',
-      doseVolumeUnit: 'ul',
-      doseConcentrationValue: '',
-      doseConcentrationMassUnit: 'mg',
-      doseConcentrationVolumeUnit: 'ml',
       volPerInjMl: '',
+
       volPerInjWeight: '',
       volPerInjWeightUnit: 'g',
       avgBodyWeight: '',
@@ -47,6 +37,7 @@ export default function IntraperitonealDosageForm() {
   });
   const v = form.values;
 
+  const [solutes, setSolutes] = useState(() => [makeSolute()]);
   const [vehicleRows, setVehicleRows] = useState(DEFAULT_IP_VEHICLE_ROWS);
   const [outputFeedback, scheduleOutputFeedback] = useOutputFeedback();
   const [units, setUnits] = useState({
@@ -59,32 +50,16 @@ export default function IntraperitonealDosageForm() {
   });
   const setUnit = (key, value) => setUnits((prev) => ({ ...prev, [key]: value }));
 
-  const dosePerAvgSubjectMg = useMemo(
+  const soluteDosesMg = useMemo(
     () =>
-      computeDosePerAvgSubjectMg({
-        dosageType: v.dosageType,
-        doseAmount: v.doseAmount,
-        doseUnit: v.doseUnit,
-        refBodyWeight: v.bodyWeightAmount,
-        refBodyWeightUnit: v.bodyWeightUnit,
+      computeSoluteDosesMg(solutes, {
         avgBodyWeight: v.avgBodyWeight,
         avgBodyWeightUnit: v.avgBodyWeightUnit,
-        dosePerSubject: v.dosePerSubject,
-        dosePerSubjectUnit: v.dosePerSubjectUnit,
-        molecularWeightGPerMol: v.molecularWeight,
-        doseVolume: v.doseVolume,
-        doseVolumeUnit: v.doseVolumeUnit,
-        doseConcentrationValue: v.doseConcentrationValue,
-        doseConcentrationMassUnit: v.doseConcentrationMassUnit,
-        doseConcentrationVolumeUnit: v.doseConcentrationVolumeUnit,
       }),
-    [
-      v.dosageType, v.doseAmount, v.doseUnit, v.bodyWeightAmount, v.bodyWeightUnit,
-      v.avgBodyWeight, v.avgBodyWeightUnit, v.dosePerSubject, v.dosePerSubjectUnit,
-      v.molecularWeight, v.doseVolume, v.doseVolumeUnit, v.doseConcentrationValue,
-      v.doseConcentrationMassUnit, v.doseConcentrationVolumeUnit,
-    ],
+    [solutes, v.avgBodyWeight, v.avgBodyWeightUnit],
   );
+  const dosePerAvgSubjectMg = totalDoseMg(soluteDosesMg);
+  const soleSolute = solutes.length === 1 ? solutes[0] : undefined;
 
   const outputs = useMemo(
     () =>
@@ -151,28 +126,21 @@ export default function IntraperitonealDosageForm() {
   // Keep the "Dose per Avg Subject" unit following the unit the dose was
   // entered in, until the user overrides it.
   const naturalDoseUnit = dosePerAvgSubjectDisplayUnit(
-    v.dosageType,
-    v.doseUnit,
-    v.dosePerSubjectUnit,
+    soleSolute?.dosageType,
+    soleSolute?.doseUnit,
+    soleSolute?.dosePerSubjectUnit,
+  );
+
+  /** How much of each substance the whole batch needs, in order. */
+  const soluteBatchMg = soluteDosesMg.map((mg) =>
+    computeSoluteRequiredMg(mg, v.totalInjections, v.wasteBufferPct),
   );
 
   return (
     <Stack gap="lg" mt="md">
-      <Step2DosageTypeSection
-        dosageType={v.dosageType}
-        dosePerSubject={v.dosePerSubject}
-        dosePerSubjectUnit={v.dosePerSubjectUnit}
-        doseAmount={v.doseAmount}
-        doseUnit={v.doseUnit}
-        bodyWeightAmount={v.bodyWeightAmount}
-        bodyWeightUnit={v.bodyWeightUnit}
-        molecularWeight={v.molecularWeight}
-        doseVolume={v.doseVolume}
-        doseVolumeUnit={v.doseVolumeUnit}
-        doseConcentrationValue={v.doseConcentrationValue}
-        doseConcentrationMassUnit={v.doseConcentrationMassUnit}
-        doseConcentrationVolumeUnit={v.doseConcentrationVolumeUnit}
-        setFieldValue={form.setFieldValue}
+      <SolutesSection
+        solutes={solutes}
+        onSolutesChange={setSolutes}
         scheduleOutputFeedback={scheduleOutputFeedback}
       />
 
@@ -201,6 +169,13 @@ export default function IntraperitonealDosageForm() {
         units={{ ...units, dosePerSubject: units.dosePerSubject || naturalDoseUnit }}
         setUnit={setUnit}
         issues={step4Issues}
+        footer={
+          <SoluteBreakdown
+            solutes={solutes}
+            soluteDosesMg={soluteDosesMg}
+            bodyWeightKg={weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit)}
+          />
+        }
       />
 
       <VehicleRatioTable
@@ -209,7 +184,8 @@ export default function IntraperitonealDosageForm() {
         route="ip"
         stepLabel="Step 5 — Vehicle ratio"
         onBlur={scheduleOutputFeedback}
-        dosePerSubjectMg={dosePerAvgSubjectMg}
+        solutes={solutes}
+        soluteDosesMg={soluteDosesMg}
         volumePerSubjectMl={outputs.volumePerAvgSubjectMl}
         bodyWeightKg={weightToKg(v.avgBodyWeight, v.avgBodyWeightUnit)}
         pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
@@ -218,7 +194,9 @@ export default function IntraperitonealDosageForm() {
       <DissolutionTable
         outputFeedback={outputFeedback}
         totalVolumeMl={outputs.totalVolumeMl}
-        soluteRequiredMg={outputs.soluteRequiredMg}
+        solutes={solutes}
+        soluteBatchMg={soluteBatchMg}
+        soluteDosesMg={soluteDosesMg}
         vehicleRows={vehicleRows}
         pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
         stepLabel="Step 6 — Dissolution & vehicle volumes"

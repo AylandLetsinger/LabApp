@@ -27,6 +27,7 @@ export default function WorkingSolutionSection({
   concentrationMassUnit,
   concentrationVolumeUnit,
   molecularWeight,
+  soluteCount = 1,
   availableMl,
   dosePerSubjectMg,
   totalDoses,
@@ -65,7 +66,18 @@ export default function WorkingSolutionSection({
   const have = toPositiveNumber(availableMl);
 
   const issues = [];
-  if (volumePerDoseUl !== undefined) {
+  // One concentration cannot describe two drugs, and quietly applying it to
+  // their combined mass would produce a volume that is wrong for both.
+  if (soluteCount > 1) {
+    issues.push({
+      level: 'error',
+      message:
+        `This step reads a single concentration off the bottle, but ${soluteCount} substances are ` +
+        'listed in Step 1. Remove the extra ones, or switch to powder or stock, where each ' +
+        'substance carries its own concentration.',
+    });
+  }
+  if (volumePerDoseUl !== undefined && soluteCount === 1) {
     if (syringeMinUl > 0 && volumePerDoseUl < syringeMinUl) {
       issues.push({
         level: 'error',
