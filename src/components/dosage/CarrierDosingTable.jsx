@@ -16,8 +16,16 @@ const inputBlue = {
  * Only meaningful when dose scales with body mass — at a fixed absolute dose
  * every animal gets the same volume and the table would be a single number.
  */
+/**
+ * @param {object} p
+ * @param {string} p.carrierNoun What one unit is called: "worm", "portion", "subject".
+ * @param {string} p.loadColumnLabel Heading over the volume column.
+ * @param {string} p.floorWord The instrument that sets the smallest volume.
+ */
 export default function CarrierDosingTable({
-  carrier,
+  carrierNoun,
+  loadColumnLabel,
+  floorWord = 'syringe',
   doseRateMgPerG,
   stockConcentrationMgPerMl,
   minBodyWeightG,
@@ -28,7 +36,6 @@ export default function CarrierDosingTable({
   setFieldValue,
   scheduleOutputFeedback,
   stepLabel = 'Step 5 — Dosing table by body mass',
-  carrierName,
 }) {
   const rows = computeMealwormDosingTable({
     doseRateMgPerG,
@@ -40,8 +47,6 @@ export default function CarrierDosingTable({
     syringeMinUl: loadFloorUl,
   });
 
-  const carrierNoun = (carrierName ?? '').trim() || carrier.noun;
-  const floorWord = carrier.usesSyringe ? 'syringe' : 'pipette';
 
   const issues = [];
   if (rows) {
@@ -49,8 +54,8 @@ export default function CarrierDosingTable({
       issues.push({
         level: 'error',
         message:
-          `Some body weights need more volume than the ${carrierNoun} can hold. Use a more ` +
-          'concentrated solution, or a larger portion.',
+          `Some body weights need more volume than the ${carrierNoun} can take. Use a more ` +
+          'concentrated solution.',
       });
     }
     if (rows.some((r) => r.belowSyringeMinimum)) {
@@ -120,7 +125,7 @@ export default function CarrierDosingTable({
             <Table.Tr>
               <Table.Th ta="left">Body mass</Table.Th>
               <Table.Th ta="left">Dose</Table.Th>
-              <Table.Th ta="left">{carrier.loadColumnLabel}</Table.Th>
+              <Table.Th ta="left">{loadColumnLabel}</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

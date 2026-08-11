@@ -36,7 +36,6 @@ export default function InjectionParametersSection({
   totalInjections,
   wasteBufferPct,
   pipetteMinUl,
-  maxVolumeRateMlPerG,
   showInjectionVolume = true,
   setFieldValue,
   scheduleOutputFeedback,
@@ -98,6 +97,28 @@ export default function InjectionParametersSection({
           </div>
         )}
 
+        {/*
+          Directly under the volume it constrains. The pipette makes up the
+          vehicle; nothing else in this step is about an instrument, so it has
+          no business sitting at the bottom next to the body weights.
+        */}
+        <Group align="flex-end" wrap="wrap" gap="sm">
+          <NumberInput
+            label="Pipette minimum (mixing)"
+            placeholder="e.g. 2"
+            min={0}
+            decimalScale={3}
+            value={pipetteMinUl}
+            onChange={(v) => setFieldValue('pipetteMinUl', v)}
+            onBlur={scheduleOutputFeedback}
+            w={220}
+            {...inputBlue}
+          />
+          <Text pb="sm" size="sm">
+            µL
+          </Text>
+        </Group>
+
         <BodyMassFields
           bodyMassMode={bodyMassMode}
           avgBodyWeight={avgBodyWeight}
@@ -129,41 +150,6 @@ export default function InjectionParametersSection({
           scheduleOutputFeedback={scheduleOutputFeedback}
         />
 
-        <div>
-          <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Pipette minimum (mixing the vehicle)"
-              placeholder="e.g. 2"
-              min={0}
-              decimalScale={3}
-              value={pipetteMinUl}
-              onChange={(v) => setFieldValue('pipetteMinUl', v)}
-              onBlur={scheduleOutputFeedback}
-              w={260}
-              {...inputBlue}
-            />
-            <Text pb="sm" size="sm">
-              µL
-            </Text>
-            <NumberInput
-              label="Max injection volume"
-              placeholder="0.01"
-              min={0}
-              decimalScale={5}
-              value={maxVolumeRateMlPerG}
-              onChange={(v) => setFieldValue('maxVolumeRateMlPerG', v)}
-              onBlur={scheduleOutputFeedback}
-              w={190}
-              {...inputBlue}
-            />
-            <Text pb="sm" size="sm">
-              mL per g body weight
-            </Text>
-          </Group>
-          <Text size="xs" c="dimmed" mt={6} className="no-print">
-            * 0.01 mL/g is the usual mouse intraperitoneal ceiling
-          </Text>
-        </div>
       </Stack>
 
       <IssueList issues={issues} />

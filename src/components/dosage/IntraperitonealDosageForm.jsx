@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { computeDoseRateMgPerG } from '../../dosage/computeMealwormOutputs';
 import { computeSoluteRequiredMg } from '../../dosage/computeSolutionOutputs';
 import { computeVehicleVolumes } from '../../dosage/computeVehicleVolumes';
 import { concentrationToMgPerMl } from '../../dosage/molarUnits';
 import { roundTo, toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
 import { weightToKg } from '../../dosage/unitConversions';
 import { DEFAULT_IP_VEHICLE_ROWS } from '../../dosage/vehicles';
-import { MOUSE_IP_MAX_VOLUME_ML_PER_G } from '../../constants/doseUnits';
 import { PREPARATION_MODES } from '../../dosage/preparationModes';
 import { makeSolute, soluteDosesMg as computeSoluteDosesMg, totalDoseMg } from '../../dosage/solutes';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
@@ -18,6 +18,7 @@ import InjectionParametersSection from './InjectionParametersSection';
 import WorkingSolutionSection from './WorkingSolutionSection';
 import VehicleRatioTable from './VehicleRatioTable';
 import DissolutionTable from './DissolutionTable';
+import CarrierDosingTable from './CarrierDosingTable';
 import RecipeNarrative from './RecipeNarrative';
 import PrintActions from './PrintActions';
 
@@ -45,7 +46,9 @@ export default function IntraperitonealDosageForm() {
       totalInjections: '',
       wasteBufferPct: 0,
       pipetteMinUl: 2,
-      maxVolumeRateMlPerG: MOUSE_IP_MAX_VOLUME_ML_PER_G,
+      minBodyWeightG: 18,
+      maxBodyWeightG: 35,
+      stepG: 1,
       stockAvailableMl: '',
       workingConcentrationValue: '',
       workingConcentrationMassUnit: 'mg',
@@ -140,12 +143,6 @@ export default function IntraperitonealDosageForm() {
     v.volPerInjWeight, v.volPerInjWeightUnit, bodyWeightKg,
   ]);
 
-  /** The tolerated ceiling for this animal, from the rate the user set. */
-  const maxVolumePerSubjectMl = useMemo(() => {
-    const rate = toPositiveNumber(v.maxVolumeRateMlPerG);
-    if (rate === undefined || bodyWeightKg === undefined) return undefined;
-    return rate * bodyWeightKg * 1000; // mL per gram x grams
-  }, [v.maxVolumeRateMlPerG, bodyWeightKg]);
 
   const totalVolumeMl = useMemo(() => {
     const injections = toOptionalNumber(v.totalInjections);
@@ -177,6 +174,26 @@ export default function IntraperitonealDosageForm() {
       ? dosePerAvgSubjectMg / volumePerSubjectMl
       : undefined;
 
+  /**
+   * The rate the dosing table scales, in mg per gram of body mass.
+   *
+   * Only a single substance dosed by body weight has one unambiguous rate, so
+   * the table is offered only then — the same rule the oral calculators use.
+   */
+  const doseRateMgPerG = useMemo(
+    () =>
+      soleSolute?.dosageType === 'by-body-weight'
+        ? computeDoseRateMgPerG({
+            doseAmount: soleSolute.doseAmount,
+            doseUnit: soleSolute.doseUnit,
+            refBodyWeight: soleSolute.bodyWeightAmount,
+            refBodyWeightUnit: soleSolute.bodyWeightUnit,
+            molecularWeightGPerMol: soleSolute.molecularWeight,
+          })
+        : undefined,
+    [soleSolute],
+  );
+
   const achievedDoseRateMgPerKg =
     dosePerAvgSubjectMg !== undefined && bodyWeightKg !== undefined && bodyWeightKg > 0
       ? dosePerAvgSubjectMg / bodyWeightKg
@@ -191,25 +208,8 @@ export default function IntraperitonealDosageForm() {
         message: 'Number of injections is 0, so every batch figure below is zero. Enter at least 1.',
       });
     }
-    if (
-      volumePerSubjectMl !== undefined &&
-      maxVolumePerSubjectMl !== undefined &&
-      volumePerSubjectMl > maxVolumePerSubjectMl
-    ) {
-      issues.push({
-        level: 'error',
-        message:
-          `Volume per subject is ${roundTo(volumePerSubjectMl, 4)} mL, above the ` +
-          `${roundTo(maxVolumePerSubjectMl, 4)} mL ceiling for a ${roundTo(Number(effectiveAvgBodyWeight), 4)} ` +
-          `${v.avgBodyWeightUnit} subject at ${v.maxVolumeRateMlPerG} mL/g. ` +
-          'Reduce the injection volume, or use a more concentrated solution.',
-      });
-    }
     return issues;
-  }, [
-    v.totalInjections, volumePerSubjectMl, maxVolumePerSubjectMl, effectiveAvgBodyWeight,
-    v.avgBodyWeightUnit, v.maxVolumeRateMlPerG,
-  ]);
+  }, [v.totalInjections]);
 
   const narrative = (
     <RecipeNarrative
@@ -254,7 +254,6 @@ export default function IntraperitonealDosageForm() {
         totalInjections={v.totalInjections}
         wasteBufferPct={v.wasteBufferPct}
         pipetteMinUl={v.pipetteMinUl}
-        maxVolumeRateMlPerG={v.maxVolumeRateMlPerG}
         showInjectionVolume={!isWorking}
         setFieldValue={form.setFieldValue}
         scheduleOutputFeedback={scheduleOutputFeedback}
@@ -274,9 +273,6 @@ export default function IntraperitonealDosageForm() {
           totalDoses={v.totalInjections}
           wasteBufferPct={v.wasteBufferPct}
           syringeMinUl={0}
-          maxVolumeUl={
-            maxVolumePerSubjectMl === undefined ? undefined : maxVolumePerSubjectMl * 1000
-          }
           setFieldValue={form.setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}
         />
@@ -291,9 +287,6 @@ export default function IntraperitonealDosageForm() {
           soluteDosesMg={soluteDosesMg}
           bodyWeightKg={bodyWeightKg}
           pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
-          maxVolumeUl={
-            maxVolumePerSubjectMl === undefined ? undefined : maxVolumePerSubjectMl * 1000
-          }
           volumePerDoseUl={
             volumePerSubjectMl === undefined ? undefined : volumePerSubjectMl * 1000
           }
@@ -325,6 +318,27 @@ export default function IntraperitonealDosageForm() {
       )}
 
       {isWorking && narrative}
+
+      {/*
+        For an injection both the dose and the volume scale with the animal, so
+        the concentration is the same for every row and the volume column is
+        simply the rate times the body mass. Nothing physically bounds it, so
+        no capacity or instrument floor is passed — there is no container.
+      */}
+      {soleSolute?.dosageType === 'by-body-weight' && (
+        <CarrierDosingTable
+          carrierNoun="subject"
+          loadColumnLabel="Volume to inject"
+          doseRateMgPerG={doseRateMgPerG}
+          stockConcentrationMgPerMl={concentrationMgPerMl}
+          minBodyWeightG={v.minBodyWeightG}
+          maxBodyWeightG={v.maxBodyWeightG}
+          stepG={v.stepG}
+          setFieldValue={form.setFieldValue}
+          scheduleOutputFeedback={scheduleOutputFeedback}
+          stepLabel={`Step ${isWorking ? 4 : 5} — Dosing table by body mass`}
+        />
+      )}
 
       <PrintActions title="intraperitoneal injection calculator" />
     </Stack>
