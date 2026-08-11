@@ -1,4 +1,16 @@
-import { ActionIcon, Button, Group, NumberInput, Paper, Table, Text, Tooltip } from '@mantine/core';
+import {
+  ActionIcon,
+  Button,
+  Divider,
+  Group,
+  NumberInput,
+  Paper,
+  Stack,
+  Table,
+  Text,
+  Tooltip,
+} from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { IconInfoCircle, IconPlus, IconTrash } from '@tabler/icons-react';
 import LabSelect from '../LabSelect';
 import IssueList from './IssueList';
@@ -25,6 +37,25 @@ import { errorColor } from '../../theme';
 
 /** mg/mL plus whatever molar units a molecular weight unlocks. */
 const CONCENTRATION_UNITS = [{ value: 'mg/ml', label: 'mg/mL' }, ...MOLAR_CONCENTRATION_UNITS];
+
+/**
+ * Below this the seven columns stop fitting and become cards. It matches the
+ * table's own minWidth, so the switch happens exactly when the alternative
+ * would have been a sideways scroll.
+ */
+const CARD_LAYOUT_BELOW = '(max-width: 760px)';
+
+/** A read-only figure in the card layout: the column heading, then the value. */
+function CardStat({ label, children }) {
+  return (
+    <div style={{ flex: '1 1 44%', minWidth: 0 }}>
+      <Text size="xs" c="dimmed">
+        {label}
+      </Text>
+      {children}
+    </div>
+  );
+}
 
 /**
  * Vehicle composition.
@@ -62,6 +93,7 @@ export default function VehicleRatioTable({
   totalStockNeededMl,
 }) {
   const manySolutes = solutes.length > 1;
+  const narrow = useMediaQuery(CARD_LAYOUT_BELOW);
   const setRow = (index, patch) =>
     onRowsChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
 
@@ -222,6 +254,174 @@ export default function VehicleRatioTable({
     issues.push({ level: 'error', message: 'The same solvent is listed more than once.' });
   }
 
+  /* ---- one definition of every cell, used by both layouts ---- */
+
+  const solventSelect = (row, index) => (
+    <LabSelect
+      data={VEHICLE_OPTIONS}
+      value={row.vehicleId}
+      onChange={(value) => setRow(index, { vehicleId: value ?? row.vehicleId })}
+      onBlur={onBlur}
+      label={row.isStock ? 'stock, dissolved in' : undefined}
+      aria-label={row.isStock ? 'What the stock is dissolved in' : `Solvent ${index + 1}`}
+      searchable
+    />
+  );
+
+  /*
+   * One entry per solute. Each dissolves at its own rate, so a single figure
+   * per solvent would be a figure for an unnamed drug — which is the sort of
+   * ambiguity that gets a formulation weighed out wrong.
+   */
+  const concentrationFields = (row, index) =>
+    solutes.map((solute, s) => {
+      const entry = row.concentrations?.[solute.id] ?? {};
+      const molar = toPositiveNumber(solute.molecularWeight) !== undefined;
+      return (
+        <div key={solute.id} style={{ marginTop: s === 0 ? 0 : 8 }}>
+          {(manySolutes || (solute.name ?? '').trim() !== '') && (
+            <Text size="xs" c="dimmed" truncate>
+              {soluteDisplayName(solute, s)}
+            </Text>
+          )}
+          <NumberInput
+            placeholder={row.isStock ? 'conc.' : 'n/a'}
+            min={0}
+            decimalScale={4}
+            value={entry.value ?? ''}
+            onChange={(value) => setConcentration(index, solute.id, { value })}
+            onBlur={onBlur}
+            aria-label={
+              row.isStock
+                ? `Stock concentration of ${soluteDisplayName(solute, s)}`
+                : `Solubility of ${soluteDisplayName(solute, s)} in solvent ${index + 1}`
+            }
+            hideControls
+          />
+          {molar && (
+            <LabSelect
+              data={CONCENTRATION_UNITS}
+              value={entry.unit ?? 'mg/ml'}
+              onChange={(value) => setConcentration(index, solute.id, { unit: value ?? 'mg/ml' })}
+              onBlur={onBlur}
+              aria-label={`Concentration unit for ${soluteDisplayName(solute, s)} in solvent ${index + 1}`}
+              size="xs"
+              mt={4}
+            />
+          )}
+        </div>
+      );
+    });
+
+  const ratioInput = (row, index) => (
+    <NumberInput
+      placeholder="-"
+      min={0}
+      decimalScale={4}
+      value={row.parts}
+      onChange={(value) => setRow(index, { parts: value })}
+      onBlur={onBlur}
+      aria-label={`Ratio parts for solvent ${index + 1}`}
+      hideControls
+    />
+  );
+
+  const removeButton = (row, index) => (
+    <ActionIcon
+      variant="subtle"
+      color="gray"
+      aria-label={`Remove solvent ${index + 1}`}
+      onClick={() => removeRow(index)}
+      disabled={rows.length <= 1 || row.isStock}
+    >
+      <IconTrash size={16} />
+    </ActionIcon>
+  );
+
+  /** Everything read-only about a row, computed once and rendered by either layout. */
+  const rowView = (row, index) => {
+    const vehicle = getVehicle(row.vehicleId);
+    const cell = split?.rows[index];
+    const minMl = rowRequiredVolumeMl(row, solutes, soluteDosesMg);
+    const shortOfMinimum = minMl !== undefined && cell && cell.exactMl < minMl - 1e-12;
+    const range = toleratedBurdenRange(row.vehicleId, { route });
+    const burden =
+      canComputeBurden && cell
+        ? computeSolventBurdenMgPerKg({
+            vehicleId: row.vehicleId,
+            percentVv: cell.percentVv,
+            volumePerSubjectMl,
+            bodyWeightKg,
+          })
+        : undefined;
+    const verdict = classifyBurden(burden, range);
+    const burdenColor =
+      verdict === 'above-highest' ? errorColor : verdict === 'above-lowest' ? 'orange.7' : undefined;
+
+    const routeWord = route === 'ip' ? 'intraperitoneal' : 'oral';
+    const published =
+      range === undefined
+        ? `No published ${routeWord} tolerability figure for this solvent in mice. Other routes, if any, are listed below.`
+        : `Published tolerated, ${routeWord}: ` +
+          `${roundTo(range.lowest.mgPerKg, 1)}–${roundTo(range.highest.mgPerKg, 1)} mg/kg`;
+    const observations = relevantObservations(row.vehicleId, { route })
+      .slice(0, 4)
+      .map((o) => {
+        const mg = observationBurdenMgPerKg(o, vehicle.densityGPerMl);
+        const amount = mg === undefined ? 'not computable' : `${roundTo(mg, 1)} mg/kg`;
+        const conc = o.percentVv !== undefined ? `${o.percentVv}%` : '';
+        const vol = o.volumeMlPerKg !== undefined ? ` at ${o.volumeMlPerKg} mL/kg` : '';
+        return `${o.species} ${o.route.toUpperCase()} ${conc}${vol} = ${amount} — ${o.duration}, ${o.outcome}`;
+      })
+      .join('\n\n');
+    const note = vehicle?.note ? `\n\n${vehicle.label}: ${vehicle.note}` : '';
+
+    return {
+      requiredNode: (
+        <Text size="sm" ff="monospace" c={shortOfMinimum ? errorColor : 'dimmed'}>
+          {minMl === undefined ? '—' : `${roundTo(minMl * 1000, 2)} µL`}
+        </Text>
+      ),
+      percentNode: (
+        <AutoValue value={cell?.percentVv}>
+          <Text size="sm" fw={500} c={burdenColor}>
+            {cell ? `${roundTo(cell.percentVv, 2)}%` : '—'}
+          </Text>
+        </AutoValue>
+      ),
+      volumeNode: (
+        <AutoValue value={cell?.displayMl}>
+          <Text
+            size="sm"
+            fw={600}
+            ff="monospace"
+            c={shortOfMinimum || cell?.belowPipetteMinimum ? errorColor : undefined}
+          >
+            {cell ? `${roundTo(cell.displayMl * 1000, 2)} µL` : '—'}
+          </Text>
+        </AutoValue>
+      ),
+      burdenNode: (
+        <Group gap={4} wrap="nowrap">
+          <AutoValue value={burden}>
+            <Text size="sm" fw={600} ff="monospace" c={burdenColor}>
+              {burden === undefined ? '—' : roundTo(burden, 1)}
+            </Text>
+          </AutoValue>
+          <Tooltip
+            label={`${published}${observations ? `\n\n${observations}` : ''}${note}`}
+            multiline
+            w={430}
+            withArrow
+            events={{ hover: true, focus: true, touch: true }}
+          >
+            <IconInfoCircle size={14} opacity={0.5} style={{ cursor: 'help' }} />
+          </Tooltip>
+        </Group>
+      ),
+    };
+  };
+
   return (
     <Paper p="md" radius="md" withBorder>
       <Text fw={600} mb="sm">
@@ -234,187 +434,85 @@ export default function VehicleRatioTable({
         <strong>Your IACUC protocol governs, not this table.</strong>
       </Text>
 
-      <Table.ScrollContainer minWidth={760}>
-        <Table verticalSpacing="sm" horizontalSpacing="sm" withTableBorder withColumnBorders>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th ta="left" miw={150}>SOLVENT</Table.Th>
-              <Table.Th ta="left" w={130}>solubility /<br />stock conc.</Table.Th>
-              <Table.Th ta="left" w={105}>required<br />(per dose)</Table.Th>
-              <Table.Th ta="left" w={80}>ratio</Table.Th>
-              <Table.Th ta="left" w={78}>%(v/v)</Table.Th>
-              <Table.Th ta="left" w={92}>volume<br />(per dose)</Table.Th>
-              <Table.Th ta="left" w={108}>delivers<br />(mg/kg)</Table.Th>
-              <Table.Th w={38} />
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {rows.map((row, index) => {
-              const vehicle = getVehicle(row.vehicleId);
-              const cell = split?.rows[index];
-              const minMl = rowRequiredVolumeMl(row, solutes, soluteDosesMg);
-              const shortOfMinimum = minMl !== undefined && cell && cell.exactMl < minMl - 1e-12;
-              const range = toleratedBurdenRange(row.vehicleId, { route });
-              const burden =
-                canComputeBurden && cell
-                  ? computeSolventBurdenMgPerKg({
-                      vehicleId: row.vehicleId,
-                      percentVv: cell.percentVv,
-                      volumePerSubjectMl,
-                      bodyWeightKg,
-                    })
-                  : undefined;
-              const verdict = classifyBurden(burden, range);
-              const burdenColor =
-                verdict === 'above-highest'
-                  ? errorColor
-                  : verdict === 'above-lowest'
-                    ? 'orange.7'
-                    : undefined;
+      {narrow ? (
+        /*
+         * One card per solvent. Seven columns cannot be read on a phone without
+         * scrolling sideways, and a number you have to scroll to reach is a
+         * number you stop checking. The controls are identical — only the
+         * arrangement changes.
+         */
+        <Stack gap="sm">
+          {rows.map((row, index) => {
+            const view = rowView(row, index);
+            return (
+              <Paper key={`${row.vehicleId}-${index}`} p="sm" radius="sm" withBorder>
+                <Group align="flex-end" wrap="nowrap" gap="xs" mb="xs">
+                  <div style={{ flex: 1, minWidth: 0 }}>{solventSelect(row, index)}</div>
+                  {removeButton(row, index)}
+                </Group>
 
-              const published =
-                range === undefined
-                  ? `No published ${route === 'ip' ? 'intraperitoneal' : 'oral'} tolerability figure for this solvent in mice. Other routes, if any, are listed below.`
-                  : `Published tolerated, ${route === 'ip' ? 'intraperitoneal' : 'oral'}: ` +
-                    `${roundTo(range.lowest.mgPerKg, 1)}–${roundTo(range.highest.mgPerKg, 1)} mg/kg`;
-              const observations = relevantObservations(row.vehicleId, { route })
-                .slice(0, 4)
-                .map((o) => {
-                  const mg = observationBurdenMgPerKg(o, vehicle.densityGPerMl);
-                  const amount = mg === undefined ? 'not computable' : `${roundTo(mg, 1)} mg/kg`;
-                  const conc = o.percentVv !== undefined ? `${o.percentVv}%` : '';
-                  const vol = o.volumeMlPerKg !== undefined ? ` at ${o.volumeMlPerKg} mL/kg` : '';
-                  return `${o.species} ${o.route.toUpperCase()} ${conc}${vol} = ${amount} — ${o.duration}, ${o.outcome}`;
-                })
-                .join('\n\n');
-              const note = vehicle?.note ? `\n\n${vehicle.label}: ${vehicle.note}` : '';
-
-              return (
-                <Table.Tr key={`${row.vehicleId}-${index}`}>
-                  <Table.Td>
-                    <LabSelect
-                      data={VEHICLE_OPTIONS}
-                      value={row.vehicleId}
-                      onChange={(value) => setRow(index, { vehicleId: value ?? row.vehicleId })}
-                      onBlur={onBlur}
-                      label={row.isStock ? 'stock, dissolved in' : undefined}
-                      aria-label={row.isStock ? 'What the stock is dissolved in' : `Solvent ${index + 1}`}
-                      searchable
-                    />
-                  </Table.Td>
-                  <Table.Td>
-                    {/*
-                      One entry per solute. Each dissolves at its own rate, so
-                      a single figure per solvent would be a figure for an
-                      unnamed drug — which is the sort of ambiguity that gets
-                      a formulation weighed out wrong.
-                    */}
-                    {solutes.map((solute, s) => {
-                      const entry = row.concentrations?.[solute.id] ?? {};
-                      const molar = toPositiveNumber(solute.molecularWeight) !== undefined;
-                      return (
-                        <div key={solute.id} style={{ marginTop: s === 0 ? 0 : 8 }}>
-                          {(manySolutes || (solute.name ?? '').trim() !== '') && (
-                            <Text size="xs" c="dimmed" truncate>
-                              {soluteDisplayName(solute, s)}
-                            </Text>
-                          )}
-                          <NumberInput
-                            placeholder={row.isStock ? 'conc.' : 'n/a'}
-                            min={0}
-                            decimalScale={4}
-                            value={entry.value ?? ''}
-                            onChange={(value) => setConcentration(index, solute.id, { value })}
-                            onBlur={onBlur}
-                            aria-label={
-                              row.isStock
-                                ? `Stock concentration of ${soluteDisplayName(solute, s)}`
-                                : `Solubility of ${soluteDisplayName(solute, s)} in solvent ${index + 1}`
-                            }
-                            hideControls
-                          />
-                          {molar && (
-                            <LabSelect
-                              data={CONCENTRATION_UNITS}
-                              value={entry.unit ?? 'mg/ml'}
-                              onChange={(value) =>
-                                setConcentration(index, solute.id, { unit: value ?? 'mg/ml' })
-                              }
-                              onBlur={onBlur}
-                              aria-label={`Concentration unit for ${soluteDisplayName(solute, s)} in solvent ${index + 1}`}
-                              size="xs"
-                              mt={4}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" ff="monospace" c={shortOfMinimum ? errorColor : 'dimmed'}>
-                      {minMl === undefined ? '—' : `${roundTo(minMl * 1000, 2)} µL`}
+                <Group align="flex-end" wrap="wrap" gap="sm" mb="xs">
+                  <div style={{ flex: '1 1 130px', minWidth: 120 }}>
+                    <Text size="xs" c="dimmed" mb={2}>
+                      {row.isStock ? 'stock conc.' : 'solubility'}
                     </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <NumberInput
-                      placeholder="-"
-                      min={0}
-                      decimalScale={4}
-                      value={row.parts}
-                      onChange={(value) => setRow(index, { parts: value })}
-                      onBlur={onBlur}
-                      aria-label={`Ratio parts for solvent ${index + 1}`}
-                      hideControls
-                    />
-                  </Table.Td>
-                  <Table.Td>
-                    <AutoValue value={cell?.percentVv}>
-                      <Text size="sm" fw={500} c={burdenColor}>
-                        {cell ? `${roundTo(cell.percentVv, 2)}%` : '—'}
-                      </Text>
-                    </AutoValue>
-                  </Table.Td>
-                  <Table.Td>
-                    <AutoValue value={cell?.displayMl}>
-                      <Text
-                        size="sm"
-                        fw={600}
-                        ff="monospace"
-                        c={shortOfMinimum || cell?.belowPipetteMinimum ? errorColor : undefined}
-                      >
-                        {cell ? `${roundTo(cell.displayMl * 1000, 2)} µL` : '—'}
-                      </Text>
-                    </AutoValue>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap={4} wrap="nowrap">
-                      <AutoValue value={burden}>
-                        <Text size="sm" fw={600} ff="monospace" c={burdenColor}>
-                          {burden === undefined ? '—' : roundTo(burden, 1)}
-                        </Text>
-                      </AutoValue>
-                      <Tooltip label={`${published}${observations ? `\n\n${observations}` : ''}${note}`} multiline w={430} withArrow events={{ hover: true, focus: true, touch: true }}>
-                        <IconInfoCircle size={14} opacity={0.5} style={{ cursor: 'help' }} />
-                      </Tooltip>
-                    </Group>
-                  </Table.Td>
-                  <Table.Td>
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      aria-label={`Remove solvent ${index + 1}`}
-                      onClick={() => removeRow(index)}
-                      disabled={rows.length <= 1 || row.isStock}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Table.Td>
-                </Table.Tr>
-              );
-            })}
-          </Table.Tbody>
-        </Table>
-      </Table.ScrollContainer>
+                    {concentrationFields(row, index)}
+                  </div>
+                  <div style={{ flex: '0 0 84px' }}>
+                    <Text size="xs" c="dimmed" mb={2}>
+                      ratio
+                    </Text>
+                    {ratioInput(row, index)}
+                  </div>
+                </Group>
+
+                <Divider mb={6} />
+
+                <Group justify="space-between" wrap="wrap" gap="xs">
+                  <CardStat label="required (per dose)">{view.requiredNode}</CardStat>
+                  <CardStat label="volume (per dose)">{view.volumeNode}</CardStat>
+                  <CardStat label="%(v/v)">{view.percentNode}</CardStat>
+                  <CardStat label="delivers (mg/kg)">{view.burdenNode}</CardStat>
+                </Group>
+              </Paper>
+            );
+          })}
+        </Stack>
+      ) : (
+        <Table.ScrollContainer minWidth={760}>
+          <Table verticalSpacing="sm" horizontalSpacing="sm" withTableBorder withColumnBorders>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th ta="left" miw={150}>SOLVENT</Table.Th>
+                <Table.Th ta="left" w={130}>solubility /<br />stock conc.</Table.Th>
+                <Table.Th ta="left" w={105}>required<br />(per dose)</Table.Th>
+                <Table.Th ta="left" w={80}>ratio</Table.Th>
+                <Table.Th ta="left" w={78}>%(v/v)</Table.Th>
+                <Table.Th ta="left" w={92}>volume<br />(per dose)</Table.Th>
+                <Table.Th ta="left" w={108}>delivers<br />(mg/kg)</Table.Th>
+                <Table.Th w={38} />
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {rows.map((row, index) => {
+                const view = rowView(row, index);
+                return (
+                  <Table.Tr key={`${row.vehicleId}-${index}`}>
+                    <Table.Td>{solventSelect(row, index)}</Table.Td>
+                    <Table.Td>{concentrationFields(row, index)}</Table.Td>
+                    <Table.Td>{view.requiredNode}</Table.Td>
+                    <Table.Td>{ratioInput(row, index)}</Table.Td>
+                    <Table.Td>{view.percentNode}</Table.Td>
+                    <Table.Td>{view.volumeNode}</Table.Td>
+                    <Table.Td>{view.burdenNode}</Table.Td>
+                    <Table.Td>{removeButton(row, index)}</Table.Td>
+                  </Table.Tr>
+                );
+              })}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
+      )}
 
       <Button
         variant="subtle"
