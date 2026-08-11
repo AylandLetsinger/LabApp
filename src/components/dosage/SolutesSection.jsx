@@ -12,12 +12,13 @@ import { makeSolute, soluteDisplayName } from '../../dosage/solutes';
  * drug arriving with the first one's dose already filled in is exactly the
  * plausible-looking wrong value this app tries not to produce.
  */
-function makeAdditionalSolute(solutes) {
+function makeAdditionalSolute(solutes, defaults) {
   const first = solutes[0];
   return makeSolute({
     dosageType: first?.dosageType ?? 'by-body-weight',
     bodyWeightAmount: first?.bodyWeightAmount ?? '',
     bodyWeightUnit: first?.bodyWeightUnit ?? 'kg',
+    ...defaults,
   });
 }
 
@@ -38,6 +39,8 @@ export default function SolutesSection({
   onSolutesChange,
   scheduleOutputFeedback,
   canAddSolutes = true,
+  soluteFieldProps,
+  newSoluteDefaults,
   footer,
 }) {
   const many = solutes.length > 1;
@@ -83,6 +86,7 @@ export default function SolutesSection({
             solute={solute}
             setFieldValue={setSoluteField(index)}
             scheduleOutputFeedback={scheduleOutputFeedback}
+            {...soluteFieldProps}
           />
         </div>
       ))}
@@ -98,7 +102,7 @@ export default function SolutesSection({
           size="compact-sm"
           leftSection={<IconPlus size={14} />}
           mt="md"
-          onClick={() => onSolutesChange([...solutes, makeAdditionalSolute(solutes)])}
+          onClick={() => onSolutesChange([...solutes, makeAdditionalSolute(solutes, newSoluteDefaults)])}
         >
           Add solute
         </Button>

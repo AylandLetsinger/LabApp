@@ -5,20 +5,18 @@ import {
   MOLAR_CONCENTRATION_UNITS,
   isMolarConcentrationUnit,
 } from '../../dosage/molarUnits';
+import { DOSAGE_TYPE_OPTIONS, MASS_PER_ML_UNITS } from '../../dosage/dosageTypes';
 import { roundTo, toPositiveNumber } from '../../dosage/numberUtils';
 import LabSelect from '../LabSelect';
 import { inputFieldColor } from '../../theme';
 
-const DOSAGE_TYPE_OPTIONS = [
-  { value: 'per-subject', label: 'Dose per subject' },
-  { value: 'by-body-weight', label: 'Dose by body weight' },
-  { value: 'by-volume-concentration', label: 'Dose by volume × concentration' },
-];
+
 
 const inputBlue = {
   variant: 'filled',
   color: inputFieldColor,
 };
+
 
 /**
  * How one substance is dosed: the type, the numbers, and its molecular weight.
@@ -33,7 +31,13 @@ const inputBlue = {
  * page someone can follow at the bench, where "of your solute" is a page they
  * have to remember the rest of.
  */
-export default function SoluteFields({ solute, setFieldValue, scheduleOutputFeedback }) {
+export default function SoluteFields({
+  solute,
+  setFieldValue,
+  scheduleOutputFeedback,
+  dosageTypeOptions = DOSAGE_TYPE_OPTIONS,
+  targetVolumeNoun = 'well',
+}) {
   const {
     dosageType,
     dosePerSubject,
@@ -70,14 +74,17 @@ export default function SoluteFields({ solute, setFieldValue, scheduleOutputFeed
           w={200}
           {...inputBlue}
         />
-        <LabSelect
-          label="Dosage type"
-          data={DOSAGE_TYPE_OPTIONS}
-          value={dosageType}
-          onChange={(v) => setFieldValue('dosageType', v ?? 'by-body-weight')}
-          onBlur={scheduleOutputFeedback}
-          w={250}
-        />
+        {/* A menu of one is a label pretending to be a choice. */}
+        {dosageTypeOptions.length > 1 && (
+          <LabSelect
+            label="Dosage type"
+            data={dosageTypeOptions}
+            value={dosageType}
+            onChange={(v) => setFieldValue('dosageType', v ?? dosageTypeOptions[0].value)}
+            onBlur={scheduleOutputFeedback}
+            w={250}
+          />
+        )}
       </Group>
 
       {/*
@@ -177,6 +184,33 @@ export default function SoluteFields({ solute, setFieldValue, scheduleOutputFeed
             onBlur={scheduleOutputFeedback}
             w={100}
           />
+        </Group>
+      )}
+
+      {dosageType === 'target-concentration' && (
+        <Group align="flex-end" wrap="wrap" gap="sm">
+          <NumberInput
+            label="Target concentration"
+            placeholder="e.g. 10"
+            min={0}
+            decimalScale={6}
+            w={160}
+            value={solute.targetConcentrationValue}
+            onChange={(v) => setFieldValue('targetConcentrationValue', v)}
+            onBlur={scheduleOutputFeedback}
+            {...inputBlue}
+          />
+          <LabSelect
+            label="Unit"
+            data={mw ? [...MASS_PER_ML_UNITS, ...MOLAR_CONCENTRATION_UNITS] : MASS_PER_ML_UNITS}
+            value={solute.targetConcentrationUnit}
+            onChange={(v) => setFieldValue('targetConcentrationUnit', v ?? 'mg/ml')}
+            onBlur={scheduleOutputFeedback}
+            w={110}
+          />
+          <Text pb="sm" size="sm">
+            in the {targetVolumeNoun}
+          </Text>
         </Group>
       )}
 
