@@ -145,6 +145,34 @@ export function mgToDrugAmountUnit(mg, unit, molecularWeightGPerMol) {
   return mgToMassUnit(mg, unit);
 }
 
+/** Milligrams in one mL, for each mass-per-millilitre unit. */
+const MG_PER_ML_PER_UNIT = {
+  'g/ml': 1000,
+  'mg/ml': 1,
+  'ug/ml': 1e-3,
+  'ng/ml': 1e-6,
+};
+
+/**
+ * A concentration written either as mass per millilitre (mg/mL, µg/mL) or as a
+ * molarity, in mg/mL.
+ *
+ * The in-vitro forms use this rather than the mass-plus-volume pair, because
+ * "10 µM" and "5 µg/mL" are each a single choice and pairing them with a
+ * separate volume unit would invite "µg per litre" and similar.
+ *
+ * @returns {number | undefined}
+ */
+export function anyConcentrationToMgPerMl(value, unit, molecularWeightGPerMol) {
+  if (isMolarConcentrationUnit(unit)) {
+    return molarConcentrationToMgPerMl(value, unit, molecularWeightGPerMol);
+  }
+  const n = toOptionalNumber(value);
+  const factor = MG_PER_ML_PER_UNIT[unit];
+  if (n === undefined || factor === undefined) return undefined;
+  return n * factor;
+}
+
 /**
  * A concentration in mg/mL, whether written as mass-per-volume or as molarity.
  *

@@ -38,6 +38,10 @@ export function makeSolute(overrides = {}) {
     doseConcentrationValue: '',
     doseConcentrationMassUnit: 'mg',
     doseConcentrationVolumeUnit: 'ml',
+    // In vitro: the concentration the vessel should end up at. Unused by the
+    // in-vivo methods, which dose a mass rather than reach a concentration.
+    targetConcentrationValue: '',
+    targetConcentrationUnit: 'mg/ml',
     ...overrides,
   };
 }

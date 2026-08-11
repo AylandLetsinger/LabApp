@@ -2,11 +2,17 @@ import { Container, Text, Title } from '@mantine/core';
 import { Navigate, useParams } from 'react-router-dom';
 import IntraperitonealDosageForm from '../components/dosage/IntraperitonealDosageForm';
 import CarrierDosageForm from '../components/dosage/CarrierDosageForm';
+import DirectApplicationForm from '../components/dosage/DirectApplicationForm';
 import { CARRIERS } from '../dosage/carriers';
 import { getDosageMethodLabel } from '../dosageDeliveryMethods';
 
 /** Delivery methods that have a working calculator, and their intro copy. */
 const IMPLEMENTED_METHODS = {
+  'direct-application': {
+    Form: DirectApplicationForm,
+    intro:
+      'Works out what to add to a well or a bath to reach a target concentration, and how much solvent goes in with it. No animal, so no mg/kg — the limit here is the solvent, and it is yours to set.',
+  },
   'intraperitoneal-injection': {
     Form: IntraperitonealDosageForm,
     intro:
