@@ -2,18 +2,18 @@ import { AppShell, Burger, Button, Group, Menu, Title } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { IconChevronDown } from '@tabler/icons-react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { CALCULATORS } from '../calculators';
 import { DOSAGE_DELIVERY_METHODS } from '../dosageDeliveryMethods';
 import { navActiveColor } from '../theme';
 
-/** Top-level sections, in nav order. */
-const SECTIONS = [
-  { to: '/about', label: 'About' },
-  { to: '/molarity', label: 'Molarity' },
-  { to: '/dilutions', label: 'Dilutions' },
-  { to: '/antibodies', label: 'Antibodies' },
-  { to: '/recipes', label: 'Recipes' },
-];
-
+/**
+ * Four top-level entries, two of which open a menu.
+ *
+ * Molarity, Dilutions and Antibodies used to sit in the bar alongside About and
+ * Dosage, which put four calculators and one section heading on the same
+ * footing. Grouping them says what they have in common: none of them is about a
+ * route of administration.
+ */
 function NavButton({ to, children }) {
   return (
     <NavLink to={to} style={{ textDecoration: 'none' }}>
@@ -34,6 +34,7 @@ function NavButton({ to, children }) {
 export default function AppLayout() {
   const { pathname } = useLocation();
   const dosageActive = pathname.startsWith('/dosage');
+  const calculatorsActive = CALCULATORS.some((c) => pathname === c.to);
   // Six links do not fit a phone. They used to wrap onto a second row that
   // overflowed the fixed-height header, so those two links scrolled away with
   // the page content instead of staying put.
@@ -82,6 +83,10 @@ export default function AppLayout() {
                 <Burger opened={menuOpen} onClick={toggleMenu} size="sm" aria-label="Open navigation" />
               </Menu.Target>
               <Menu.Dropdown>
+                <Menu.Item component={Link} to="/about" onClick={closeMenu}>
+                  About
+                </Menu.Item>
+                <Menu.Divider />
                 <Menu.Label>Dosage</Menu.Label>
                 {DOSAGE_DELIVERY_METHODS.map(({ slug, label }) => (
                   <Menu.Item key={slug} component={Link} to={`/dosage/${slug}`} onClick={closeMenu}>
@@ -89,11 +94,16 @@ export default function AppLayout() {
                   </Menu.Item>
                 ))}
                 <Menu.Divider />
-                {SECTIONS.map(({ to, label }) => (
+                <Menu.Label>Calculators</Menu.Label>
+                {CALCULATORS.map(({ to, label }) => (
                   <Menu.Item key={to} component={Link} to={to} onClick={closeMenu}>
                     {label}
                   </Menu.Item>
                 ))}
+                <Menu.Divider />
+                <Menu.Item component={Link} to="/recipes" onClick={closeMenu}>
+                  Recipe Creator
+                </Menu.Item>
               </Menu.Dropdown>
             </Menu>
           ) : (
@@ -120,11 +130,27 @@ export default function AppLayout() {
                 </Menu.Dropdown>
               </Menu>
 
-              {SECTIONS.filter((s) => s.to !== '/about').map(({ to, label }) => (
-                <NavButton key={to} to={to}>
-                  {label}
-                </NavButton>
-              ))}
+              <Menu shadow="md" width={220} position="bottom-start">
+                <Menu.Target>
+                  <Button
+                    variant={calculatorsActive ? 'filled' : 'subtle'}
+                    color={calculatorsActive ? navActiveColor : 'gray'}
+                    size="sm"
+                    rightSection={<IconChevronDown size={14} stroke={1.5} />}
+                  >
+                    Calculators
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {CALCULATORS.map(({ to, label }) => (
+                    <Menu.Item key={to} component={Link} to={to}>
+                      {label}
+                    </Menu.Item>
+                  ))}
+                </Menu.Dropdown>
+              </Menu>
+
+              <NavButton to="/recipes">Recipe Creator</NavButton>
             </Group>
           )}
           </div>

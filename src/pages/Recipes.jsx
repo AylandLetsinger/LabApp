@@ -18,7 +18,7 @@ export default function Recipes() {
   return (
     <Container size="md" py="xl">
       <Title order={1} mb="md">
-        Recipes
+        Recipe Creator
       </Title>
       <Text c="dimmed">Scientific recipe creator — content coming soon.</Text>
     </Container>
