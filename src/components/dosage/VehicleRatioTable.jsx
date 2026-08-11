@@ -53,6 +53,10 @@ export default function VehicleRatioTable({
   volumePerDoseUl,
   onVolumePerDoseChange,
   volumeLabel = 'Volume loaded per worm',
+  // What to do about a dose that will not fit depends on what it has to fit
+  // into. A worm can be swapped for a bigger worm; an animal's tolerated
+  // injection volume cannot.
+  overCapacityAdvice = 'Reduce the volume, raise the share of the solvent the drug dissolves in, or use a larger carrier.',
   stockAvailableMl,
   onStockAvailableChange,
   totalStockNeededMl,
@@ -129,7 +133,7 @@ export default function VehicleRatioTable({
       level: 'error',
       message:
         `${roundTo(effectiveUl, 2)} µL per dose exceeds the ${roundTo(maxVolumeUl, 2)} µL that fits. ` +
-        'Reduce the volume, raise the share of the solvent the drug dissolves in, or use a larger worm.',
+        overCapacityAdvice,
     });
   }
   if (syringeMinUl > 0 && effectiveUl > 0 && effectiveUl < syringeMinUl) {
@@ -424,22 +428,39 @@ export default function VehicleRatioTable({
       </Button>
 
       <Group align="flex-end" wrap="wrap" gap="sm" mb={4}>
-        <NumberInput
-          label={volumeLabel}
-          min={0}
-          decimalScale={3}
-          value={volumePerDoseUl}
-          onChange={changeVolume}
-          onBlur={onBlur}
-          w={200}
-          variant="filled"
-          className="auto-input"
-          key={`vol-${roundTo(suggestedUl, 3)}`}
-        />
+        {/*
+          Where the caller owns the volume — an injection sets it from mL per
+          gram of body mass — it is shown rather than offered for editing. An
+          input here would be a second source of truth for a number already
+          decided upstream, and whichever one lost would do so silently.
+        */}
+        {onVolumePerDoseChange ? (
+          <NumberInput
+            label={volumeLabel}
+            min={0}
+            decimalScale={3}
+            value={volumePerDoseUl}
+            onChange={changeVolume}
+            onBlur={onBlur}
+            w={200}
+            variant="filled"
+            className="auto-input"
+            key={`vol-${roundTo(suggestedUl, 3)}`}
+          />
+        ) : (
+          <div>
+            <Text size="xs" c="dimmed">
+              {volumeLabel}
+            </Text>
+            <Text size="lg" fw={700} ff="monospace">
+              {effectiveUl > 0 ? roundTo(effectiveUl, 3) : '—'}
+            </Text>
+          </div>
+        )}
         <Text pb="sm" size="sm">
           µL
         </Text>
-        {suggestedUl > 0 && (
+        {onVolumePerDoseChange && suggestedUl > 0 && (
           <Text pb="sm" size="sm" c="dimmed">
             smallest workable: <strong>{roundTo(suggestedUl, 2)} µL</strong>
             {Number.isFinite(maxVolumeUl) && maxVolumeUl > 0

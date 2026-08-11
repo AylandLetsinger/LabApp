@@ -8,9 +8,11 @@ import {
   Text,
   TextInput,
 } from '@mantine/core';
-import { DOSE_UNITS, MOUSE_WEIGHT_HINT, WEIGHT_UNITS } from '../../constants/doseUnits';
+import { DOSE_UNITS } from '../../constants/doseUnits';
 import LabSelect from '../LabSelect';
 import IssueList from './IssueList';
+import BodyMassFields from './BodyMassFields';
+import WasteBufferField from './WasteBufferField';
 import { roundTo } from '../../dosage/numberUtils';
 import { inputFieldColor, navActiveColor } from '../../theme';
 
@@ -55,16 +57,6 @@ export default function CarrierParametersSection({
   scheduleOutputFeedback,
   issues,
 }) {
-  // What the waste buffer actually buys, in the unit the user thinks in.
-  // At zero it carries the recommendation instead — advice as light text beats
-  // a warning about a field nobody has reached yet.
-  const plannedDoses = Number(totalDoses);
-  const wastePct = Number(wasteBufferPct);
-  const bufferOff = !Number.isFinite(wastePct) || wastePct <= 0;
-  const spareDoses =
-    !bufferOff && Number.isFinite(plannedDoses) && plannedDoses > 0
-      ? Math.floor(plannedDoses * (1 + wastePct / 100)) - plannedDoses
-      : undefined;
 
   // Once the carrier has a name, use it: "loading the cookie dough" beats
   // "loading the portion" on a page someone is following at the bench.
@@ -294,92 +286,16 @@ export default function CarrierParametersSection({
           </Group>
         </div>
 
-        <div>
-          <SegmentedControl
-            size="xs"
-            color={navActiveColor}
-            value={bodyMassMode}
-            onChange={(value) => {
-              setFieldValue('bodyMassMode', value);
-              scheduleOutputFeedback();
-            }}
-            data={[
-              { value: 'average', label: 'Average body mass' },
-              { value: 'total', label: 'Total body mass' },
-            ]}
-            mb={8}
-          />
-          {bodyMassMode === 'total' ? (
-            <>
-              <Group align="flex-end" wrap="wrap" gap="sm">
-                <NumberInput
-                  label="Total body mass, all subjects"
-                  placeholder="e.g. 900"
-                  min={0}
-                  decimalScale={6}
-                  value={totalBodyMass}
-                  onChange={(value) => setFieldValue('totalBodyMass', value)}
-                  onBlur={scheduleOutputFeedback}
-                  w={200}
-                  {...inputBlue}
-                />
-                <LabSelect
-                  label="Unit"
-                  data={WEIGHT_UNITS}
-                  value={avgBodyWeightUnit}
-                  onChange={(value) => setFieldValue('avgBodyWeightUnit', value ?? 'g')}
-                  onBlur={scheduleOutputFeedback}
-                  w={100}
-                />
-                <NumberInput
-                  label="across how many subjects?"
-                  placeholder="e.g. 40"
-                  min={0}
-                  allowDecimal={false}
-                  value={subjectCount}
-                  onChange={(value) => setFieldValue('subjectCount', value)}
-                  onBlur={scheduleOutputFeedback}
-                  w={190}
-                  {...inputBlue}
-                />
-                {derivedAverage !== undefined && (
-                  <Text pb="sm" size="sm" c="dimmed">
-                    &rarr; <strong>{derivedAverage}</strong> {avgBodyWeightUnit} each
-                  </Text>
-                )}
-              </Group>
-              <Text size="xs" c="dimmed" mt={6} className="no-print">
-                * exact if you weighed every subject; the average is worked out for you
-              </Text>
-            </>
-          ) : (
-            <>
-              <Group align="flex-end" wrap="wrap" gap="sm">
-                <NumberInput
-                  label="Average body mass per subject"
-                  placeholder="e.g. 25"
-                  min={0}
-                  decimalScale={6}
-                  value={avgBodyWeight}
-                  onChange={(value) => setFieldValue('avgBodyWeight', value)}
-                  onBlur={scheduleOutputFeedback}
-                  {...inputBlue}
-                />
-                <LabSelect
-                  label="Unit"
-                  data={WEIGHT_UNITS}
-                  value={avgBodyWeightUnit}
-                  onChange={(value) => setFieldValue('avgBodyWeightUnit', value ?? 'g')}
-                  onBlur={scheduleOutputFeedback}
-                  w={100}
-                />
-              </Group>
-              <Text size="xs" c="dimmed" mt={6} className="no-print">
-                {MOUSE_WEIGHT_HINT}
-              </Text>
-            </>
-          )}
-        </div>
+        <BodyMassFields
+          bodyMassMode={bodyMassMode}
+          avgBodyWeight={avgBodyWeight}
+          avgBodyWeightUnit={avgBodyWeightUnit}
+          totalBodyMass={totalBodyMass}
+          subjectCount={subjectCount}
+          derivedAverage={derivedAverage}
+          setFieldValue={setFieldValue}
+          scheduleOutputFeedback={scheduleOutputFeedback}
+        />
 
         <NumberInput
           label="Total number of dosages to prepare"
@@ -393,34 +309,12 @@ export default function CarrierParametersSection({
           {...inputBlue}
         />
 
-        <Group align="flex-end" wrap="wrap" gap="sm">
-          <NumberInput
-            label="Waste buffer"
-            placeholder="e.g. 10"
-            min={0}
-            max={100}
-            decimalScale={2}
-            value={wasteBufferPct}
-            onChange={(value) => setFieldValue('wasteBufferPct', value)}
-            onBlur={scheduleOutputFeedback}
-            {...inputBlue}
-          />
-          <Text pb="sm" size="sm">
-            %
-          </Text>
-          {bufferOff ? (
-            <Text pb="sm" size="sm" c="dimmed">
-              &rarr; 10% is recommended
-            </Text>
-          ) : (
-            spareDoses !== undefined && (
-              <Text pb="sm" size="sm" c="dimmed">
-                &rarr; enough for <strong>{plannedDoses + spareDoses}</strong> dosages,{' '}
-                {spareDoses} spare
-              </Text>
-            )
-          )}
-        </Group>
+        <WasteBufferField
+          wasteBufferPct={wasteBufferPct}
+          plannedCount={totalDoses}
+          setFieldValue={setFieldValue}
+          scheduleOutputFeedback={scheduleOutputFeedback}
+        />
 
       </Stack>
 

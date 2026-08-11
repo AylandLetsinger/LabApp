@@ -34,6 +34,7 @@ export default function WorkingSolutionSection({
   wasteBufferPct,
   syringeMinUl,
   maxVolumeUl,
+  tooDiluteAdvice = 'make it stronger, or use a larger carrier.',
   setFieldValue,
   scheduleOutputFeedback,
 }) {
@@ -92,7 +93,7 @@ export default function WorkingSolutionSection({
         level: 'error',
         message:
           `Each dose is ${roundTo(volumePerDoseUl, 2)} µL, more than the ${roundTo(maxVolumeUl, 2)} µL ` +
-          'that fits. This solution is too dilute for this dose — make it stronger, or use a larger worm.',
+          `that fits. This solution is too dilute for this dose — ${tooDiluteAdvice}`,
       });
     }
   }
