@@ -360,6 +360,7 @@ export default function CarrierDosageForm({ carrier }) {
           soluteCount={solutes.length}
           availableMl={v.workingAvailableMl}
           dosePerSubjectMg={dosePerSubjectMg}
+          tooDiluteAdvice={`make it stronger, or use a larger ${carrier.noun}.`}
           totalDoses={v.totalDoses}
           wasteBufferPct={v.wasteBufferPct}
           syringeMinUl={loadFloorUl}
@@ -383,6 +384,7 @@ export default function CarrierDosageForm({ carrier }) {
           volumePerDoseUl={v.loadVolumeUl}
           onVolumePerDoseChange={(value) => form.setFieldValue('loadVolumeUl', value)}
           volumeLabel={carrier.volumeLabel}
+          overCapacityAdvice={`Reduce the volume, raise the share of the solvent the drug dissolves in, or use a larger ${carrier.noun}.`}
           stockAvailableMl={isStock ? v.stockAvailableMl : undefined}
           onStockAvailableChange={
             isStock ? (value) => form.setFieldValue('stockAvailableMl', value) : undefined
