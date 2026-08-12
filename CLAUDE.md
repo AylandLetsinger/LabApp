@@ -6,9 +6,62 @@ Instructions for AI assistants working in this repository. Read before editing.
 
 The Lab App (thelabapp.org) — calculators for research labs at UT Austin.
 Vite + React 19 + React Router 7 + Mantine 9. Static SPA, no backend.
+Deployed from `main` by Vercel.
 
 **Students use these calculators to dose live animals.** A wrong number here
 can reach a mouse. That is the reason for every rule below.
+
+## Where things are
+
+Do not go hunting. Every screen follows the same three layers: a **page** that
+sets the framing text, a **form/calculator component** that is layout and
+state, and a **compute module** of pure functions that holds the arithmetic.
+
+**Bugs in numbers live in the compute module. Bugs in wording, ordering, or
+missing warnings usually live in the component.**
+
+| Route | Page | Component | Arithmetic |
+|---|---|---|---|
+| `/` | `pages/Home.jsx` | — | cards come from `calculators.js` + `dosageDeliveryMethods.js` |
+| `/dosage/:method` | `pages/Dosage.jsx` | see table below | see table below |
+| `/molarity` | `pages/Molarity.jsx` | `components/molarity/MolarityCalculator.jsx` | `molarity/computeMolarity.js` |
+| `/dilutions` | `pages/Dilutions.jsx` | `components/dilutions/DilutionCalculator.jsx` | `dilutions/computeDilution.js` |
+| `/antibodies` | `pages/Antibodies.jsx` | `components/reagents/AntibodyDilution.jsx` | `reagents/computeAntibody.js` |
+| `/viral-mixes` | `pages/ViralMixes.jsx` | `components/reagents/ViralMix.jsx` | `reagents/computeViralMix.js` |
+| `/stock-solution` | `pages/StockSolution.jsx` | `components/stock/StockPlanCalculator.jsx` | `stock/computeStockPlan.js` |
+| `/recipes` | `pages/Recipes.jsx` | — | stub, not built yet |
+| `/about`, `/support` | `pages/About.jsx`, `pages/Support.jsx` | — | — |
+
+`pages/Dosage.jsx` holds one object, `IMPLEMENTED_METHODS`, mapping a slug to
+its form and intro text. **Start there for any dosage question.**
+
+| Slug | Form | Arithmetic |
+|---|---|---|
+| `direct-application` | `DirectApplicationForm` | `dosage/computeInVitro.js` |
+| `intraperitoneal-injection` | `LiquidDoseForm` | `computeSolutionOutputs` + `computeVehicleVolumes` |
+| `subcutaneous-injection` | `LiquidDoseForm` | same |
+| `oral-gavage` | `LiquidDoseForm` | same |
+| `intracranial-injection-infusion` | `IntracranialDoseForm` | `computeIntracranial.js` |
+| `iv-infusion` | `IvDoseForm` | `computeIntravenous.js`, `computeInfusion.js` |
+| `drinking-fluid` | `DrinkingFluidForm` | `computeDrinkingFluid.js` |
+| `mealworm` | `CarrierDosageForm` | `computeMealwormOutputs.js` |
+| `solid` (edible solid) | `CarrierDosageForm` | `computeMealwormOutputs.js` |
+
+Three slugs share `LiquidDoseForm`, and two share `CarrierDosageForm`. They
+differ only by a config object — see "Config as data" below. **A change to one
+changes the others.** Check which routes a form serves before editing it.
+
+### Config as data
+
+Four files parameterise otherwise-identical forms. Adding a route, carrier, or
+vessel should be an edit to one of these, not a new copy of a form:
+
+- `dosage/liquidRoutes.js` — IP vs SC vs gavage: labels, per-route solvent
+  observations, advice strings
+- `dosage/carriers.js` — mealworm vs edible solid
+- `dosage/vessels.js` — well plates, dishes, baths
+- `dosage/preparationModes.js` — powder / stock / working solution, the Step 1
+  question on nearly every page
 
 ## Hard rules
 
@@ -67,21 +120,39 @@ genuinely method-specific logic gets its own module.
 | Need | Use |
 |---|---|
 | Unit conversion | `src/dosage/unitConversions.js` |
+| Molar units, `1 M = MW mg/mL` | `src/dosage/molarUnits.js` |
 | Parsing, guards, rounding | `src/dosage/numberUtils.js` |
 | Dose per subject | `src/dosage/computeDosePerAvgSubject.js` |
 | Solute / volume / concentration | `src/dosage/computeSolutionOutputs.js` |
+| Multiple named solutes in one prep | `src/dosage/solutes.js` |
 | Splitting a volume by ratio | `src/dosage/computeVehicleVolumes.js` |
 | Solvents and their limits | `src/dosage/vehicles.js` |
+| Shared unit lists / dose types | `src/dosage/dosageTypes.js`, `src/constants/doseUnits.js` |
 | Output value + unit selector | `src/components/dosage/DosageOutputRow.jsx` |
 | Errors and warnings | `src/components/dosage/IssueList.jsx` |
+| Step 1 powder/stock/working question | `src/components/dosage/PreparationModeControl.jsx` |
 | Solvent table | `src/components/dosage/VehicleRatioTable.jsx` |
 | Dissolution recipe | `src/components/dosage/DissolutionTable.jsx` |
+| Closing "so, in practice…" paragraph | `src/components/dosage/RecipeNarrative.jsx` |
+| Dosing table by body mass | `src/components/dosage/CarrierDosingTable.jsx` |
 | "Updating -> updated" state | `src/hooks/useOutputFeedback.js` |
 | Print / PDF | `src/components/dosage/PrintActions.jsx` |
+| Feedback button, mailto | `src/components/feedback/`, `src/feedback/mailto.js` |
 
-`src/dosage/computeMealwormOutputs.js` is the newest module and shows the
-intended pattern: pure functions, canonical units, explicit
-`{ level, message }` issues.
+Any `compute*.js` module shows the intended pattern: pure functions, canonical
+units, explicit `{ level, message }` issues, no React.
+
+### Two conventions that are easy to get wrong
+
+**Solubility is a floor, not a lock.** It sets the minimum volume a solvent
+must contribute. Ratio still drives every volume. With several solutes the
+required volume is the **maximum** of the individual requirements, not the
+sum — they are assumed to dissolve independently.
+
+**Impossible is not the same as unwise.** An impossibility blocks and returns
+`undefined`; an unwise-but-valid number warns and still computes. `IssueList`
+panels containing only warnings **render collapsed**, so anything the user must
+read has to sit next to the control that caused it, not in the panel.
 
 ### 6. Build only what was asked for
 
@@ -119,6 +190,40 @@ npm run build    # must succeed
 For calculation changes, verify the arithmetic numerically — run the actual
 functions against hand-checked cases. Do not report a fix as working because
 it looks right.
+
+### How to run a compute module on its own
+
+There is no test runner installed. The working method is a throwaway script in
+your scratchpad, and it takes one trick: source files import without file
+extensions (`from '../numberUtils'`), which Vite resolves and bare Node does
+not.
+
+1. Copy `src/` to `<scratchpad>/sandbox/`.
+2. Regex the extensions in: `from '(\./[^']+)'` → `from '$1.js'`.
+3. Write `verify.mjs` importing from the sandbox, and run `node verify.mjs`.
+
+Assert against numbers **you worked out by hand**, and print a pass/fail line
+per check. Watch two traps that have already produced false results here: a
+float tolerance tighter than the value being tested, and a check that passes
+because it silently compared a string to a number.
+
+The sandbox is a copy — edits there change nothing. Delete it when done.
+
+## Environment notes
+
+- **Windows.** The Bash tool is Git Bash; PowerShell is the default. In
+  PowerShell, `&&` and `||` are parse errors — use `; if ($?) { ... }`.
+  `[IO.File]` methods ignore `Set-Location`, so pass absolute paths.
+- **Mantine dropdowns, selects and modals do not respond to synthetic clicks
+  or dispatched events.** Browser-automation checks of them fail, and worse,
+  can silently match an option in a *different* select and pass for the wrong
+  reason. To check a Mantine-driven branch, change the default in the source
+  temporarily and revert, or read the source and say that is what you did.
+- The dev server occasionally serves a stale render after heavy HMR (a burger
+  menu at desktop width, for one). A fresh navigation clears it. Confirm
+  against a real build before believing a layout bug.
+- `npm run dev` from a background shell: use the tool's own background mode.
+  `Start-Process npm` does not start Vite here.
 
 ## Git
 
