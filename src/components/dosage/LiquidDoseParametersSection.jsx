@@ -12,17 +12,19 @@ const inputBlue = {
 };
 
 /**
- * Injection parameters — the physical constraints of the session.
+ * Parameters for a liquid dose given by volume per unit of body mass.
  *
  * The counterpart of CarrierParametersSection. Where a carrier has a capacity
- * and a loading instrument, an injection has a volume rate and a tolerated
- * ceiling, both written per unit of body mass: mice take about 0.1 mL per 10 g
- * intraperitoneally, so both scale with the animal rather than being fixed.
+ * and a loading instrument, a measured liquid dose has a volume rate written
+ * per unit of body mass, so it scales with the animal rather than being fixed.
+ * How much volume is reasonable depends on the route, which is why the label
+ * and the guidance under it come from the route rather than being written in.
  *
  * Body mass and the waste buffer are the same controls the carrier methods use,
  * because they are the same questions.
  */
-export default function InjectionParametersSection({
+export default function LiquidDoseParametersSection({
+  route,
   stepLabel = 'Step 2 — Dosing Parameters',
   volPerInjMl,
   volPerInjWeight,
@@ -57,7 +59,7 @@ export default function InjectionParametersSection({
           <div>
             <Group align="flex-end" wrap="wrap" gap="sm">
               <NumberInput
-                label="Volume per injection"
+                label={route.volumeLabel}
                 placeholder="mL"
                 min={0}
                 decimalScale={6}
@@ -92,7 +94,7 @@ export default function InjectionParametersSection({
               </Text>
             </Group>
             <Text size="xs" c="dimmed" mt={6} className="no-print">
-              * mice tolerate about 0.1 mL per 10 g intraperitoneally
+              {route.volumeHint}
             </Text>
           </div>
         )}
@@ -131,7 +133,7 @@ export default function InjectionParametersSection({
         />
 
         <NumberInput
-          label="Total number of injections to prepare"
+          label={route.countLabel}
           placeholder="count"
           min={0}
           allowDecimal={false}
@@ -145,7 +147,7 @@ export default function InjectionParametersSection({
         <WasteBufferField
           wasteBufferPct={wasteBufferPct}
           plannedCount={totalInjections}
-          countNoun="injections"
+          countNoun={route.pluralNoun}
           setFieldValue={setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}
         />

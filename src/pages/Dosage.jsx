@@ -1,9 +1,10 @@
 import { Container, Text, Title } from '@mantine/core';
 import { Navigate, useParams } from 'react-router-dom';
-import IntraperitonealDosageForm from '../components/dosage/IntraperitonealDosageForm';
+import LiquidDoseForm from '../components/dosage/LiquidDoseForm';
 import CarrierDosageForm from '../components/dosage/CarrierDosageForm';
 import DirectApplicationForm from '../components/dosage/DirectApplicationForm';
 import { CARRIERS } from '../dosage/carriers';
+import { LIQUID_ROUTES } from '../dosage/liquidRoutes';
 import { getDosageMethodLabel } from '../dosageDeliveryMethods';
 
 /** Delivery methods that have a working calculator, and their intro copy. */
@@ -14,9 +15,16 @@ const IMPLEMENTED_METHODS = {
       'Works out what to add to a well or a bath to reach a target concentration, and how much solvent goes in with it. No animal, so no mg/kg — the limit here is the solvent, and it is yours to set.',
   },
   'intraperitoneal-injection': {
-    Form: IntraperitonealDosageForm,
+    Form: LiquidDoseForm,
+    props: { route: LIQUID_ROUTES['intraperitoneal-injection'] },
     intro:
       'Works out dosage and preparation volumes for intraperitoneal injection. Blue fields are your inputs; grey fields are calculated.',
+  },
+  'oral-gavage': {
+    Form: LiquidDoseForm,
+    props: { route: LIQUID_ROUTES['oral-gavage'] },
+    intro:
+      'Works out dosage and preparation volumes for oral gavage. Solvent tolerability is judged against published ORAL figures, never intraperitoneal ones. Gavage is often a suspension rather than a solution — methylcellulose and CMC are in the solvent list, and for those the solubility box is meant to stay empty.',
   },
   mealworm: {
     Form: CarrierDosageForm,
