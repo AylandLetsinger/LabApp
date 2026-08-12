@@ -89,6 +89,35 @@ export const VEHICLES = [
       'solvent ceiling applies. Recipes vary between labs — the app treats it ' +
       'as saline-like and does not model its salts.',
   },
+  /*
+   * Suspending agents, not solvents. The point of them is that the drug does
+   * NOT dissolve: it stays evenly dispersed long enough to be drawn up and
+   * given. So leave the solubility box empty for these — a suspension has no
+   * solubility floor to clear, and putting a number there would impose one
+   * that does not exist.
+   */
+  {
+    id: 'methylcellulose',
+    label: 'Methylcellulose (aqueous, e.g. 0.5%)',
+    densityGPerMl: 1.0,
+    isAqueous: true,
+    observations: [],
+    note:
+      'A suspending agent for oral gavage, not a solvent — the drug is dispersed, not ' +
+      'dissolved, so leave solubility blank. The percentage refers to methylcellulose in ' +
+      'water; this app treats the made-up vehicle as the aqueous balance and does not model ' +
+      'its viscosity. Shake or vortex immediately before each dose.',
+  },
+  {
+    id: 'cmc',
+    label: 'Carboxymethylcellulose (CMC, aqueous, e.g. 0.5%)',
+    densityGPerMl: 1.0,
+    isAqueous: true,
+    observations: [],
+    note:
+      'A suspending agent for oral gavage, not a solvent — as for methylcellulose, leave ' +
+      'solubility blank and resuspend before each dose.',
+  },
   {
     id: 'dmso',
     label: 'DMSO (Dimethyl Sulfoxide)',

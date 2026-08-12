@@ -7,14 +7,13 @@ import { computeVehicleVolumes } from '../../dosage/computeVehicleVolumes';
 import { concentrationToMgPerMl } from '../../dosage/molarUnits';
 import { roundTo, toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
 import { weightToKg } from '../../dosage/unitConversions';
-import { DEFAULT_IP_VEHICLE_ROWS } from '../../dosage/vehicles';
 import { PREPARATION_MODES } from '../../dosage/preparationModes';
 import { makeSolute, soluteDosesMg as computeSoluteDosesMg, totalDoseMg } from '../../dosage/solutes';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import SolutesSection from './SolutesSection';
 import SoluteBreakdown from './SoluteBreakdown';
 import PreparationModeControl from './PreparationModeControl';
-import InjectionParametersSection from './InjectionParametersSection';
+import LiquidDoseParametersSection from './LiquidDoseParametersSection';
 import WorkingSolutionSection from './WorkingSolutionSection';
 import VehicleRatioTable from './VehicleRatioTable';
 import DissolutionTable from './DissolutionTable';
@@ -22,16 +21,14 @@ import CarrierDosingTable from './CarrierDosingTable';
 import RecipeNarrative from './RecipeNarrative';
 import PrintActions from './PrintActions';
 
-/** Powder: the published 1:1:18 ethanol : Emulphor : saline vehicle. */
-const POWDER_ROWS = DEFAULT_IP_VEHICLE_ROWS;
-
 /** Stock: the first row IS the stock. See the note in CarrierDosageForm. */
 const STOCK_ROWS = [
   { vehicleId: 'dmso', parts: '1', isStock: true },
   { vehicleId: 'saline', parts: '9' },
 ];
 
-export default function IntraperitonealDosageForm() {
+export default function LiquidDoseForm({ route }) {
+  const POWDER_ROWS = route.defaultVehicleRows;
   const form = useForm({
     initialValues: {
       preparation: PREPARATION_MODES.none,
@@ -205,11 +202,11 @@ export default function IntraperitonealDosageForm() {
     if (injections !== undefined && injections === 0) {
       issues.push({
         level: 'error',
-        message: 'Number of injections is 0, so every batch figure below is zero. Enter at least 1.',
+        message: `Number of ${route.pluralNoun} is 0, so every batch figure below is zero. Enter at least 1.`,
       });
     }
     return issues;
-  }, [v.totalInjections]);
+  }, [v.totalInjections, route.pluralNoun]);
 
   const narrative = (
     <RecipeNarrative
@@ -241,7 +238,8 @@ export default function IntraperitonealDosageForm() {
         footer={<PreparationModeControl value={v.preparation} onChange={changePreparation} />}
       />
 
-      <InjectionParametersSection
+      <LiquidDoseParametersSection
+        route={route}
         volPerInjMl={v.volPerInjMl}
         volPerInjWeight={v.volPerInjWeight}
         volPerInjWeightUnit={v.volPerInjWeightUnit}
@@ -280,7 +278,7 @@ export default function IntraperitonealDosageForm() {
         <VehicleRatioTable
           rows={vehicleRows}
           onRowsChange={setVehicleRows}
-          route="ip"
+          route={route.route}
           stepLabel={isStock ? 'Step 3 — Dilution' : 'Step 3 — Vehicle formulation'}
           onBlur={scheduleOutputFeedback}
           solutes={solutes}
@@ -290,8 +288,8 @@ export default function IntraperitonealDosageForm() {
           volumePerDoseUl={
             volumePerSubjectMl === undefined ? undefined : volumePerSubjectMl * 1000
           }
-          volumeLabel="Volume per injection"
-          overCapacityAdvice="Reduce the injection volume, or use a more concentrated solution."
+          volumeLabel={route.volumeLabel}
+          overCapacityAdvice={`Reduce the ${route.noun} volume, or use a more concentrated solution.`}
           stockAvailableMl={isStock ? v.stockAvailableMl : undefined}
           onStockAvailableChange={
             isStock ? (value) => form.setFieldValue('stockAvailableMl', value) : undefined
@@ -340,7 +338,7 @@ export default function IntraperitonealDosageForm() {
         />
       )}
 
-      <PrintActions title="intraperitoneal injection calculator" />
+      <PrintActions title={route.printTitle} />
     </Stack>
   );
 }
