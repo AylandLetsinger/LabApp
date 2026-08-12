@@ -49,6 +49,29 @@ const MOL_PER_L_PER_CONCENTRATION_UNIT = {
   nM: 1e-9,
 };
 
+/**
+ * A molar concentration in mol/L, with no molecular weight involved.
+ *
+ * `molarConcentrationToMgPerMl` needs a molecular weight because it crosses
+ * into mass. This one stays inside molarity, so it does not — which is what a
+ * calculator solving for the molecular weight itself needs.
+ *
+ * @returns {number | undefined}
+ */
+export function molarConcentrationToMolPerL(value, unit) {
+  const n = toOptionalNumber(value);
+  const molPerL = MOL_PER_L_PER_CONCENTRATION_UNIT[unit];
+  if (n === undefined || molPerL === undefined) return undefined;
+  return n * molPerL;
+}
+
+/** mol/L expressed in one of the molar concentration units. */
+export function molPerLToMolarConcentration(molPerL, unit) {
+  const factor = MOL_PER_L_PER_CONCENTRATION_UNIT[unit];
+  if (!Number.isFinite(molPerL) || factor === undefined) return undefined;
+  return molPerL / factor;
+}
+
 /** @param {string} unit */
 export function isMolarAmountUnit(unit) {
   return Object.prototype.hasOwnProperty.call(MOL_PER_AMOUNT_UNIT, unit);

@@ -155,11 +155,23 @@ export const VEHICLES = [
     note: 'Palatability in voluntary oral consumption is not established. A refused mealworm is a failed session, not a safety event — determine empirically.',
     miscibility: {
       poorlyMiscibleWith: ['oil'],
-      maxPercentInOil: 10,
+      /*
+       * Zero, not the ~10% that formulation practice cites.
+       *
+       * That figure was in here until 10% and 20% DMSO were both tried in
+       * sesame oil at this bench and both separated. One lab's observation is
+       * not a published threshold, so nothing is claimed about where the real
+       * boundary is — but a number that has been watched to fail should not go
+       * on being offered as the safe ceiling. Any unsurfactanted DMSO in oil
+       * now warns, and a surfactant still silences it.
+       */
+      maxPercentInOil: 0,
       message:
-        'DMSO and vegetable oils separate. Practice keeps DMSO at or below ~10% in oil, ' +
-        'or adds a surfactant (Tween-80, Cremophor, Emulphor) to hold the phases together. ' +
-        'A separated batch produces unequal doses that the numbers on screen will not reveal.',
+        'DMSO and vegetable oils separate. Formulation practice cites ~10% as workable, but ' +
+        '10% and 20% in sesame oil were both observed to separate here, so no unsurfactanted ' +
+        'fraction is assumed to hold. Add a surfactant (Tween-80, Cremophor, Emulphor), or ' +
+        'check whether the drug will simply dissolve in the oil alone. A separated batch ' +
+        'produces unequal doses that the numbers on screen will not reveal.',
     },
   },
   {
