@@ -5,6 +5,7 @@ import CarrierDosageForm from '../components/dosage/CarrierDosageForm';
 import DirectApplicationForm from '../components/dosage/DirectApplicationForm';
 import IntracranialDoseForm from '../components/dosage/IntracranialDoseForm';
 import DrinkingFluidForm from '../components/dosage/DrinkingFluidForm';
+import IvDoseForm from '../components/dosage/IvDoseForm';
 import { CARRIERS } from '../dosage/carriers';
 import { LIQUID_ROUTES } from '../dosage/liquidRoutes';
 import { getDosageMethodLabel } from '../dosageDeliveryMethods';
@@ -32,6 +33,11 @@ const IMPLEMENTED_METHODS = {
     props: { route: LIQUID_ROUTES['subcutaneous-injection'] },
     intro:
       'Works out dosage and preparation volumes for subcutaneous injection, including how much goes into each site when the dose is split. This app holds no published subcutaneous solvent-tolerability figures, so no solvent warnings appear here — Step 2 says so rather than leaving you to infer it from silence.',
+  },
+  'iv-infusion': {
+    Form: IvDoseForm,
+    intro:
+      'Works out what to put in the line, whether that is one slow bolus, a self-administration session of many, or a syringe pump running for hours. Set infusions per subject above one and Step 1 becomes the dose per infusion, with the session total shown alongside it.',
   },
   'drinking-fluid': {
     Form: DrinkingFluidForm,
