@@ -6,8 +6,10 @@
  * dosing at all — which is why they are a separate menu rather than another
  * entry under Dosage.
  *
- * The `blurb` is what the home page shows, kept here so the card and the menu
- * entry cannot drift apart.
+ * The `blurb` was what the home page cards showed. The cards are names only
+ * for now, so nothing reads it — it is kept because the descriptions are
+ * meant to return, and it lives here so a card and its menu entry cannot
+ * drift apart when they do.
  */
 export const CALCULATORS = [
   {
