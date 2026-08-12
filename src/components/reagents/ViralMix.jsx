@@ -11,7 +11,7 @@ import {
   injectionsFrom,
   splitByRatio,
   titerPerMl,
-} from '../../reagents/computeReagents';
+} from '../../reagents/computeViralMix';
 import LabSelect from '../LabSelect';
 import IssueList from '../dosage/IssueList';
 import { inputFieldColor, navActiveColor } from '../../theme';

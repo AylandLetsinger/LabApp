@@ -10,5 +10,6 @@ export const CALCULATORS = [
   { to: '/molarity', label: 'Molarity' },
   { to: '/dilutions', label: 'Dilutions' },
   { to: '/antibodies', label: 'Antibodies' },
+  { to: '/viral-mixes', label: 'Viral Mixes' },
   { to: '/stock-solution', label: 'Stock Solution' },
 ];
