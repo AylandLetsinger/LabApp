@@ -181,7 +181,7 @@ export default function AppLayout() {
           style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}
         >
           <Text size="xs" c="dimmed">
-            Something wrong on this page, or missing from it?
+            Something wrong on this page, or missing from it? Just love it and want us to know?
           </Text>
           <Group gap="sm" align="center" wrap="wrap">
             <NoteButton />

@@ -5,11 +5,34 @@
  * answer questions that come up whatever you are dosing, or when you are not
  * dosing at all — which is why they are a separate menu rather than another
  * entry under Dosage.
+ *
+ * The `blurb` is what the home page shows, kept here so the card and the menu
+ * entry cannot drift apart.
  */
 export const CALCULATORS = [
-  { to: '/molarity', label: 'Molarity' },
-  { to: '/dilutions', label: 'Dilutions' },
-  { to: '/antibodies', label: 'Antibodies' },
-  { to: '/viral-mixes', label: 'Viral Mixes' },
-  { to: '/stock-solution', label: 'Stock Solution' },
+  {
+    to: '/molarity',
+    label: 'Molarity',
+    blurb: 'Mass, concentration, volume, molecular weight. Fill in three and the fourth follows.',
+  },
+  {
+    to: '/dilutions',
+    label: 'Dilutions',
+    blurb: 'C₁V₁ = C₂V₂, and how much diluent to actually add rather than make up to.',
+  },
+  {
+    to: '/antibodies',
+    label: 'Antibodies',
+    blurb: 'Primary and secondary solutions, with several antibodies sharing one diluent.',
+  },
+  {
+    to: '/viral-mixes',
+    label: 'Viral Mixes',
+    blurb: 'Agents to a ratio — by volume, by genome copies, or from the dose you want injected.',
+  },
+  {
+    to: '/stock-solution',
+    label: 'Stock Solution',
+    blurb: 'From a tube of powder to a working solution far too dilute to weigh.',
+  },
 ];
