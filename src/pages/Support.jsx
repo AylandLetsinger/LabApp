@@ -24,18 +24,18 @@ export default function Support() {
           alongside the research it was written for.
         </Text>
         {/*
-          The site claimed "no tracking" outright until the Ko-fi widget went
-          in. The widget is third-party and this is the only page that loads
-          it, so the claim is narrowed rather than quietly left standing.
+          This said the Ko-fi widget was confined to this page. It is now in
+          the footer of every page, so that is no longer true and the sentence
+          is corrected rather than left to age badly. What has NOT changed is
+          the part that matters: no calculator sends anything anywhere.
         */}
         <Text size="sm" c="dimmed">
-          No calculator on this site loads anything from anywhere else, and none of them send your
-          numbers off the page. The Ko-fi panel below is the one exception, and it is only on this
-          page — if you would rather not load it,{' '}
-          <Anchor href={SUPPORT_LINK.url} target="_blank" rel="noopener noreferrer">
-            open Ko-fi directly
-          </Anchor>{' '}
-          instead.
+          <strong>What this site does and does not send.</strong> Every calculation happens in your
+          browser. Nothing you type — a compound, a dose, an unpublished formulation — is sent
+          anywhere, stored, or logged, and there are no accounts and no analytics. The one
+          exception is the Ko-fi support button in the footer of every page: it is drawn by a
+          script from ko-fi.com and pulls a font from Google, so those two see that a page was
+          loaded. Nothing from any calculator reaches them.
         </Text>
 
         <Paper p="md" radius="md" withBorder>
