@@ -1,11 +1,8 @@
-import { useState } from 'react';
-import { Alert, Button, Container, Stack, Text, Textarea, TextInput, Title } from '@mantine/core';
+import { Button, Container, Stack, Text, Textarea, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { primaryActionColor } from '../theme';
+import { noteMailtoUrl } from '../feedback/mailto';
 
 export default function About() {
-  const [stubSubmitted, setStubSubmitted] = useState(false);
-
   const feedbackForm = useForm({
     initialValues: {
       name: '',
@@ -44,28 +41,24 @@ export default function About() {
             Have feedback or requests for The Lab App?
           </Title>
           <Text size="sm" c="dimmed" mb="md">
-            Send a note below. This form is not wired to a server yet — hook up your endpoint when
-            ready.
+            This opens your email app with the note already written. You still have to press send
+            there — the site has no server of its own, so nothing leaves this page on its own.
           </Text>
-
-          {stubSubmitted && (
-            <Alert
-              color={primaryActionColor}
-              title="Thanks for your feedback"
-              mb="md"
-              withCloseButton
-              onClose={() => setStubSubmitted(false)}
-            >
-              Your message wasn&apos;t sent anywhere (stub). Replace the submit handler to connect an
-              API or email service.
-            </Alert>
-          )}
 
           <form
             id="feedback-form"
-            onSubmit={feedbackForm.onSubmit(() => {
-              setStubSubmitted(true);
-              feedbackForm.reset();
+            onSubmit={feedbackForm.onSubmit((values) => {
+              // Previously this showed "Thanks for your feedback" and sent
+              // nothing at all, which is worse than having no form: it spends
+              // someone's goodwill and their typing on a message nobody gets.
+              window.location.assign(
+                noteMailtoUrl({
+                  pathname: '/about',
+                  name: values.name,
+                  email: values.email,
+                  message: values.message,
+                }),
+              );
             })}
           >
             <Stack gap="sm" maw={480}>
@@ -85,7 +78,7 @@ export default function About() {
                 {...feedbackForm.getInputProps('message')}
               />
               <Button type="submit" variant="filled" w="fit-content">
-                Send
+                Open email
               </Button>
             </Stack>
           </form>

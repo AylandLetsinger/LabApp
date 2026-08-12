@@ -111,6 +111,45 @@ export function copiesPerInjection(finalTiterPerMl, perInjectionMl) {
   return t * v;
 }
 
+/**
+ * Work backwards from the dose: how much of each agent to reach a stated
+ * number of copies per injection.
+ *
+ * The other two bases start from a ratio and tell you what lands in the
+ * animal. This starts from what should land in the animal, which is the form
+ * a protocol is actually written in — "2.5e9 GC of GCaMP per site" — and the
+ * ratio falls out rather than being chosen.
+ *
+ * A required volume is (copies wanted per injection / injection volume) x
+ * final volume / titre: the first bracket is the titre the finished mix must
+ * have, and the rest is how much neat virus carries that.
+ *
+ * @param {object} p
+ * @param {Array<{titerPerMl?: number, copiesPerInjection?: number}>} p.agents
+ * @param {number} p.perInjectionMl
+ * @param {number} p.finalVolumeMl
+ * @returns {{ volumesMl: number[], diluentMl: number, overfull: boolean } | undefined}
+ */
+export function planFromTargetCopies({ agents, perInjectionMl, finalVolumeMl }) {
+  const each = toPositiveNumber(perInjectionMl);
+  const final = toPositiveNumber(finalVolumeMl);
+  if (each === undefined || final === undefined || agents.length === 0) return undefined;
+
+  const volumesMl = [];
+  for (const a of agents) {
+    const titre = toPositiveNumber(a.titerPerMl);
+    const wanted = toPositiveNumber(a.copiesPerInjection);
+    if (titre === undefined || wanted === undefined) return undefined;
+    const requiredFinalTiter = wanted / each;
+    volumesMl.push((requiredFinalTiter * final) / titre);
+  }
+
+  const used = volumesMl.reduce((sum, x) => sum + x, 0);
+  // More neat virus than the vial holds is a real answer: the stocks are too
+  // weak for this dose at this injection volume, and no diluent fixes that.
+  return { volumesMl, diluentMl: final - used, overfull: used > final };
+}
+
 /** The achieved ratio of copies, normalised so the smallest agent is 1. */
 export function copiesRatio(copiesList) {
   const values = copiesList.filter((c) => toPositiveNumber(c) !== undefined);
