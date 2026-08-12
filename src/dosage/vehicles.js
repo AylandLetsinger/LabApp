@@ -488,4 +488,35 @@ export const DEFAULT_IP_VEHICLE_ROWS = [
  * else, and anyone who needs a co-solvent will add it — starting with a guess
  * about their chemistry only invites them to accept it.
  */
-export const DEFAULT_ORAL_VEHICLE_ROWS = [{ vehicleId: 'saline', parts: '1' }];
+/** Plain saline: the starting point for any route that does not need better. */
+export const DEFAULT_SALINE_VEHICLE_ROWS = [{ vehicleId: 'saline', parts: '1' }];
+
+/**
+ * How to name a route in prose.
+ *
+ * This exists because the alternative was `route === 'ip' ? 'intraperitoneal'
+ * : 'oral'`, which silently calls every other route oral — so a subcutaneous
+ * page would have warned about "published oral figures" for a dose nobody was
+ * giving by mouth. A lookup fails visibly instead.
+ */
+const ROUTE_LABELS = {
+  ip: 'intraperitoneal',
+  oral: 'oral',
+  sc: 'subcutaneous',
+  iv: 'intravenous',
+};
+
+/** @returns {string} The route's name, or the raw key if it is unknown. */
+export function routeLabel(route) {
+  return ROUTE_LABELS[route] ?? route;
+}
+
+/**
+ * Whether this app holds any tolerability observation for a route at all.
+ *
+ * A page for a route with no data shows no solvent warnings, and silence is
+ * easy to read as approval. Callers use this to say so out loud instead.
+ */
+export function hasObservationsForRoute(route) {
+  return VEHICLES.some((v) => v.observations.some((o) => o.route === route));
+}
