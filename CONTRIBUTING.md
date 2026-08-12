@@ -35,8 +35,13 @@ file at the same time is the one thing git cannot resolve on its own.
 | Person | Area | Files |
 |---|---|---|
 | **Ayland** | Dosage calculators | `src/dosage/`, `src/components/dosage/` |
-| **Klarissa** | Molarity, Dilutions, Antibodies | `src/pages/Molarity.jsx`, `Dilutions.jsx`, `Antibodies.jsx` |
+| **Klarissa** | Molarity, Dilutions, Antibodies | `src/components/molarity/`, `src/components/dilutions/`, `src/components/reagents/`, and the matching pages |
 | **Elijah** | Recipes | `src/pages/Recipes.jsx` |
+
+Each calculator is a page (framing text), a component (layout and state), and
+a `compute*.js` module (the arithmetic). Owning a calculator means owning all
+three. `src/pages/ViralMixes.jsx` and `src/pages/StockSolution.jsx` are
+unassigned — say so in chat before taking one on.
 
 **Shared files — say so in chat before editing:**
 
