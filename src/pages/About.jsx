@@ -20,9 +20,9 @@ export default function About() {
           </Title>
           <Text>
             The Lab App is a research tool that allows you to perform common laboratory calculations.
-            The Lab App is open-source and coded by Ayland Letsinger and Sarah Little-Letsinger. We are
-            always working on expanding the capabilities of the app – and we&apos;re happy to take
-            requests!
+            The Lab App is open-source and coded by Ayland Letsinger, Sarah Little-Letsinger,
+            Klarissa Tey, and Elijah Martinez. We are always working on expanding the capabilities of
+            the app – and we&apos;re happy to take requests!
           </Text>
         </div>
 
