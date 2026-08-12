@@ -16,12 +16,26 @@ export default function Support() {
 
       <Stack gap="lg">
         <Text>
-          The Lab App is free, open source, and has no accounts, adverts or tracking. It is built
-          and maintained by{' '}
+          The Lab App is free, open source, and has no accounts or adverts. It is built and
+          maintained by{' '}
           <Anchor href={LAB_WEBSITE} target="_blank" rel="noopener noreferrer">
             Ayland Letsinger
           </Anchor>{' '}
           alongside the research it was written for.
+        </Text>
+        {/*
+          The site claimed "no tracking" outright until the Ko-fi widget went
+          in. The widget is third-party and this is the only page that loads
+          it, so the claim is narrowed rather than quietly left standing.
+        */}
+        <Text size="sm" c="dimmed">
+          No calculator on this site loads anything from anywhere else, and none of them send your
+          numbers off the page. The Ko-fi panel below is the one exception, and it is only on this
+          page — if you would rather not load it,{' '}
+          <Anchor href={SUPPORT_LINK.url} target="_blank" rel="noopener noreferrer">
+            open Ko-fi directly
+          </Anchor>{' '}
+          instead.
         </Text>
 
         <Paper p="md" radius="md" withBorder>
@@ -53,9 +67,32 @@ export default function Support() {
               afternoon and you would like to put something in the tin, it is appreciated and it
               changes nothing about what you get.
             </Text>
-            <Anchor href={SUPPORT_LINK.url} target="_blank" rel="noopener noreferrer">
-              {SUPPORT_LINK.label}
-            </Anchor>
+
+            <iframe
+              title="Support The Lab App on Ko-fi"
+              src={SUPPORT_LINK.embedSrc}
+              height="712"
+              className="no-print"
+              style={{
+                border: 'none',
+                width: '100%',
+                maxWidth: 420,
+                padding: 4,
+                background: '#f9f9f9',
+              }}
+            />
+
+            {/*
+              A plain link under the frame, because a blocked iframe is an
+              empty 712-pixel hole with nothing to click. Privacy extensions
+              and locked-down networks both do this routinely.
+            */}
+            <Text size="sm" mt="sm">
+              Or go straight there:{' '}
+              <Anchor href={SUPPORT_LINK.url} target="_blank" rel="noopener noreferrer">
+                {SUPPORT_LINK.label}
+              </Anchor>
+            </Text>
           </Paper>
         )}
 
