@@ -4,6 +4,7 @@ import { IconChevronDown } from '@tabler/icons-react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CALCULATORS } from '../calculators';
 import { DOSAGE_DELIVERY_METHODS } from '../dosageDeliveryMethods';
+import KofiButton from '../components/feedback/KofiButton';
 import NoteButton from '../components/feedback/NoteButton';
 import { navActiveColor } from '../theme';
 
@@ -182,8 +183,10 @@ export default function AppLayout() {
           <Text size="xs" c="dimmed">
             Something wrong on this page, or missing from it?
           </Text>
-          {/* Support lives in the nav now; two links to it is one too many. */}
-          <NoteButton />
+          <Group gap="sm" align="center" wrap="wrap">
+            <NoteButton />
+            <KofiButton />
+          </Group>
         </Group>
       </AppShell.Main>
     </AppShell>
