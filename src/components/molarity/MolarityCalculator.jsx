@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Group, NumberInput, Paper, Stack, Text } from '@mantine/core';
+import { Button, Group, NumberInput, Paper, Stack, Text } from '@mantine/core';
+import { IconRefresh } from '@tabler/icons-react';
 import { DOSE_UNITS, VOLUME_UNITS } from '../../constants/doseUnits';
 import { MOLAR_CONCENTRATION_UNITS } from '../../dosage/molarUnits';
 import {
@@ -40,6 +41,17 @@ const calculatedStyles = {
   },
 };
 
+/** Empty, with the units most people start from. Reset returns to exactly this. */
+const BLANK = {
+  mass: '',
+  massUnit: 'mg',
+  concentration: '',
+  concentrationUnit: 'mM',
+  volume: '',
+  volumeUnit: 'ml',
+  molecularWeight: '',
+};
+
 /**
  * Molarity, solved for whichever field is left blank.
  *
@@ -51,15 +63,13 @@ const calculatedStyles = {
  * file is layout and unit handling only — nothing here decides an answer.
  */
 export default function MolarityCalculator() {
-  const [v, setV] = useState({
-    mass: '',
-    massUnit: 'mg',
-    concentration: '',
-    concentrationUnit: 'mM',
-    volume: '',
-    volumeUnit: 'ml',
-    molecularWeight: '',
-  });
+  const [v, setV] = useState(BLANK);
+  /**
+   * Clearing fields one at a time does not empty this form — each clear bakes
+   * the current answer into the field beside it, which is what makes solving
+   * for a different term work. So there has to be a way out, and this is it.
+   */
+  const reset = () => setV(BLANK);
   /**
    * Edit a field, keeping any answer already on screen.
    *
@@ -219,9 +229,19 @@ export default function MolarityCalculator() {
   return (
     <Stack gap="lg">
       <Paper p="md" radius="md" withBorder>
-        <Text fw={600} mb="sm">
-          Molarity
-        </Text>
+        <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
+          <Text fw={600}>Molarity</Text>
+          <Button
+            variant="subtle"
+            size="compact-sm"
+            color="gray"
+            leftSection={<IconRefresh size={14} />}
+            onClick={reset}
+            className="no-print"
+          >
+            Reset
+          </Button>
+        </Group>
         <Text size="sm" c="dimmed" mb="md" className="no-print">
           Fill in any three. The fourth is worked out and shown in yellow.
         </Text>
