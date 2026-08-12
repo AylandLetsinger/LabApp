@@ -1,9 +1,10 @@
-import { AppShell, Burger, Button, Group, Menu, Title } from '@mantine/core';
+import { AppShell, Burger, Button, Group, Menu, Text, Title } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { IconChevronDown } from '@tabler/icons-react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CALCULATORS } from '../calculators';
 import { DOSAGE_DELIVERY_METHODS } from '../dosageDeliveryMethods';
+import NoteButton from '../components/feedback/NoteButton';
 import { navActiveColor } from '../theme';
 
 /**
@@ -159,6 +160,33 @@ export default function AppLayout() {
 
       <AppShell.Main maw={1126} mx="auto" w="100%" ta="left">
         <Outlet />
+
+        {/*
+          On every page, because the page a problem happened on is the thing
+          worth reporting and nobody navigates elsewhere to report it.
+        */}
+        <Group
+          justify="space-between"
+          align="center"
+          wrap="wrap"
+          gap="sm"
+          mt="xl"
+          pt="md"
+          className="no-print"
+          style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}
+        >
+          <Text size="xs" c="dimmed">
+            Something wrong on this page, or missing from it?
+          </Text>
+          <Group gap="xs">
+            <NoteButton />
+            <NavLink to="/support" style={{ textDecoration: 'none' }}>
+              <Button component="span" variant="subtle" size="compact-sm" color="gray">
+                Support
+              </Button>
+            </NavLink>
+          </Group>
+        </Group>
       </AppShell.Main>
     </AppShell>
   );

@@ -9,6 +9,7 @@ import {
   copiesPerInjection,
   copiesRatio,
   injectionsFrom,
+  planFromTargetCopies,
   splitByRatio,
   titerPerMl,
 } from '../../reagents/computeViralMix';
@@ -17,6 +18,23 @@ import IssueList from '../dosage/IssueList';
 import { inputFieldColor, navActiveColor } from '../../theme';
 
 const inputBlue = { variant: 'filled', color: inputFieldColor };
+
+/** Copy counts are quoted as a mantissa and a power of ten, like titres. */
+const COPY_EXPONENTS = [
+  { value: '12', label: '×10¹²' },
+  { value: '11', label: '×10¹¹' },
+  { value: '10', label: '×10¹⁰' },
+  { value: '9', label: '×10⁹' },
+  { value: '8', label: '×10⁸' },
+  { value: '7', label: '×10⁷' },
+];
+
+/** A copy count from its two halves; undefined until the mantissa is given. */
+function copiesFrom(mantissa, exponent) {
+  const n = Number(mantissa);
+  if (!Number.isFinite(n) || n <= 0) return undefined;
+  return n * 10 ** Number(exponent ?? 9);
+}
 
 function volumeText(ml, unit = 'ul') {
   const value = mlToVolumeUnit(ml, unit);
@@ -49,6 +67,7 @@ export default function ViralMix({ v, set, agents, setAgents }) {
     setAgents([...agents, { name: '', titer: '', titerUnit: 'e12', parts: '1' }]);
   const removeAgent = (index) => setAgents(agents.filter((_, i) => i !== index));
 
+  const isTarget = v.basis === 'target';
   const finalMl = volumeToMl(v.finalVolume, v.finalVolumeUnit);
   const diluentMl = volumeToMl(v.diluentVolume, v.diluentVolumeUnit) ?? 0;
   const virusMl = finalMl === undefined ? undefined : finalMl - diluentMl;
@@ -56,9 +75,29 @@ export default function ViralMix({ v, set, agents, setAgents }) {
   const resolved = agents.map((a) => ({
     titerPerMl: titerPerMl(a.titer, a.titerUnit),
     parts: a.parts,
+    copiesPerInjection: copiesFrom(a.targetCopies, a.targetCopiesExp),
   }));
 
-  const volumes = splitByRatio({ agents: resolved, basis: v.basis, virusVolumeMl: virusMl });
+  /*
+   * Two directions into the same mixture. A ratio splits whatever volume the
+   * viruses are allowed; a target dose says how much of each is needed and the
+   * diluent is whatever is left, which can be negative when the stocks are too
+   * weak to reach the dose at all.
+   */
+  const targetPlan = isTarget
+    ? planFromTargetCopies({
+        agents: resolved,
+        perInjectionMl: volumeToMl(v.injectionVolume, v.injectionVolumeUnit),
+        finalVolumeMl: finalMl,
+      })
+    : undefined;
+
+  const volumes = isTarget
+    ? targetPlan?.volumesMl
+    : splitByRatio({ agents: resolved, basis: v.basis, virusVolumeMl: virusMl });
+
+  // In target mode the diluent is an output, not something the user sets.
+  const effectiveDiluentMl = isTarget ? targetPlan?.diluentMl : diluentMl;
 
   const inMix = volumes
     ? volumes.map((volumeMl, i) =>
@@ -77,6 +116,23 @@ export default function ViralMix({ v, set, agents, setAgents }) {
       message:
         'The diluent alone fills the final volume, leaving nothing for the viruses. Reduce the ' +
         'diluent, or make a larger volume.',
+    });
+  }
+  /*
+   * Working back from a dose can ask for more neat virus than the vial holds,
+   * and the volumes still compute — they just do not add up to the mix. Left
+   * unsaid, the page would print "take 5 uL and 50 uL for 10 uL in total".
+   * No diluent fixes this: the stocks are too weak for that dose at that
+   * injection volume.
+   */
+  if (isTarget && targetPlan?.overfull) {
+    const needed = targetPlan.volumesMl.reduce((sum, x) => sum + x, 0);
+    issues.push({
+      level: 'error',
+      message:
+        `Reaching those doses needs ${volumeText(needed)} of neat agent, more than the ` +
+        `${volumeText(finalMl)} being made. The stocks are too weak for this dose at this ` +
+        'injection volume — inject a larger volume, or use more concentrated virus.',
     });
   }
   if (v.basis === 'copies' && resolved.some((r) => r.titerPerMl === undefined)) {
@@ -104,12 +160,13 @@ export default function ViralMix({ v, set, agents, setAgents }) {
             data={[
               { value: 'copies', label: 'Ratio of genome copies' },
               { value: 'volume', label: 'Ratio of volumes' },
+              { value: 'target', label: 'Copies per injection' },
             ]}
           />
           <Text size="xs" c="dimmed" mt={6} className="no-print">
-            * these are different mixtures. Ten times the copies of a virus that is ten times
-            stronger means equal volumes; ten parts by volume of the same pair is a hundred to one
-            in copies.
+            {isTarget
+              ? '* say what each injection should deliver and the volumes follow — the ratio comes out rather than being chosen'
+              : '* these are different mixtures. Ten times the copies of a virus that is ten times stronger means equal volumes; ten parts by volume of the same pair is a hundred to one in copies.'}
           </Text>
         </div>
 
@@ -119,7 +176,9 @@ export default function ViralMix({ v, set, agents, setAgents }) {
               <Table.Tr>
                 <Table.Th ta="left" miw={140}>AGENT</Table.Th>
                 <Table.Th ta="left" w={210}>titre</Table.Th>
-                <Table.Th ta="left" w={90}>parts</Table.Th>
+                <Table.Th ta="left" w={isTarget ? 190 : 90}>
+                  {isTarget ? 'copies per injection' : 'parts'}
+                </Table.Th>
                 <Table.Th ta="left" w={110}>volume</Table.Th>
                 <Table.Th ta="left" w={140}>in the mix</Table.Th>
                 <Table.Th w={38} />
@@ -160,16 +219,39 @@ export default function ViralMix({ v, set, agents, setAgents }) {
                     </Group>
                   </Table.Td>
                   <Table.Td>
-                    <NumberInput
-                      placeholder="1"
-                      min={0}
-                      decimalScale={4}
-                      value={a.parts}
-                      onChange={(value) => setAgent(i, { parts: value })}
-                      aria-label={`Ratio parts for agent ${i + 1}`}
-                      hideControls
-                      {...inputBlue}
-                    />
+                    {isTarget ? (
+                      <Group gap={4} wrap="nowrap">
+                        <NumberInput
+                          placeholder="e.g. 2.5"
+                          min={0}
+                          decimalScale={6}
+                          value={a.targetCopies}
+                          onChange={(value) => setAgent(i, { targetCopies: value })}
+                          aria-label={`Copies per injection for agent ${i + 1}`}
+                          hideControls
+                          w={80}
+                          {...inputBlue}
+                        />
+                        <LabSelect
+                          data={COPY_EXPONENTS}
+                          value={String(a.targetCopiesExp ?? 9)}
+                          onChange={(value) => setAgent(i, { targetCopiesExp: value ?? '9' })}
+                          aria-label={`Copies exponent for agent ${i + 1}`}
+                          w={98}
+                        />
+                      </Group>
+                    ) : (
+                      <NumberInput
+                        placeholder="1"
+                        min={0}
+                        decimalScale={4}
+                        value={a.parts}
+                        onChange={(value) => setAgent(i, { parts: value })}
+                        aria-label={`Ratio parts for agent ${i + 1}`}
+                        hideControls
+                        {...inputBlue}
+                      />
+                    )}
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" fw={600} ff="monospace">
@@ -227,24 +309,38 @@ export default function ViralMix({ v, set, agents, setAgents }) {
               onChange={(value) => set('finalVolumeUnit', value ?? 'ul')}
               w={100}
             />
-            <NumberInput
-              label="of which diluent"
-              placeholder="optional"
-              min={0}
-              decimalScale={6}
-              value={v.diluentVolume}
-              onChange={(value) => set('diluentVolume', value)}
-              w={170}
-              {...inputBlue}
-            />
-            <LabSelect
-              label="Unit"
-              data={VOLUME_UNITS}
-              value={v.diluentVolumeUnit}
-              onChange={(value) => set('diluentVolumeUnit', value ?? 'ul')}
-              w={100}
-            />
+            {/*
+              Only an input when a ratio is driving the split. Working back
+              from a dose, the diluent is whatever the viruses did not take,
+              so asking for it would be asking for an answer.
+            */}
+            {!isTarget && (
+              <>
+                <NumberInput
+                  label="Diluent to make up with"
+                  placeholder="0"
+                  min={0}
+                  decimalScale={6}
+                  value={v.diluentVolume}
+                  onChange={(value) => set('diluentVolume', value)}
+                  w={200}
+                  {...inputBlue}
+                />
+                <LabSelect
+                  label="Unit"
+                  data={VOLUME_UNITS}
+                  value={v.diluentVolumeUnit}
+                  onChange={(value) => set('diluentVolumeUnit', value ?? 'ul')}
+                  w={100}
+                />
+              </>
+            )}
           </Group>
+          <Text size="xs" c="dimmed" mt={6} className="no-print">
+            {isTarget
+              ? '* the diluent is whatever is left once each agent has taken what the dose needs'
+              : '* saline or PBS, counted inside the final volume above — leave it blank to mix the agents neat'}
+          </Text>
 
           <Group align="flex-end" wrap="wrap" gap="sm">
             <NumberInput
@@ -289,9 +385,9 @@ export default function ViralMix({ v, set, agents, setAgents }) {
                 {a.name?.trim() || `agent ${i + 1}`}
               </Text>
             ))}
-            {diluentMl > 0 && (
+            {effectiveDiluentMl > 0 && (
               <Text size="sm">
-                and <strong>{volumeText(diluentMl)}</strong> of diluent
+                and <strong>{volumeText(effectiveDiluentMl)}</strong> of diluent
               </Text>
             )}
             <Text size="sm" fw={600} mt={4}>
