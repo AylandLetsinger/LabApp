@@ -3,6 +3,7 @@ import { Navigate, useParams } from 'react-router-dom';
 import LiquidDoseForm from '../components/dosage/LiquidDoseForm';
 import CarrierDosageForm from '../components/dosage/CarrierDosageForm';
 import DirectApplicationForm from '../components/dosage/DirectApplicationForm';
+import IntracranialDoseForm from '../components/dosage/IntracranialDoseForm';
 import { CARRIERS } from '../dosage/carriers';
 import { LIQUID_ROUTES } from '../dosage/liquidRoutes';
 import { getDosageMethodLabel } from '../dosageDeliveryMethods';
@@ -19,6 +20,11 @@ const IMPLEMENTED_METHODS = {
     props: { route: LIQUID_ROUTES['intraperitoneal-injection'] },
     intro:
       'Works out dosage and preparation volumes for intraperitoneal injection. Blue fields are your inputs; grey fields are calculated.',
+  },
+  'intracranial-injection-infusion': {
+    Form: IntracranialDoseForm,
+    intro:
+      'Works out what to put in the syringe or the pump for delivery into the brain. Volume here is anatomical, not allometric — a microlitre into a ventricle is a microlitre whatever the animal weighs — so nothing on this page is scaled per kilogram. ACSF is the starting vehicle. No published intracranial solvent-tolerability figures are held here, and Step 3 says so.',
   },
   'subcutaneous-injection': {
     Form: LiquidDoseForm,
