@@ -1,196 +1,249 @@
-import { Group, NumberInput, Paper, Stack, Text } from '@mantine/core';
+import {
+  ActionIcon,
+  Button,
+  Divider,
+  Group,
+  NumberInput,
+  Paper,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { VOLUME_UNITS } from '../../constants/doseUnits';
-import { mlToVolumeUnit, volumeToMl } from '../../dosage/unitConversions';
+import { volumeToMl } from '../../dosage/unitConversions';
 import { roundTo, toPositiveNumber } from '../../dosage/numberUtils';
 import {
-  antibodyDiluentMl,
   antibodyVolumeMl,
+  maxWorkingVolumeMl,
+  mixtureDiluentMl,
   workingVolumeMl,
-} from '../../reagents/computeReagents';
+} from '../../reagents/computeAntibody';
 import LabSelect from '../LabSelect';
 import IssueList from '../dosage/IssueList';
 import { inputFieldColor } from '../../theme';
 
 const inputBlue = { variant: 'filled', color: inputFieldColor };
 
-function volumeText(ml, unit) {
-  const value = mlToVolumeUnit(ml, unit);
-  if (value === undefined) return '—';
-  return `${roundTo(value, 6)} ${VOLUME_UNITS.find((u) => u.value === unit)?.label ?? unit}`;
+/** Microlitres for the small volumes, millilitres once it stops being silly. */
+function auto(ml) {
+  if (ml === undefined || !Number.isFinite(ml)) return '—';
+  if (Math.abs(ml) < 1) return `${roundTo(ml * 1000, 4)} µL`;
+  return `${roundTo(ml, 4)} mL`;
 }
 
 /**
- * Diluting an antibody for staining or blotting.
+ * One named solution — a primary or a secondary — and the antibodies in it.
  *
- * The fold is the input rather than a concentration, because that is what a
- * datasheet gives you — an antibody's actual concentration is usually unknown
- * and often unknowable. And the working volume is reached by counting sections
- * or blots, because that is how anyone arrives at it in practice.
+ * Several antibodies share one volume of diluent, which is the reason this is
+ * a mixture rather than a row: working them out one at a time and adding up by
+ * hand is the step where the diluent gets counted twice.
+ *
+ * Each is its own step so that a printed record reads as the order things were
+ * actually done in.
  */
-export default function AntibodyDilution({ v, set }) {
-  const perSampleMl = volumeToMl(v.volumePerSample, v.volumePerSampleUnit);
-  const fromCount = workingVolumeMl(v.sampleCount, perSampleMl);
-  const typedWorkingMl = volumeToMl(v.workingVolume, v.workingVolumeUnit);
+export default function AntibodyDilution({ mixture, index, onChange, onRemove, canRemove }) {
+  const setField = (key, value) => onChange({ ...mixture, [key]: value });
+  const setAntibody = (i, patch) =>
+    onChange({
+      ...mixture,
+      antibodies: mixture.antibodies.map((a, j) => (j === i ? { ...a, ...patch } : a)),
+    });
+  const addAntibody = () =>
+    onChange({
+      ...mixture,
+      antibodies: [...mixture.antibodies, { name: '', fold: 500, stock: '', stockUnit: 'ul' }],
+    });
+  const removeAntibody = (i) =>
+    onChange({ ...mixture, antibodies: mixture.antibodies.filter((_, j) => j !== i) });
 
-  // Counting samples is the usual route, but a volume can be stated outright.
-  const workingMl = v.volumeMode === 'count' ? fromCount : typedWorkingMl;
+  const perSampleMl = volumeToMl(mixture.volumePerSample, mixture.volumePerSampleUnit);
+  const workingMl = workingVolumeMl(mixture.sampleCount, perSampleMl);
 
-  const antibodyMl = antibodyVolumeMl(workingMl, v.fold);
-  const diluentMl = antibodyDiluentMl(workingMl, antibodyMl);
+  const volumes = mixture.antibodies.map((a) => antibodyVolumeMl(workingMl, a.fold));
+  const diluent = mixtureDiluentMl(workingMl, volumes);
 
-  const haveMl = volumeToMl(v.stockAvailable, v.stockAvailableUnit);
   const issues = [];
-  if (haveMl !== undefined && antibodyMl !== undefined && antibodyMl > haveMl) {
+  if (diluent?.overfull) {
     issues.push({
       level: 'error',
       message:
-        `This needs ${volumeText(antibodyMl, 'ul')} of antibody but you have ` +
-        `${volumeText(haveMl, 'ul')} — short by ${volumeText(antibodyMl - haveMl, 'ul')}. ` +
-        'Make less, or use a weaker dilution.',
+        `The antibodies alone come to ${auto(workingMl - diluent.diluentMl)}, more than the ` +
+        `${auto(workingMl)} of solution being made. Use a weaker dilution, or make more.`,
     });
   }
 
+  const title = mixture.name?.trim() || `Solution ${index + 1}`;
+
   return (
-    <Stack gap="lg">
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={600} mb="sm">
-          How much do you need?
-        </Text>
-
-        <Stack gap="md">
-          <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Dilution — 1 in"
-              placeholder="e.g. 500"
-              min={0}
-              decimalScale={4}
-              value={v.fold}
-              onChange={(value) => set('fold', value)}
-              w={200}
-              {...inputBlue}
-            />
+    <Paper p="md" radius="md" withBorder>
+      <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm" mb="md">
+        <TextInput
+          label="This solution is"
+          placeholder="e.g. Primary"
+          value={mixture.name}
+          onChange={(e) => setField('name', e.currentTarget.value)}
+          w={220}
+          {...inputBlue}
+        />
+        <Group align="flex-end" wrap="wrap" gap="sm">
+          <NumberInput
+            label="Samples"
+            placeholder="sections, wells or blots"
+            min={0}
+            allowDecimal={false}
+            value={mixture.sampleCount}
+            onChange={(value) => setField('sampleCount', value)}
+            w={150}
+            {...inputBlue}
+          />
+          <Text pb="sm" size="sm">
+            ×
+          </Text>
+          <NumberInput
+            label="Volume each"
+            placeholder="e.g. 10"
+            min={0}
+            decimalScale={6}
+            value={mixture.volumePerSample}
+            onChange={(value) => setField('volumePerSample', value)}
+            w={140}
+            {...inputBlue}
+          />
+          <LabSelect
+            label="Unit"
+            data={VOLUME_UNITS}
+            value={mixture.volumePerSampleUnit}
+            onChange={(value) => setField('volumePerSampleUnit', value ?? 'ml')}
+            w={100}
+          />
+          {workingMl !== undefined && (
             <Text pb="sm" size="sm" c="dimmed">
-              {toPositiveNumber(v.fold) ? `→ written 1:${v.fold}` : '→ e.g. 1:500'}
+              &rarr; <strong>{auto(workingMl)}</strong> to make
             </Text>
-          </Group>
+          )}
+        </Group>
+        {canRemove && (
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            aria-label={`Remove ${title}`}
+            onClick={onRemove}
+            mb={6}
+          >
+            <IconTrash size={16} />
+          </ActionIcon>
+        )}
+      </Group>
 
-          <div>
-            <Group align="flex-end" wrap="wrap" gap="sm">
-              <NumberInput
-                label="Samples"
-                placeholder="sections, wells or blots"
-                min={0}
-                allowDecimal={false}
-                value={v.sampleCount}
-                onChange={(value) => {
-                  set('sampleCount', value);
-                  set('volumeMode', 'count');
-                }}
-                w={220}
+      <Divider mb="md" />
+
+      <Stack gap="sm">
+        {mixture.antibodies.map((a, i) => {
+          const stockMl = volumeToMl(a.stock, a.stockUnit);
+          const couldMake = maxWorkingVolumeMl(stockMl, a.fold);
+          return (
+            <Group key={i} align="flex-end" wrap="wrap" gap="sm">
+              <TextInput
+                label={i === 0 ? 'Antibody' : undefined}
+                placeholder="e.g. Ki-67"
+                value={a.name}
+                onChange={(e) => setAntibody(i, { name: e.currentTarget.value })}
+                aria-label={`Name of antibody ${i + 1} in ${title}`}
+                w={180}
                 {...inputBlue}
               />
-              <Text pb="sm" size="sm">
-                ×
-              </Text>
               <NumberInput
-                label="Volume each"
+                label={i === 0 ? 'Dilution — 1 in' : undefined}
                 placeholder="e.g. 500"
                 min={0}
+                decimalScale={4}
+                value={a.fold}
+                onChange={(value) => setAntibody(i, { fold: value })}
+                aria-label={`Dilution of antibody ${i + 1} in ${title}`}
+                w={140}
+                {...inputBlue}
+              />
+              <div style={{ minWidth: 110 }}>
+                {i === 0 && (
+                  <Text size="xs" c="dimmed" mb={2}>
+                    add
+                  </Text>
+                )}
+                <Text size="sm" fw={700} ff="monospace" pb={6}>
+                  {auto(volumes[i])}
+                </Text>
+              </div>
+              <NumberInput
+                label={i === 0 ? 'You have' : undefined}
+                placeholder="optional"
+                min={0}
                 decimalScale={6}
-                value={v.volumePerSample}
-                onChange={(value) => {
-                  set('volumePerSample', value);
-                  set('volumeMode', 'count');
-                }}
-                w={160}
+                value={a.stock}
+                onChange={(value) => setAntibody(i, { stock: value })}
+                aria-label={`Stock of antibody ${i + 1} in ${title}`}
+                w={120}
                 {...inputBlue}
               />
               <LabSelect
-                label="Unit"
                 data={VOLUME_UNITS}
-                value={v.volumePerSampleUnit}
-                onChange={(value) => set('volumePerSampleUnit', value ?? 'ul')}
-                w={100}
+                value={a.stockUnit}
+                onChange={(value) => setAntibody(i, { stockUnit: value ?? 'ul' })}
+                aria-label={`Stock unit for antibody ${i + 1} in ${title}`}
+                w={90}
               />
-              {fromCount !== undefined && (
+              {/*
+                The useful direction of "how much do I have": what the tube is
+                worth at this dilution, rather than whether one plan fits.
+              */}
+              {couldMake !== undefined && (
                 <Text pb="sm" size="sm" c="dimmed">
-                  &rarr; <strong>{volumeText(fromCount, 'ml')}</strong> in total
+                  &rarr; enough for <strong>{auto(couldMake)}</strong>
                 </Text>
               )}
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                aria-label={`Remove antibody ${i + 1} from ${title}`}
+                onClick={() => removeAntibody(i)}
+                disabled={mixture.antibodies.length <= 1}
+                mb={6}
+              >
+                <IconTrash size={16} />
+              </ActionIcon>
             </Group>
-            <Text size="xs" c="dimmed" mt={6} className="no-print">
-              * or state the working volume directly below, if you already know it
-            </Text>
-          </div>
+          );
+        })}
+      </Stack>
 
-          <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Working volume, directly"
-              placeholder="optional"
-              min={0}
-              decimalScale={6}
-              value={v.workingVolume}
-              onChange={(value) => {
-                set('workingVolume', value);
-                set('volumeMode', 'direct');
-              }}
-              w={220}
-              {...inputBlue}
-            />
-            <LabSelect
-              label="Unit"
-              data={VOLUME_UNITS}
-              value={v.workingVolumeUnit}
-              onChange={(value) => set('workingVolumeUnit', value ?? 'ml')}
-              w={100}
-            />
-            {v.volumeMode === 'direct' && (
-              <Text pb="sm" size="sm" c="dimmed">
-                &rarr; using this rather than the count above
-              </Text>
-            )}
-          </Group>
+      <Button
+        variant="subtle"
+        size="compact-sm"
+        leftSection={<IconPlus size={14} />}
+        mt="sm"
+        onClick={addAntibody}
+      >
+        Add antibody
+      </Button>
 
-          <Group align="flex-end" wrap="wrap" gap="sm">
-            <NumberInput
-              label="Antibody you have"
-              placeholder="optional"
-              min={0}
-              decimalScale={6}
-              value={v.stockAvailable}
-              onChange={(value) => set('stockAvailable', value)}
-              w={220}
-              {...inputBlue}
-            />
-            <LabSelect
-              label="Unit"
-              data={VOLUME_UNITS}
-              value={v.stockAvailableUnit}
-              onChange={(value) => set('stockAvailableUnit', value ?? 'ul')}
-              w={100}
-            />
-          </Group>
-        </Stack>
-
-        <IssueList issues={issues} />
-      </Paper>
-
-      {antibodyMl !== undefined && diluentMl !== undefined && (
-        <Paper p="md" radius="md" withBorder>
-          <Text fw={600} mb="sm">
-            At the bench
-          </Text>
+      {diluent && !diluent.overfull && (
+        <Paper p="sm" radius="sm" mt="md" bg="var(--mantine-color-gray-0)" withBorder>
           <Text size="sm">
-            Add <strong>{volumeText(antibodyMl, 'ul')}</strong> of antibody to{' '}
-            <strong>{volumeText(diluentMl, 'ml')}</strong> of diluent, for{' '}
-            <strong>{volumeText(workingMl, 'ml')}</strong> at <strong>1:{v.fold}</strong>.
-          </Text>
-          <Text size="xs" c="dimmed" mt={8} className="no-print">
-            1:{v.fold} means one volume of antibody in {v.fold} of finished solution, which is the
-            convention every datasheet uses.
+            For <strong>{title}</strong>, add{' '}
+            {mixture.antibodies.map((a, i) => (
+              <span key={i}>
+                {i > 0 && (i === mixture.antibodies.length - 1 ? ' and ' : ', ')}
+                <strong>{auto(volumes[i])}</strong> of {a.name?.trim() || `antibody ${i + 1}`}
+                {toPositiveNumber(a.fold) ? ` (1:${a.fold})` : ''}
+              </span>
+            ))}{' '}
+            to <strong>{auto(diluent.diluentMl)}</strong> of diluent, for{' '}
+            <strong>{auto(workingMl)}</strong> in total.
           </Text>
         </Paper>
       )}
-    </Stack>
+
+      <IssueList issues={issues} />
+    </Paper>
   );
 }

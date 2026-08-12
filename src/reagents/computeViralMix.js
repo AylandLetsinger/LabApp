@@ -1,64 +1,15 @@
 /**
- * Two jobs that live on the same page because the same person does both.
+ * Mixing viral agents to a ratio.
  *
- * DILUTING AN ANTIBODY is the "1:500" calculation, for immunohistochemistry or
- * a western blot. What makes it worth its own form rather than the general
- * dilution page is that nobody knows an antibody's concentration — the
- * datasheet says a fold, so the fold is the input — and that the working
- * volume is usually reached by counting sections or blots rather than typed.
+ * A ratio of GCaMP to tdTomato can mean two things, and they are not the same
+ * mixture: ten parts by VOLUME, or ten times as many genome COPIES. Which one
+ * was meant depends on the titres, and getting it wrong is a silent tenfold
+ * error in an experiment that will look like it worked.
  *
- * MIXING VIRUSES is a different problem wearing similar clothes. A ratio of
- * GCaMP to tdTomato can mean two things, and they are not the same mixture:
- * ten parts by VOLUME, or ten times as many genome COPIES. Which one was meant
- * depends on the titres, and getting it wrong is a silent tenfold error in an
- * experiment that will look like it worked.
+ * This shared a module with antibody dilution while the two shared a page.
+ * They no longer do, and they never shared any arithmetic.
  */
 import { toPositiveNumber } from '../dosage/numberUtils';
-
-/* -------------------------------------------------------------------------
- * Antibody dilution
- * ------------------------------------------------------------------------- */
-
-/**
- * Working volume from a count of samples.
- *
- * @returns {number | undefined} Millilitres.
- */
-export function workingVolumeMl(sampleCount, volumePerSampleMl) {
-  const n = toPositiveNumber(sampleCount);
-  const each = toPositiveNumber(volumePerSampleMl);
-  if (n === undefined || each === undefined) return undefined;
-  return n * each;
-}
-
-/**
- * How much neat antibody a working solution needs.
- *
- * "1:500" means one volume of antibody in five hundred volumes of finished
- * solution — not one in five hundred and one. That is the convention every
- * datasheet uses, and the difference is 0.2%, but the convention is what is
- * implemented rather than an interpretation of it.
- *
- * @returns {number | undefined} Millilitres.
- */
-export function antibodyVolumeMl(workingMl, foldDilution) {
-  const working = toPositiveNumber(workingMl);
-  const fold = toPositiveNumber(foldDilution);
-  if (working === undefined || fold === undefined) return undefined;
-  return working / fold;
-}
-
-/** What is left of the working volume once the antibody is in it. */
-export function antibodyDiluentMl(workingMl, antibodyMl) {
-  const working = toPositiveNumber(workingMl);
-  const antibody = toPositiveNumber(antibodyMl);
-  if (working === undefined || antibody === undefined) return undefined;
-  return working - antibody;
-}
-
-/* -------------------------------------------------------------------------
- * Viral mixing
- * ------------------------------------------------------------------------- */
 
 /** Titres are quoted as a mantissa and a power of ten, so that is how they are entered. */
 export const TITER_UNITS = [

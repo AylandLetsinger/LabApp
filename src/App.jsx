@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import Molarity from './pages/Molarity';
 import Recipes from './pages/Recipes';
 import StockSolution from './pages/StockSolution';
+import ViralMixes from './pages/ViralMixes';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/molarity" element={<Molarity />} />
         <Route path="/dilutions" element={<Dilutions />} />
         <Route path="/antibodies" element={<Antibodies />} />
+        <Route path="/viral-mixes" element={<ViralMixes />} />
         <Route path="/stock-solution" element={<StockSolution />} />
         <Route path="/recipes" element={<Recipes />} />
       </Route>
