@@ -4,6 +4,7 @@ import LiquidDoseForm from '../components/dosage/LiquidDoseForm';
 import CarrierDosageForm from '../components/dosage/CarrierDosageForm';
 import DirectApplicationForm from '../components/dosage/DirectApplicationForm';
 import IntracranialDoseForm from '../components/dosage/IntracranialDoseForm';
+import DrinkingFluidForm from '../components/dosage/DrinkingFluidForm';
 import { CARRIERS } from '../dosage/carriers';
 import { LIQUID_ROUTES } from '../dosage/liquidRoutes';
 import { getDosageMethodLabel } from '../dosageDeliveryMethods';
@@ -31,6 +32,11 @@ const IMPLEMENTED_METHODS = {
     props: { route: LIQUID_ROUTES['subcutaneous-injection'] },
     intro:
       'Works out dosage and preparation volumes for subcutaneous injection, including how much goes into each site when the dose is split. This app holds no published subcutaneous solvent-tolerability figures, so no solvent warnings appear here — Step 2 says so rather than leaving you to infer it from silence.',
+  },
+  'drinking-fluid': {
+    Form: DrinkingFluidForm,
+    intro:
+      'Works out what concentration to put in the bottle, or what a bottle already made up delivers. Unlike every other page here, this dose is inferred rather than administered: the animal decides how much it drinks, so everything rests on an intake you measured. The last step shows how far the dose moves when they drink more or less.',
   },
   'oral-gavage': {
     Form: LiquidDoseForm,

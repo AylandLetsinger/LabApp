@@ -505,6 +505,13 @@ const ROUTE_LABELS = {
   sc: 'subcutaneous',
   iv: 'intravenous',
   ic: 'intracranial',
+  /*
+   * Deliberately distinct from `oral`. The oral figures in this catalogue come
+   * from single administrations by gavage; drinking water is an unmeasured
+   * chronic exposure over days. Sharing the key would have applied one to the
+   * other, which is the conflation this file exists to prevent.
+   */
+  drinking: 'drinking water',
 };
 
 /** @returns {string} The route's name, or the raw key if it is unknown. */
