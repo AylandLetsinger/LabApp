@@ -24,6 +24,7 @@ export const VOLUME_UNITS = [
   { value: 'l', label: 'L' },
   { value: 'ml', label: 'mL' },
   { value: 'ul', label: 'µL' },
+  { value: 'nl', label: 'nL' },
 ];
 
 /**
