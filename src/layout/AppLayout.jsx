@@ -89,16 +89,16 @@ export default function AppLayout() {
                   About
                 </Menu.Item>
                 <Menu.Divider />
-                <Menu.Label>Dosage</Menu.Label>
-                {DOSAGE_DELIVERY_METHODS.map(({ slug, label }) => (
-                  <Menu.Item key={slug} component={Link} to={`/dosage/${slug}`} onClick={closeMenu}>
+                <Menu.Label>Calculators</Menu.Label>
+                {CALCULATORS.map(({ to, label }) => (
+                  <Menu.Item key={to} component={Link} to={to} onClick={closeMenu}>
                     {label}
                   </Menu.Item>
                 ))}
                 <Menu.Divider />
-                <Menu.Label>Calculators</Menu.Label>
-                {CALCULATORS.map(({ to, label }) => (
-                  <Menu.Item key={to} component={Link} to={to} onClick={closeMenu}>
+                <Menu.Label>Dosage</Menu.Label>
+                {DOSAGE_DELIVERY_METHODS.map(({ slug, label }) => (
+                  <Menu.Item key={slug} component={Link} to={`/dosage/${slug}`} onClick={closeMenu}>
                     {label}
                   </Menu.Item>
                 ))}
@@ -118,26 +118,6 @@ export default function AppLayout() {
               <Menu shadow="md" width={220} position="bottom-start">
                 <Menu.Target>
                   <Button
-                    variant={dosageActive ? 'filled' : 'subtle'}
-                    color={dosageActive ? navActiveColor : 'gray'}
-                    size="sm"
-                    rightSection={<IconChevronDown size={14} stroke={1.5} />}
-                  >
-                    Dosage
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  {DOSAGE_DELIVERY_METHODS.map(({ slug, label }) => (
-                    <Menu.Item key={slug} component={Link} to={`/dosage/${slug}`}>
-                      {label}
-                    </Menu.Item>
-                  ))}
-                </Menu.Dropdown>
-              </Menu>
-
-              <Menu shadow="md" width={220} position="bottom-start">
-                <Menu.Target>
-                  <Button
                     variant={calculatorsActive ? 'filled' : 'subtle'}
                     color={calculatorsActive ? navActiveColor : 'gray'}
                     size="sm"
@@ -149,6 +129,26 @@ export default function AppLayout() {
                 <Menu.Dropdown>
                   {CALCULATORS.map(({ to, label }) => (
                     <Menu.Item key={to} component={Link} to={to}>
+                      {label}
+                    </Menu.Item>
+                  ))}
+                </Menu.Dropdown>
+              </Menu>
+
+              <Menu shadow="md" width={220} position="bottom-start">
+                <Menu.Target>
+                  <Button
+                    variant={dosageActive ? 'filled' : 'subtle'}
+                    color={dosageActive ? navActiveColor : 'gray'}
+                    size="sm"
+                    rightSection={<IconChevronDown size={14} stroke={1.5} />}
+                  >
+                    Dosage
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {DOSAGE_DELIVERY_METHODS.map(({ slug, label }) => (
+                    <Menu.Item key={slug} component={Link} to={`/dosage/${slug}`}>
                       {label}
                     </Menu.Item>
                   ))}
