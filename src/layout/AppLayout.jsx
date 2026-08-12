@@ -105,6 +105,9 @@ export default function AppLayout() {
                 <Menu.Item component={Link} to="/recipes" onClick={closeMenu}>
                   Recipe Creator
                 </Menu.Item>
+                <Menu.Item component={Link} to="/support" onClick={closeMenu}>
+                  Support
+                </Menu.Item>
               </Menu.Dropdown>
             </Menu>
           ) : (
@@ -152,6 +155,7 @@ export default function AppLayout() {
               </Menu>
 
               <NavButton to="/recipes">Recipe Creator</NavButton>
+              <NavButton to="/support">Support</NavButton>
             </Group>
           )}
           </div>
@@ -178,14 +182,8 @@ export default function AppLayout() {
           <Text size="xs" c="dimmed">
             Something wrong on this page, or missing from it?
           </Text>
-          <Group gap="xs">
-            <NoteButton />
-            <NavLink to="/support" style={{ textDecoration: 'none' }}>
-              <Button component="span" variant="subtle" size="compact-sm" color="gray">
-                Support
-              </Button>
-            </NavLink>
-          </Group>
+          {/* Support lives in the nav now; two links to it is one too many. */}
+          <NoteButton />
         </Group>
       </AppShell.Main>
     </AppShell>
