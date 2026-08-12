@@ -43,6 +43,7 @@ export default function LiquidDoseForm({ route }) {
       totalInjections: '',
       wasteBufferPct: 0,
       pipetteMinUl: 2,
+      sitesPerSubject: 1,
       minBodyWeightG: 18,
       maxBodyWeightG: 35,
       stepG: 1,
@@ -196,6 +197,18 @@ export default function LiquidDoseForm({ route }) {
       ? dosePerAvgSubjectMg / bodyWeightKg
       : undefined;
 
+  /**
+   * What goes under the skin in one place, when the dose is split between
+   * sites. Display only — the animal receives the same total either way, so
+   * nothing downstream of the per-subject volume depends on it.
+   */
+  const volumePerSiteUl = useMemo(() => {
+    if (!route.hasSites || volumePerSubjectMl === undefined) return undefined;
+    const sites = toPositiveNumber(v.sitesPerSubject);
+    if (sites === undefined) return undefined;
+    return (volumePerSubjectMl * 1000) / sites;
+  }, [route.hasSites, volumePerSubjectMl, v.sitesPerSubject]);
+
   const parameterIssues = useMemo(() => {
     const issues = [];
     const injections = toOptionalNumber(v.totalInjections);
@@ -206,7 +219,7 @@ export default function LiquidDoseForm({ route }) {
       });
     }
     return issues;
-  }, [v.totalInjections, route.pluralNoun]);
+  }, [v.totalInjections, route]);
 
   const narrative = (
     <RecipeNarrative
@@ -240,6 +253,8 @@ export default function LiquidDoseForm({ route }) {
 
       <LiquidDoseParametersSection
         route={route}
+        sitesPerSubject={v.sitesPerSubject}
+        volumePerSiteUl={volumePerSiteUl}
         volPerInjMl={v.volPerInjMl}
         volPerInjWeight={v.volPerInjWeight}
         volPerInjWeightUnit={v.volPerInjWeightUnit}

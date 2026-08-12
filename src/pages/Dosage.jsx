@@ -20,6 +20,12 @@ const IMPLEMENTED_METHODS = {
     intro:
       'Works out dosage and preparation volumes for intraperitoneal injection. Blue fields are your inputs; grey fields are calculated.',
   },
+  'subcutaneous-injection': {
+    Form: LiquidDoseForm,
+    props: { route: LIQUID_ROUTES['subcutaneous-injection'] },
+    intro:
+      'Works out dosage and preparation volumes for subcutaneous injection, including how much goes into each site when the dose is split. This app holds no published subcutaneous solvent-tolerability figures, so no solvent warnings appear here — Step 2 says so rather than leaving you to infer it from silence.',
+  },
   'oral-gavage': {
     Form: LiquidDoseForm,
     props: { route: LIQUID_ROUTES['oral-gavage'] },

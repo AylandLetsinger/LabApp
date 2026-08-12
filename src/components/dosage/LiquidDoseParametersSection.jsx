@@ -1,5 +1,6 @@
 import { Group, NumberInput, Paper, Stack, Text } from '@mantine/core';
 import { WEIGHT_UNITS } from '../../constants/doseUnits';
+import { roundTo } from '../../dosage/numberUtils';
 import LabSelect from '../LabSelect';
 import IssueList from './IssueList';
 import BodyMassFields from './BodyMassFields';
@@ -39,6 +40,8 @@ export default function LiquidDoseParametersSection({
   wasteBufferPct,
   pipetteMinUl,
   showInjectionVolume = true,
+  sitesPerSubject,
+  volumePerSiteUl,
   setFieldValue,
   scheduleOutputFeedback,
   issues,
@@ -93,6 +96,26 @@ export default function LiquidDoseParametersSection({
                 body weight
               </Text>
             </Group>
+            {route.hasSites && (
+              <Group align="flex-end" wrap="wrap" gap="sm" mt="sm">
+                <NumberInput
+                  label="Split across how many sites?"
+                  placeholder="e.g. 1"
+                  min={1}
+                  allowDecimal={false}
+                  value={sitesPerSubject}
+                  onChange={(v) => setFieldValue('sitesPerSubject', v)}
+                  onBlur={scheduleOutputFeedback}
+                  w={220}
+                  {...inputBlue}
+                />
+                {volumePerSiteUl !== undefined && (
+                  <Text pb="sm" size="sm" c="dimmed">
+                    &rarr; <strong>{roundTo(volumePerSiteUl, 2)} µL</strong> per site
+                  </Text>
+                )}
+              </Group>
+            )}
             <Text size="xs" c="dimmed" mt={6} className="no-print">
               {route.volumeHint}
             </Text>

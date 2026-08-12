@@ -21,8 +21,10 @@ import {
   classifyBurden,
   computeSolventBurdenMgPerKg,
   getVehicle,
+  hasObservationsForRoute,
   observationBurdenMgPerKg,
   relevantObservations,
+  routeLabel,
   toleratedBurdenRange,
 } from '../../dosage/vehicles';
 import {
@@ -203,7 +205,7 @@ export default function VehicleRatioTable({
         bodyWeightKg,
       });
       const verdict = classifyBurden(burden, range);
-      const routeWord = route === 'ip' ? 'intraperitoneal' : 'oral';
+      const routeWord = routeLabel(route);
 
       // Whole sentences, and only figures for THIS route. Neither of these is
       // an impossibility: the formulation mixes fine, it is simply beyond
@@ -358,7 +360,7 @@ export default function VehicleRatioTable({
     const burdenColor =
       verdict === 'above-highest' ? errorColor : verdict === 'above-lowest' ? 'orange.7' : undefined;
 
-    const routeWord = route === 'ip' ? 'intraperitoneal' : 'oral';
+    const routeWord = routeLabel(route);
     const published =
       range === undefined
         ? `No published ${routeWord} tolerability figure for this solvent in mice. Other routes, if any, are listed below.`
@@ -433,6 +435,21 @@ export default function VehicleRatioTable({
         occupy. It does not lock the volume, so you can carry more if your protocol does.{' '}
         <strong>Your IACUC protocol governs, not this table.</strong>
       </Text>
+
+      {/*
+        A standing fact about the route, not a validation result — it will
+        never go away, so it does not belong in the issue list, which is also
+        collapsed by default when it holds only warnings. Silence about
+        solvents, on a site whose other pages do warn, reads as approval.
+      */}
+      {!hasObservationsForRoute(route) && (
+        <Text size="sm" c="orange.7" mb="md">
+          <strong>No published {routeLabel(route)} solvent figures are held here</strong>, so the
+          delivers column below is arithmetic only and no solvent warning will appear whatever you
+          formulate. Other routes are listed in each tooltip as context — they are not a{' '}
+          {routeLabel(route)} limit, and an absent warning is not approval.
+        </Text>
+      )}
 
       {narrow ? (
         /*

@@ -10,7 +10,11 @@
  * vehicle against intraperitoneal numbers is exactly the conflation this app
  * had to have taken out of it once already.
  */
-import { DEFAULT_IP_VEHICLE_ROWS, DEFAULT_ORAL_VEHICLE_ROWS } from './vehicles';
+import {
+  DEFAULT_IP_VEHICLE_ROWS,
+  DEFAULT_SALINE_VEHICLE_ROWS,
+  hasObservationsForRoute,
+} from './vehicles';
 
 /**
  * @typedef {object} LiquidRoute
@@ -53,10 +57,44 @@ const ORAL_GAVAGE = {
     'dose. Your IACUC protocol governs.',
   countLabel: 'Total number of gavages to prepare',
   printTitle: 'oral gavage calculator',
-  defaultVehicleRows: DEFAULT_ORAL_VEHICLE_ROWS,
+  defaultVehicleRows: DEFAULT_SALINE_VEHICLE_ROWS,
+};
+
+/**
+ * @type {LiquidRoute}
+ *
+ * Subcutaneous is the route where a dose is routinely split between sites, so
+ * it is the only one that asks how many. Splitting changes what goes under the
+ * skin in one place; it does not change what the animal receives, so nothing
+ * downstream of the per-subject volume depends on it.
+ */
+const SUBCUTANEOUS = {
+  route: 'sc',
+  noun: 'injection',
+  pluralNoun: 'injections',
+  volumeLabel: 'Volume per injection',
+  volumeHint:
+    '* mice are commonly given up to about 5 mL/kg per subcutaneous site, with larger totals ' +
+    'split between sites. Your IACUC protocol governs.',
+  countLabel: 'Total number of injections to prepare',
+  printTitle: 'subcutaneous injection calculator',
+  defaultVehicleRows: DEFAULT_SALINE_VEHICLE_ROWS,
+  hasSites: true,
 };
 
 export const LIQUID_ROUTES = {
   'intraperitoneal-injection': INTRAPERITONEAL,
+  'subcutaneous-injection': SUBCUTANEOUS,
   'oral-gavage': ORAL_GAVAGE,
 };
+
+/**
+ * Whether this app can say anything about solvent tolerability for a route.
+ *
+ * False means no warning will ever appear on that page, and a reader who has
+ * seen warnings on the intraperitoneal page could easily take that silence for
+ * approval. Pages use this to say so plainly instead.
+ */
+export function routeHasTolerabilityData(route) {
+  return hasObservationsForRoute(route.route);
+}
