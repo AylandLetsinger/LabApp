@@ -504,6 +504,7 @@ const ROUTE_LABELS = {
   oral: 'oral',
   sc: 'subcutaneous',
   iv: 'intravenous',
+  ic: 'intracranial',
 };
 
 /** @returns {string} The route's name, or the raw key if it is unknown. */
