@@ -200,20 +200,17 @@ export default function MolarityCalculator() {
     molecularWeight: 'g/mol',
   };
 
+  /*
+   * No issues while the form is simply not filled in yet.
+   *
+   * There used to be a "leave exactly one field blank" warning here, which
+   * meant an empty calculator greeted everyone with something to check — on
+   * arrival, when nothing could possibly be filled in. A panel that is already
+   * complaining before anything has been typed teaches people to ignore the
+   * panel. The instruction above the fields says what to do, and the yellow
+   * answer appears the moment it can.
+   */
   const issues = [];
-  if (!solved) {
-    const blanks = ['mass', 'concentration', 'volume', 'molecularWeight'].filter(
-      (t) => toPositiveNumber(v[t]) === undefined,
-    );
-    if (blanks.length > 1) {
-      issues.push({
-        level: 'warning',
-        message:
-          `Leave exactly one field blank and it will be worked out. ${blanks.length} are blank: ` +
-          `${blanks.map((t) => labelFor[t].toLowerCase()).join(', ')}.`,
-      });
-    }
-  }
   /*
    * There is deliberately no "these four disagree" check here.
    *

@@ -162,17 +162,10 @@ export default function DilutionCalculator() {
   const issues = [];
   if (!comparable.ok) {
     issues.push({ level: 'warning', message: comparable.reason });
-  } else if (!solved) {
-    const blanks = ['c1', 'v1', 'c2', 'v2'].filter((t) => toPositiveNumber(v[t]) === undefined);
-    if (blanks.length > 1) {
-      issues.push({
-        level: 'warning',
-        message:
-          `Leave exactly one field blank and it will be worked out. ${blanks.length} are blank: ` +
-          `${blanks.map((t) => t.toUpperCase()).join(', ')}.`,
-      });
-    }
   }
+  // Nothing is reported for a form that is merely unfinished — see the note on
+  // the molarity calculator. A panel complaining on arrival trains people to
+  // ignore it, and the instruction above the fields already says what to do.
   if (diluent?.impossible) {
     issues.push({
       level: 'error',

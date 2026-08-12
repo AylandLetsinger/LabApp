@@ -89,6 +89,10 @@ export function volumeToMl(amount, unit) {
       return n;
     case 'ul':
       return n / 1000;
+    // Nanolitres matter where a whole dose is a fraction of a microlitre:
+    // intracranial infusions and viral injections are both routinely 500 nL.
+    case 'nl':
+      return n / 1e6;
     case 'l':
       return n * 1000;
     default:
@@ -104,6 +108,8 @@ export function mlToVolumeUnit(ml, unit) {
       return ml;
     case 'ul':
       return ml * 1000;
+    case 'nl':
+      return ml * 1e6;
     case 'l':
       return ml / 1000;
     default:
