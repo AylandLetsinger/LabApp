@@ -164,6 +164,105 @@ export function computeWorkableConcentrationWindow({
 }
 
 /**
+ * Dose-volume bounds for the AVERAGE subject, when one batch serves a range of
+ * body masses.
+ *
+ * A batch has one concentration, and fixing the average subject's volume fixes
+ * it. Every other subject's volume then follows their body mass: a subject of
+ * mass w gets V x (w / w_avg). So the instrument floor and the carrier ceiling
+ * are not limits on V directly — the LIGHTEST subject reaches the floor first
+ * and the HEAVIEST reaches the ceiling first, and both have to be translated
+ * back into limits on V before a suggested volume can respect them.
+ *
+ * Without a range this is the identity — the bounds come back as they went in.
+ * That is what lets the range be optional: not knowing it costs you the wider
+ * check, not the calculator.
+ *
+ * The ratios are clamped so they always span the average, because the average
+ * subject is a subject too. A range typed as 30–40 g around a 25 g average
+ * would otherwise scale the floor DOWN and licence a volume the pipette cannot
+ * actually deliver.
+ *
+ * @param {object} p
+ * @param {number} [p.floorUl] Smallest volume the loading instrument can deliver.
+ * @param {number} [p.capacityUl] Most one carrier holds. Omit when nothing bounds it.
+ * @param {number} [p.avgBodyWeightG]
+ * @param {number} [p.minBodyWeightG] Lightest subject. Optional.
+ * @param {number} [p.maxBodyWeightG] Heaviest subject. Optional.
+ * @returns {{ floorUl: number, capacityUl: number | undefined, lightestRatio: number,
+ *   heaviestRatio: number, scaled: boolean, feasible: boolean, issues: Issue[] }}
+ */
+export function computeCohortVolumeBounds({
+  floorUl,
+  capacityUl,
+  avgBodyWeightG,
+  minBodyWeightG,
+  maxBodyWeightG,
+}) {
+  const floor = toNonNegativeNumber(floorUl) ?? 0;
+  const capacity = toPositiveNumber(capacityUl);
+  const avgG = toPositiveNumber(avgBodyWeightG);
+  const minG = toPositiveNumber(minBodyWeightG);
+  const maxG = toPositiveNumber(maxBodyWeightG);
+
+  /** @type {Issue[]} */
+  const issues = [];
+  const unscaled = {
+    floorUl: floor,
+    capacityUl: capacity,
+    lightestG: avgG,
+    heaviestG: avgG,
+    lightestRatio: 1,
+    heaviestRatio: 1,
+    scaled: false,
+    feasible: capacity === undefined || floor <= capacity,
+    issues,
+  };
+
+  if (avgG === undefined || (minG === undefined && maxG === undefined)) return unscaled;
+
+  if (minG !== undefined && maxG !== undefined && maxG < minG) {
+    issues.push({
+      level: 'warning',
+      message:
+        'The lightest subject is heavier than the heaviest one. The range is ignored until that ' +
+        'is fixed, so the volume below is sized for the average subject only.',
+    });
+    return unscaled;
+  }
+
+  if ((minG !== undefined && minG > avgG) || (maxG !== undefined && maxG < avgG)) {
+    issues.push({
+      level: 'warning',
+      message:
+        `Your average body mass (${round(avgG)} g) sits outside the ${round(minG ?? avgG)}–` +
+        `${round(maxG ?? avgG)} g range. One of the two is wrong; the range is being widened to ` +
+        'include the average so the volume stays deliverable for it.',
+    });
+  }
+
+  const lightestG = Math.min(minG ?? avgG, avgG);
+  const heaviestG = Math.max(maxG ?? avgG, avgG);
+  const lightestRatio = lightestG / avgG;
+  const heaviestRatio = heaviestG / avgG;
+
+  const scaledFloorUl = floor / lightestRatio;
+  const scaledCapacityUl = capacity === undefined ? undefined : capacity / heaviestRatio;
+
+  return {
+    floorUl: scaledFloorUl,
+    capacityUl: scaledCapacityUl,
+    lightestG,
+    heaviestG,
+    lightestRatio,
+    heaviestRatio,
+    scaled: true,
+    feasible: scaledCapacityUl === undefined || scaledFloorUl <= scaledCapacityUl,
+    issues,
+  };
+}
+
+/**
  * Bench reference table: for each body weight, the volume to load.
  *
  * @returns {Array<{ bodyWeightG: number, doseMg: number, loadVolumeUl: number,

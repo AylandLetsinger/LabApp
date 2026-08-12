@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Stack } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { computeDosePerAvgSubjectMg } from '../../dosage/computeDosePerAvgSubject';
-import { computeDoseRateMgPerG } from '../../dosage/computeMealwormOutputs';
+import {
+  computeCohortVolumeBounds,
+  computeDoseRateMgPerG,
+} from '../../dosage/computeMealwormOutputs';
 import { computeSoluteRequiredMg } from '../../dosage/computeSolutionOutputs';
 import {
   computeVehicleVolumes,
@@ -10,8 +13,8 @@ import {
 } from '../../dosage/computeVehicleVolumes';
 import { concentrationToMgPerMl } from '../../dosage/molarUnits';
 import { makeSolute, soluteDosesMg as computeSoluteDosesMg, totalDoseMg } from '../../dosage/solutes';
-import { roundTo, toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
-import { massToMg, volumeToMl, weightToKg } from '../../dosage/unitConversions';
+import { ceilToStep, roundTo, toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
+import { massToMg, volumeToMl, weightToG, weightToKg } from '../../dosage/unitConversions';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import SolutesSection from './SolutesSection';
 import SoluteBreakdown from './SoluteBreakdown';
@@ -72,8 +75,10 @@ export default function CarrierDosageForm({ carrier }) {
       // figure is never read.
       syringeMinUl: carrier.defaultSyringeMinUl ?? 0,
       pipetteMinUl: 2,
-      minBodyWeightG: 18,
-      maxBodyWeightG: 35,
+      // Optional, and blank rather than pre-filled: a guessed range would
+      // silently constrain the suggested volume with numbers nobody chose.
+      minBodyWeight: '',
+      maxBodyWeight: '',
       stepG: 1,
     },
   });
@@ -134,6 +139,10 @@ export default function CarrierDosageForm({ carrier }) {
   // With no syringe the pipette delivers the dose, so its minimum matters even
   // in working mode, where there is no vehicle left to mix.
   const showPipetteMinimum = buildsAVehicle || !carrier.usesSyringe;
+
+  /** Named carriers are called by their name at the bench; fall back to the noun. */
+  const carrierNoun = (v.carrierName ?? '').trim() || carrier.noun;
+  const floorWord = carrier.usesSyringe ? 'syringe' : 'pipette';
 
   /**
    * How much carrier one subject gets, in milligrams.
@@ -219,17 +228,48 @@ export default function CarrierDosageForm({ carrier }) {
     [soleSolute],
   );
 
+  /**
+   * The cohort, in grams — the canonical unit the dosing table and the bounds
+   * both work in. Entered in whatever unit the body mass is entered in, so the
+   * two cannot silently disagree.
+   */
+  const avgBodyWeightG = weightToG(effectiveAvgBodyWeight, v.avgBodyWeightUnit);
+  const minBodyWeightG = weightToG(v.minBodyWeight, v.avgBodyWeightUnit);
+  const maxBodyWeightG = weightToG(v.maxBodyWeight, v.avgBodyWeightUnit);
+
+  /**
+   * One batch, one concentration — so the lightest and heaviest subjects, not
+   * the average one, decide how small and how large the average subject's dose
+   * volume is allowed to be. With no range given these come back unchanged.
+   */
+  const cohortBounds = useMemo(
+    () =>
+      computeCohortVolumeBounds({
+        floorUl: loadFloorUl,
+        capacityUl,
+        avgBodyWeightG,
+        minBodyWeightG,
+        maxBodyWeightG,
+      }),
+    [loadFloorUl, capacityUl, avgBodyWeightG, minBodyWeightG, maxBodyWeightG],
+  );
+
   const suggestedUl = suggestedDoseVolumeUl(
     vehicleRows,
     solutes,
     soluteDosesMg,
-    loadFloorUl,
+    cohortBounds.floorUl,
   );
 
   // Keep the dose volume a REAL value in the field rather than a placeholder,
   // so the stepper increments from it instead of jumping to zero. Rewritten
   // whenever the suggestion moves; the field flashes to say so.
-  const roundedSuggestion = suggestedUl > 0 ? roundTo(suggestedUl, 3) : '';
+  //
+  // Rounded UP, never to nearest: this is a minimum, and a volume rounded down
+  // sits below the floor it was derived from. The breach is a fraction of a
+  // nanolitre, but it is enough to flag the lightest subject's row red in the
+  // dosing table — on the very volume that was chosen to keep it green.
+  const roundedSuggestion = suggestedUl > 0 ? ceilToStep(suggestedUl, 0.001) : '';
   useEffect(() => {
     if (roundedSuggestion !== '') form.setFieldValue('loadVolumeUl', roundedSuggestion);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -310,6 +350,68 @@ export default function CarrierDosageForm({ carrier }) {
       ? (dosePerSubjectMg / concentrationMgPerMl) * 1000
       : undefined;
 
+  /**
+   * How the volume bounds are explained once a body-mass range moves them.
+   *
+   * A ceiling of 71 µL on a portion the user told us holds 100 µL is not wrong,
+   * but it is unfindable on any piece of their equipment unless the sentence
+   * says which subject it belongs to.
+   */
+  const boundsWording = useMemo(() => {
+    if (!cohortBounds.scaled) return {};
+    const light = roundTo(cohortBounds.lightestG, 2);
+    const heavy = roundTo(cohortBounds.heaviestG, 2);
+    const instrumentMin = roundTo(loadFloorUl, 2);
+    return {
+      floorReason:
+        `needed to keep the lightest subject (${light} g) above your ${instrumentMin} µL ` +
+        `${floorWord} minimum`,
+      belowFloorAdvice:
+        'Make the solution more dilute, so every dose is a larger volume.',
+      capacityReason:
+        capacityUl === undefined
+          ? 'that fits'
+          : `the heaviest subject (${heavy} g) leaves, from the ${roundTo(capacityUl, 2)} µL a ` +
+            `${carrierNoun} holds`,
+      overCapacityAdvice:
+        `Use a more concentrated solution, or a larger ${carrierNoun}.`,
+      boundsNote:
+        // "the", not "a": the article would have to agree with a number that
+        // changes as the user types.
+        `Sized for the ${light}–${heavy} g cohort: the lightest subject sets the floor, the ` +
+        `heaviest sets the ceiling. Your ${floorWord} reaches ${instrumentMin} µL and a ` +
+        `${carrierNoun} holds ${capacityUl === undefined ? 'an unstated volume' : `${roundTo(capacityUl, 2)} µL`}.`,
+    };
+  }, [cohortBounds, loadFloorUl, capacityUl, carrierNoun, floorWord]);
+
+  /**
+   * No single concentration serves both ends of the range.
+   *
+   * This is a genuine impossibility, but it is reported WITH a volume rather
+   * than instead of one: the user asked to still see the figure, and knowing
+   * which end fails by how much is what tells them whether to change the
+   * carrier or the dilution. Both remedies are named, because they pull in
+   * opposite directions and picking the wrong one makes it worse.
+   */
+  const cohortIssues = useMemo(() => {
+    const issues = [...cohortBounds.issues];
+    if (cohortBounds.scaled && !cohortBounds.feasible) {
+      issues.push({
+        level: 'error',
+        message:
+          `No single concentration works across ${roundTo(cohortBounds.lightestG, 2)}–` +
+          `${roundTo(cohortBounds.heaviestG, 2)} g. The lightest subject needs at least ` +
+          `${roundTo(cohortBounds.floorUl, 2)} µL of the batch to stay above your ` +
+          `${roundTo(loadFloorUl, 2)} µL ${floorWord} minimum, but the heaviest can take at most ` +
+          `${roundTo(cohortBounds.capacityUl, 2)} µL before overflowing the ${carrierNoun}. ` +
+          `Use a larger ${carrierNoun} to fix the heavy end, or a more dilute solution to fix the ` +
+          'light end — you cannot do both with one batch. Splitting the cohort into two batches ' +
+          'also works.',
+      });
+    }
+    return issues;
+  }, [cohortBounds, loadFloorUl, carrierNoun, floorWord]);
+
   return (
     <Stack gap="lg" mt="md">
       <SolutesSection
@@ -340,6 +442,8 @@ export default function CarrierDosageForm({ carrier }) {
         totalBodyMass={v.totalBodyMass}
         subjectCount={v.subjectCount}
         derivedAverage={derivedAverage}
+        minBodyWeight={v.minBodyWeight}
+        maxBodyWeight={v.maxBodyWeight}
         totalDoses={v.totalDoses}
         wasteBufferPct={v.wasteBufferPct}
         pipetteMinUl={v.pipetteMinUl}
@@ -379,12 +483,22 @@ export default function CarrierDosageForm({ carrier }) {
           soluteDosesMg={soluteDosesMg}
           bodyWeightKg={weightToKg(effectiveAvgBodyWeight, v.avgBodyWeightUnit)}
           pipetteMinUl={toOptionalNumber(v.pipetteMinUl) ?? 0}
-          syringeMinUl={loadFloorUl}
-          maxVolumeUl={capacityUl}
+          // The cohort bounds, not the raw instrument limits: the suggestion,
+          // the hint and the errors then all describe the same batch.
+          syringeMinUl={cohortBounds.floorUl}
+          maxVolumeUl={cohortBounds.capacityUl}
+          floorReason={boundsWording.floorReason}
+          belowFloorAdvice={boundsWording.belowFloorAdvice}
+          capacityReason={boundsWording.capacityReason}
+          boundsNote={boundsWording.boundsNote}
+          extraIssues={cohortIssues}
           volumePerDoseUl={v.loadVolumeUl}
           onVolumePerDoseChange={(value) => form.setFieldValue('loadVolumeUl', value)}
           volumeLabel={carrier.volumeLabel}
-          overCapacityAdvice={`Reduce the volume, raise the share of the solvent the drug dissolves in, or use a larger ${carrier.noun}.`}
+          overCapacityAdvice={
+            boundsWording.overCapacityAdvice ??
+            `Reduce the volume, raise the share of the solvent the drug dissolves in, or use a larger ${carrier.noun}.`
+          }
           stockAvailableMl={isStock ? v.stockAvailableMl : undefined}
           onStockAvailableChange={
             isStock ? (value) => form.setFieldValue('stockAvailableMl', value) : undefined
@@ -442,24 +556,21 @@ export default function CarrierDosageForm({ carrier }) {
 
       {soleSolute?.dosageType === 'by-body-weight' && (
         <CarrierDosingTable
+          carrierNoun={carrierNoun}
+          loadColumnLabel={carrier.loadColumnLabel}
+          floorWord={floorWord}
+          // The range is owned by Step 2, because it also bounds the volume
+          // suggested there. Two copies of it could disagree, and the one that
+          // lost would do so silently.
+          showRangeInputs={false}
+          rangeSource="the subject body-mass range in Step 2"
           doseRateMgPerG={doseRateMgPerG}
           stockConcentrationMgPerMl={concentrationMgPerMl}
-          minBodyWeightG={v.minBodyWeightG}
-          maxBodyWeightG={v.maxBodyWeightG}
+          minBodyWeightG={minBodyWeightG}
+          maxBodyWeightG={maxBodyWeightG}
           stepG={v.stepG}
-          carrier={carrier}
-        carrierName={v.carrierName}
-        carrierAmount={v.carrierAmount}
-        carrierAmountUnit={v.carrierAmountUnit}
-        carrierAmountMode={v.carrierAmountMode}
-        carrierRefBodyWeight={v.carrierRefBodyWeight}
-        carrierAmountPerSubjectMg={carrierAmountPerSubjectMg}
-        totalCarrierMg={totalCarrierMg}
-        capacityUl={carrier.capacity.kind === 'per-mass' ? capacityUl : v.capacityUl}
-        absorbencyUl={v.absorbencyUl}
-        absorbencyMass={v.absorbencyMass}
-        absorbencyMassUnit={v.absorbencyMassUnit}
-          syringeMinUl={v.syringeMinUl}
+          capacityUl={capacityUl}
+          loadFloorUl={loadFloorUl}
           setFieldValue={form.setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}
           stepLabel={`Step ${isWorking ? 4 : 5} — Dosing table by body mass`}

@@ -90,6 +90,17 @@ export default function VehicleRatioTable({
   // into. A worm can be swapped for a bigger worm; an animal's tolerated
   // injection volume cannot.
   overCapacityAdvice = 'Reduce the volume, raise the share of the solvent the drug dissolves in, or use a larger carrier.',
+  // Why the ceiling and the floor are where they are. Callers that pass limits
+  // scaled for something other than the subject in front of you — a cohort's
+  // heaviest and lightest members, say — must say so here, or the sentence
+  // quotes a number the user cannot find on any of their equipment.
+  capacityReason = 'that fits',
+  floorReason = 'your syringe can measure',
+  belowFloorAdvice = 'Add diluent to reach a volume you can actually deliver.',
+  /** One line explaining a floor or ceiling the user did not type in directly. */
+  boundsNote,
+  /** Issues the caller owns but that belong under the volume control. */
+  extraIssues = [],
   stockAvailableMl,
   onStockAvailableChange,
   totalStockNeededMl,
@@ -160,22 +171,22 @@ export default function VehicleRatioTable({
   });
   const canComputeBurden = split !== null && Number.isFinite(bodyWeightKg) && bodyWeightKg > 0;
 
-  const issues = [];
+  const issues = [...extraIssues];
 
   if (Number.isFinite(maxVolumeUl) && maxVolumeUl > 0 && effectiveUl > maxVolumeUl) {
     issues.push({
       level: 'error',
       message:
-        `${roundTo(effectiveUl, 2)} µL per dose exceeds the ${roundTo(maxVolumeUl, 2)} µL that fits. ` +
-        overCapacityAdvice,
+        `${roundTo(effectiveUl, 2)} µL per dose exceeds the ${roundTo(maxVolumeUl, 2)} µL ` +
+        `${capacityReason}. ${overCapacityAdvice}`,
     });
   }
   if (syringeMinUl > 0 && effectiveUl > 0 && effectiveUl < syringeMinUl) {
     issues.push({
       level: 'error',
       message:
-        `${roundTo(effectiveUl, 2)} µL is below the ${roundTo(syringeMinUl, 2)} µL your syringe can ` +
-        'measure. Add diluent to reach a volume you can actually deliver.',
+        `${roundTo(effectiveUl, 2)} µL is below the ${roundTo(syringeMinUl, 2)} µL ` +
+        `${floorReason}. ${belowFloorAdvice}`,
     });
   }
 
@@ -584,6 +595,15 @@ export default function VehicleRatioTable({
           </Text>
         )}
       </Group>
+
+      {/* A floor or ceiling the user cannot find on their own equipment needs
+          saying out loud, next to the figure, and permanently — not only when
+          it is breached. */}
+      {boundsNote && (
+        <Text size="xs" c="dimmed" mb={4}>
+          {boundsNote}
+        </Text>
+      )}
 
       {onStockAvailableChange && (
         <Group align="flex-end" wrap="wrap" gap="sm" mt="sm">

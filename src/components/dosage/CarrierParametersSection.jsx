@@ -48,6 +48,8 @@ export default function CarrierParametersSection({
   totalBodyMass,
   subjectCount,
   derivedAverage,
+  minBodyWeight,
+  maxBodyWeight,
   totalDoses,
   wasteBufferPct,
   pipetteMinUl,
@@ -296,6 +298,57 @@ export default function CarrierParametersSection({
           setFieldValue={setFieldValue}
           scheduleOutputFeedback={scheduleOutputFeedback}
         />
+
+        {/*
+          The spread of the cohort, not just its middle. One batch carries one
+          concentration, so the average subject's dose volume decides everyone
+          else's — the lightest subject gets the smallest volume anybody will
+          have to measure, and the heaviest the largest the carrier must hold.
+          Both ends therefore bound the volume suggested in the next step, and
+          without them that suggestion can only be right for the average animal.
+
+          Optional because a range is not always known at planning time, and a
+          calculator that refuses to work until it is would be worse than one
+          that says what it did not check.
+        */}
+        <div>
+          <Group align="flex-end" wrap="wrap" gap="sm">
+            <NumberInput
+              label="Lightest subject"
+              placeholder="optional"
+              min={0}
+              decimalScale={6}
+              value={minBodyWeight}
+              onChange={(value) => setFieldValue('minBodyWeight', value)}
+              onBlur={scheduleOutputFeedback}
+              w={160}
+              {...inputBlue}
+            />
+            <Text pb="sm" size="sm">
+              to
+            </Text>
+            <NumberInput
+              label="Heaviest subject"
+              placeholder="optional"
+              min={0}
+              decimalScale={6}
+              value={maxBodyWeight}
+              onChange={(value) => setFieldValue('maxBodyWeight', value)}
+              onBlur={scheduleOutputFeedback}
+              w={160}
+              {...inputBlue}
+            />
+            <Text pb="sm" size="sm">
+              {avgBodyWeightUnit}
+            </Text>
+          </Group>
+          <Text size="xs" c="dimmed" mt={6} className="no-print">
+            * optional — with both ends given, the volume suggested in the next step is sized to
+            stay above your {carrier.usesSyringe ? 'syringe' : 'pipette'} minimum for the lightest
+            subject and inside the {carrierNoun} for the heaviest. Left blank, it is sized for the
+            average subject alone and the dosing table cannot be built.
+          </Text>
+        </div>
 
         <NumberInput
           label="Total number of dosages to prepare"

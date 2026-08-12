@@ -21,11 +21,17 @@ const inputBlue = {
  * @param {string} p.carrierNoun What one unit is called: "worm", "portion", "subject".
  * @param {string} p.loadColumnLabel Heading over the volume column.
  * @param {string} p.floorWord The instrument that sets the smallest volume.
+ * @param {boolean} p.showRangeInputs False where the range is owned by an
+ *   earlier step, because it also constrains the volume suggested there.
+ * @param {string} p.rangeSource What to tell the user to fill in when there is
+ *   no range yet — which is not always these inputs.
  */
 export default function CarrierDosingTable({
   carrierNoun,
   loadColumnLabel,
   floorWord = 'syringe',
+  showRangeInputs = true,
+  rangeSource = 'a valid weight range',
   doseRateMgPerG,
   stockConcentrationMgPerMl,
   minBodyWeightG,
@@ -55,7 +61,7 @@ export default function CarrierDosingTable({
         level: 'error',
         message:
           `Some body weights need more volume than the ${carrierNoun} can take. Use a more ` +
-          'concentrated solution.',
+          `concentrated solution, or a larger ${carrierNoun}.`,
       });
     }
     if (rows.some((r) => r.belowSyringeMinimum)) {
@@ -79,26 +85,30 @@ export default function CarrierDosingTable({
       </Text>
 
       <Group align="flex-end" wrap="wrap" gap="sm" mb="md">
-        <NumberInput
-          label="From"
-          min={0}
-          decimalScale={2}
-          value={minBodyWeightG}
-          onChange={(value) => setFieldValue('minBodyWeightG', value)}
-          onBlur={scheduleOutputFeedback}
-          w={110}
-          {...inputBlue}
-        />
-        <NumberInput
-          label="To"
-          min={0}
-          decimalScale={2}
-          value={maxBodyWeightG}
-          onChange={(value) => setFieldValue('maxBodyWeightG', value)}
-          onBlur={scheduleOutputFeedback}
-          w={110}
-          {...inputBlue}
-        />
+        {showRangeInputs && (
+          <>
+            <NumberInput
+              label="From"
+              min={0}
+              decimalScale={2}
+              value={minBodyWeightG}
+              onChange={(value) => setFieldValue('minBodyWeightG', value)}
+              onBlur={scheduleOutputFeedback}
+              w={110}
+              {...inputBlue}
+            />
+            <NumberInput
+              label="To"
+              min={0}
+              decimalScale={2}
+              value={maxBodyWeightG}
+              onChange={(value) => setFieldValue('maxBodyWeightG', value)}
+              onBlur={scheduleOutputFeedback}
+              w={110}
+              {...inputBlue}
+            />
+          </>
+        )}
         <NumberInput
           label="Step"
           min={0}
@@ -112,12 +122,17 @@ export default function CarrierDosingTable({
         <Text pb="sm" size="sm">
           grams
         </Text>
+        {!showRangeInputs && minBodyWeightG !== undefined && maxBodyWeightG !== undefined && (
+          <Text pb="sm" size="sm" c="dimmed">
+            over {roundTo(minBodyWeightG, 2)}–{roundTo(maxBodyWeightG, 2)} g, from Step 2
+          </Text>
+        )}
       </Group>
 
       {rows === null ? (
         <Text size="sm" c="dimmed">
-          Enter a dose by body weight, a stock concentration, and a valid weight range to build the
-          table. (A range needing more than 200 rows is refused — increase the step.)
+          Enter a dose by body weight, a stock concentration, and {rangeSource} to build the table.
+          (A range needing more than 200 rows is refused — increase the step.)
         </Text>
       ) : (
         <Table verticalSpacing="xs" horizontalSpacing="sm" withTableBorder withColumnBorders striped>
