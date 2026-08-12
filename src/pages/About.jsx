@@ -1,5 +1,7 @@
-import { Button, Container, Stack, Text, Textarea, TextInput, Title } from '@mantine/core';
+import { Anchor, Button, Container, Stack, Text, Textarea, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { Link } from 'react-router-dom';
+import { DOSAGE_DELIVERY_METHODS } from '../dosageDeliveryMethods';
 import { noteMailtoUrl } from '../feedback/mailto';
 
 export default function About() {
@@ -30,9 +32,19 @@ export default function About() {
           <Title order={2} mb="sm">
             What can The Lab App do?
           </Title>
+          {/*
+            The delivery-method count is read from the list rather than typed
+            out. This sentence had already gone stale once — it still claimed
+            four calculators after five more had shipped — and a number nobody
+            remembers to update is the part that rots first.
+          */}
           <Text>
-            Use the navigation menu above to access the various calculators! At present, the app can
-            help you calculate dosages, solution molarity, dilutions, and antibodies concentrations.
+            The <Anchor component={Link} to="/">home page</Anchor> lists everything, one card per
+            calculator. At present that is {DOSAGE_DELIVERY_METHODS.length} ways of getting a known
+            dose into a subject — injection, gavage, drinking fluid, an edible solid, and more —
+            alongside Molarity, Dilutions, Antibodies, Viral Mixes and Stock Solution. Every page
+            prints as a bench sheet, and every calculation happens in your browser: nothing you type
+            is sent anywhere.
           </Text>
         </div>
 
