@@ -227,7 +227,7 @@ export default function AntibodyDilution({ mixture, index, onChange, onRemove, c
       </Button>
 
       {diluent && !diluent.overfull && (
-        <Paper p="sm" radius="sm" mt="md" bg="var(--mantine-color-gray-0)" withBorder>
+        <Paper p="sm" radius="sm" mt="md" withBorder>
           <Text size="sm">
             For <strong>{title}</strong>, add{' '}
             {mixture.antibodies.map((a, i) => (

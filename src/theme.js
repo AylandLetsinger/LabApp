@@ -107,7 +107,7 @@ export const labTheme = {
     Button: { defaultProps: { color: primaryActionColor } },
     InputWrapper: {
       styles: {
-        label: { color: 'var(--mantine-color-black)', fontWeight: 500 },
+        label: { fontWeight: 500 },
       },
     },
   },

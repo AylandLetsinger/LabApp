@@ -1,6 +1,7 @@
-import { AppShell, Burger, Button, Group, Menu, Text, Title } from '@mantine/core';
+import { ActionIcon, AppShell, Burger, Button, Group, Menu, Text, Title } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import { IconChevronDown } from '@tabler/icons-react';
+import { useMantineColorScheme } from '@mantine/core';
+import { IconChevronDown, IconMoon, IconSun } from '@tabler/icons-react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CALCULATORS } from '../calculators';
 import { DOSAGE_DELIVERY_METHODS } from '../dosageDeliveryMethods';
@@ -35,6 +36,7 @@ function NavButton({ to, children }) {
 
 export default function AppLayout() {
   const { pathname } = useLocation();
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const dosageActive = pathname.startsWith('/dosage');
   const calculatorsActive = CALCULATORS.some((c) => pathname === c.to);
   // Six links do not fit a phone. They used to wrap onto a second row that
@@ -44,15 +46,7 @@ export default function AppLayout() {
   const [menuOpen, { toggle: toggleMenu, close: closeMenu }] = useDisclosure(false);
 
   return (
-    <AppShell
-      header={{ height: 64 }}
-      padding="md"
-      styles={{
-        root: { backgroundColor: 'var(--mantine-color-white)' },
-        header: { backgroundColor: 'var(--mantine-color-white)' },
-        main: { backgroundColor: 'var(--mantine-color-white)' },
-      }}
-    >
+    <AppShell header={{ height: 64 }} padding="md">
       <AppShell.Header px="md" style={{ display: 'flex', alignItems: 'center' }}>
         {/* Title left, navigation right, at every width. Centring the title
             while the nav was absolutely positioned let the two overlap once
@@ -65,7 +59,7 @@ export default function AppLayout() {
             to="/"
             style={{
               textDecoration: 'none',
-              color: 'var(--mantine-color-black)',
+              color: 'var(--mantine-color-text)',
               whiteSpace: 'nowrap',
             }}
           >
@@ -108,6 +102,13 @@ export default function AppLayout() {
                 </Menu.Item>
                 <Menu.Item component={Link} to="/support" onClick={closeMenu}>
                   Support
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  leftSection={colorScheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />}
+                  onClick={toggleColorScheme}
+                >
+                  {colorScheme === 'dark' ? 'Light mode' : 'Dark mode'}
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -157,6 +158,15 @@ export default function AppLayout() {
 
               <NavButton to="/recipes">Recipe Creator</NavButton>
               <NavButton to="/support">Support</NavButton>
+              <ActionIcon
+                onClick={toggleColorScheme}
+                variant="subtle"
+                color="gray"
+                size="md"
+                aria-label="Toggle color scheme"
+              >
+                {colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
+              </ActionIcon>
             </Group>
           )}
           </div>
