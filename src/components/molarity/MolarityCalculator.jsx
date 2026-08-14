@@ -35,8 +35,8 @@ const inputBlue = { variant: 'filled', color: inputFieldColor };
 /** The field that got calculated, marked so it cannot be mistaken for an input. */
 const calculatedStyles = {
   input: {
-    backgroundColor: 'var(--mantine-color-yellow-1)',
-    borderColor: 'var(--mantine-color-yellow-5)',
+    backgroundColor: 'light-dark(var(--mantine-color-yellow-1), var(--mantine-color-dark-4))',
+    borderColor: 'light-dark(var(--mantine-color-yellow-5), var(--mantine-color-dark-3))',
     fontWeight: 700,
   },
 };
@@ -334,7 +334,7 @@ export default function MolarityCalculator() {
         </Stack>
 
         {/* The equation lives with the fields it describes. */}
-        <Paper p="sm" radius="sm" mt="md" bg="var(--mantine-color-gray-0)" withBorder>
+        <Paper p="sm" radius="sm" mt="md" withBorder bg="light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5))">
           <Text size="sm" ff="monospace" ta="center">
             {solved ? REARRANGEMENTS[solved.term] : REARRANGEMENTS.mass}
           </Text>
