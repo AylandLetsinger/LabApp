@@ -26,3 +26,15 @@ export const SUPPORT_LINK = {
   label: 'ko-fi.com/thelabapp',
   embedSrc: 'https://ko-fi.com/thelabapp/?hidefeed=true&widget=true&embed=true&preview=true',
 };
+
+/**
+ * The public repository.
+ *
+ * The About page calls the app open-source, which is only a meaningful claim
+ * if a reader can get to the code. It lives here rather than inline so the
+ * About page, the Support page and anywhere else all point at one string.
+ */
+export const SOURCE_REPO = {
+  url: 'https://github.com/AylandLetsinger/LabApp',
+  label: 'github.com/AylandLetsinger/LabApp',
+};

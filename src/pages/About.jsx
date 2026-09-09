@@ -3,6 +3,7 @@ import { useForm } from '@mantine/form';
 import { Link } from 'react-router-dom';
 import { DOSAGE_DELIVERY_METHODS } from '../dosageDeliveryMethods';
 import { noteMailtoUrl } from '../feedback/mailto';
+import { SOURCE_REPO } from '../support';
 
 export default function About() {
   const feedbackForm = useForm({
@@ -22,9 +23,13 @@ export default function About() {
           </Title>
           <Text>
             The Lab App is a research tool that allows you to perform common laboratory calculations.
-            The Lab App is open-source and coded by Ayland Letsinger, Sarah Little-Letsinger,
-            Klarissa Tey, and Elijah Martinez. We are always working on expanding the capabilities of
-            the app – and we&apos;re happy to take requests!
+            The Lab App is{' '}
+            <Anchor href={SOURCE_REPO.url} target="_blank" rel="noopener noreferrer">
+              open-source
+            </Anchor>{' '}
+            and coded by Ayland Letsinger, Sarah Little-Letsinger, Klarissa Tey, and Elijah
+            Martinez. We are always working on expanding the capabilities of the app – and
+            we&apos;re happy to take requests!
           </Text>
         </div>
 
@@ -45,6 +50,42 @@ export default function About() {
             alongside Molarity, Dilutions, Antibodies, Viral Mixes and Stock Solution. Every page
             prints as a bench sheet, and every calculation happens in your browser: nothing you type
             is sent anywhere.
+          </Text>
+        </div>
+
+        <div>
+          <Title order={2} mb="sm">
+            How this was built
+          </Title>
+          {/*
+            Disclosed because these numbers end up in live animals, and because
+            a reader deciding how much to trust a calculator is entitled to know
+            how it was produced. Stated as what it was — specified and checked by
+            researchers, largely written by Claude — rather than as "AI-generated",
+            which would undersell the checking that is the actual reason to trust
+            any of it.
+          */}
+          <Text mb="sm">
+            Researchers wrote this with AI assistance. We specified the calculations and checked
+            them against the bench; Claude wrote most of the code. That is worth saying plainly,
+            because these numbers end up in live animals.
+          </Text>
+          <Text mb="sm">
+            So the app is built to be checked rather than taken on faith. Every solvent limit
+            records the study behind it and what that study actually measured — &ldquo;no effect on
+            locomotor activity&rdquo; is not the same claim as &ldquo;safe&rdquo;. Where no
+            published figure exists, the page says so instead of filling the gap with a plausible
+            number. A calculation that cannot produce a trustworthy result produces none, and
+            explains why. Tolerability figures are kept route-specific: an intraperitoneal number
+            is never quietly reused for an oral or subcutaneous page.
+          </Text>
+          <Text>
+            All of it is public, so you can check any of that for yourself:{' '}
+            <Anchor href={SOURCE_REPO.url} target="_blank" rel="noopener noreferrer">
+              {SOURCE_REPO.label}
+            </Anchor>
+            . And if a number here looks wrong to you, please tell us — that is the most useful
+            thing anyone does for this app.
           </Text>
         </div>
 

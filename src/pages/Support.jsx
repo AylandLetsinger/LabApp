@@ -1,5 +1,5 @@
 import { Anchor, Container, List, Paper, Stack, Text, Title } from '@mantine/core';
-import { LAB_WEBSITE, SUPPORT_LINK } from '../support';
+import { LAB_WEBSITE, SOURCE_REPO, SUPPORT_LINK } from '../support';
 
 /**
  * Who made this, and how to say thanks.
@@ -35,7 +35,12 @@ export default function Support() {
           anywhere, stored, or logged, and there are no accounts and no analytics. The one
           exception is the Ko-fi support button in the footer of every page: it is drawn by a
           script from ko-fi.com and pulls a font from Google, so those two see that a page was
-          loaded. Nothing from any calculator reaches them.
+          loaded. Nothing from any calculator reaches them. You do not have to take that on trust —
+          the whole site is open source at{' '}
+          <Anchor href={SOURCE_REPO.url} target="_blank" rel="noopener noreferrer">
+            {SOURCE_REPO.label}
+          </Anchor>
+          .
         </Text>
 
         <Paper p="md" radius="md" withBorder>
