@@ -16,7 +16,7 @@ export default function PrintActions({ title }) {
   return (
     <Group justify="flex-end" align="center" wrap="wrap" gap="sm" className="no-print">
       <Button
-        variant="light"
+        variant="filled"
         leftSection={<IconPrinter size={16} />}
         onClick={() => window.print()}
         aria-label={`Print or save ${title}`}

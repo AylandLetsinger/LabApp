@@ -10,8 +10,8 @@ import { soluteDisplayName } from '../../dosage/solutes';
 import { getVehicle } from '../../dosage/vehicles';
 import { errorColor } from '../../theme';
 
-const cellValueBg = { backgroundColor: 'var(--mantine-color-yellow-1)' };
-const cellUnitBg = { backgroundColor: 'var(--mantine-color-gray-2)' };
+const cellValueBg = { backgroundColor: 'light-dark(var(--mantine-color-yellow-1), var(--mantine-color-mist-9))' };
+const cellUnitBg = { backgroundColor: 'light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6))' };
 
 /** Small volumes read better in microlitres; large ones in millilitres. */
 function formatVolume(ml) {
