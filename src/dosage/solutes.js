@@ -16,14 +16,36 @@ import { computeDosePerAvgSubjectMg } from './computeDosePerAvgSubject';
 /**
  * Stable identity for a solute, so a vehicle row's solubility stays attached to
  * the right substance when one above it is removed. An index would not.
+ *
+ * The load prefix makes ids unique across page loads, not only within one.
+ * Solutes are now remembered between visits, and the counter restarts at zero
+ * on every load: without the prefix, a restored `solute-1` and the next one
+ * added would share an id — and a vehicle row's concentration and a stock
+ * entry, both keyed by that id, would silently attach to the wrong drug.
  */
+const LOAD_PREFIX = Date.now().toString(36);
 let nextSoluteNumber = 0;
+
+/**
+ * Rebuild remembered solutes into the current shape, or reject them.
+ *
+ * Passing each one back through makeSolute() means a field added since
+ * someone's last visit arrives with its default instead of as undefined. The
+ * stored id is kept — vehicle rows and stock entries refer to it.
+ *
+ * @returns {object[] | undefined} undefined when the stored value is unusable.
+ */
+export function restoreSolutes(stored) {
+  if (!Array.isArray(stored) || stored.length === 0) return undefined;
+  const usable = stored.every((s) => s && typeof s === 'object' && typeof s.id === 'string');
+  return usable ? stored.map((s) => makeSolute(s)) : undefined;
+}
 
 /** @returns {object} A blank solute, or one seeded with `overrides`. */
 export function makeSolute(overrides = {}) {
   nextSoluteNumber += 1;
   return {
-    id: `solute-${nextSoluteNumber}`,
+    id: `solute-${LOAD_PREFIX}-${nextSoluteNumber}`,
     name: '',
     dosageType: 'by-body-weight',
     dosePerSubject: '',

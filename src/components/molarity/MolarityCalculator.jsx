@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRememberedState } from '../../persistence/useRemembered';
 import { Button, Group, NumberInput, Paper, Stack, Text } from '@mantine/core';
 import { IconRefresh } from '@tabler/icons-react';
 import { DOSE_UNITS, VOLUME_UNITS } from '../../constants/doseUnits';
@@ -63,7 +63,7 @@ const BLANK = {
  * file is layout and unit handling only — nothing here decides an answer.
  */
 export default function MolarityCalculator() {
-  const [v, setV] = useState(BLANK);
+  const [v, setV] = useRememberedState('values', BLANK);
   /**
    * Clearing fields one at a time does not empty this form — each clear bakes
    * the current answer into the field beside it, which is what makes solving

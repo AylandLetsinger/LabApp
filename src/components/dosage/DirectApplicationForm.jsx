@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Stack } from '@mantine/core';
-import { useForm } from '@mantine/form';
+import { useRememberedForm, useRememberedState } from '../../persistence/useRemembered';
 import {
   mediumVolumeMl,
   perVesselContribution,
@@ -8,7 +8,7 @@ import {
 } from '../../dosage/computeInVitro';
 import { anyConcentrationToMgPerMl } from '../../dosage/molarUnits';
 import { toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
-import { makeSolute, soluteDisplayName } from '../../dosage/solutes';
+import { makeSolute, soluteDisplayName, restoreSolutes } from '../../dosage/solutes';
 import { volumeToMl } from '../../dosage/unitConversions';
 import { VESSELS } from '../../dosage/vessels';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
@@ -29,7 +29,7 @@ const newStock = () => ({
 });
 
 export default function DirectApplicationForm() {
-  const form = useForm({
+  const form = useRememberedForm('form', {
     initialValues: {
       vesselId: 'well-plate',
       finalVolume: 200,
@@ -47,10 +47,12 @@ export default function DirectApplicationForm() {
   });
   const v = form.values;
 
-  const [solutes, setSolutes] = useState(() => [
+  const [solutes, setSolutes] = useRememberedState('solutes', () => [
     makeSolute({ dosageType: 'target-concentration' }),
-  ]);
-  const [stocks, setStocks] = useState({});
+  ], {
+    normalize: restoreSolutes,
+  });
+  const [stocks, setStocks] = useRememberedState('stocks', {});
   const [outputFeedback, scheduleOutputFeedback] = useOutputFeedback();
 
   const vessel = VESSELS[v.vesselId] ?? VESSELS['well-plate'];

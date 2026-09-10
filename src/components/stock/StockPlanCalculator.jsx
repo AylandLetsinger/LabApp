@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRememberedState } from '../../persistence/useRemembered';
 import {
   Button,
   Divider,
@@ -75,7 +75,7 @@ const BLANK = {
  * and unit handling; nothing here decides a plan.
  */
 export default function StockPlanCalculator() {
-  const [v, setV] = useState(BLANK);
+  const [v, setV] = useRememberedState('values', BLANK);
   const set = (key, value) => setV((prev) => ({ ...prev, [key]: value }));
   const reset = () => setV(BLANK);
 

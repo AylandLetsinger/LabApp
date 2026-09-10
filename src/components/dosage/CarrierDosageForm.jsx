@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Stack } from '@mantine/core';
-import { useForm } from '@mantine/form';
+import {
+  useRememberedForm,
+  useRememberedState,
+  useWasRestored,
+} from '../../persistence/useRemembered';
 import { computeDosePerAvgSubjectMg } from '../../dosage/computeDosePerAvgSubject';
 import {
   computeCohortVolumeBounds,
@@ -12,7 +16,12 @@ import {
   suggestedDoseVolumeUl,
 } from '../../dosage/computeVehicleVolumes';
 import { concentrationToMgPerMl } from '../../dosage/molarUnits';
-import { makeSolute, soluteDosesMg as computeSoluteDosesMg, totalDoseMg } from '../../dosage/solutes';
+import {
+  makeSolute,
+  soluteDosesMg as computeSoluteDosesMg,
+  totalDoseMg,
+  restoreSolutes,
+} from '../../dosage/solutes';
 import { ceilToStep, roundTo, toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
 import { massToMg, volumeToMl, weightToG, weightToKg } from '../../dosage/unitConversions';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
@@ -44,7 +53,8 @@ const STOCK_ROWS = [
 ];
 
 export default function CarrierDosageForm({ carrier }) {
-  const form = useForm({
+  const formRestored = useWasRestored('form');
+  const form = useRememberedForm('form', {
     initialValues: {
       preparation: PREPARATION_MODES.none,
       capacityUl: carrier.defaultCapacityUl,
@@ -86,8 +96,10 @@ export default function CarrierDosageForm({ carrier }) {
 
   // Solutes live outside the Mantine form for the same reason vehicle rows do:
   // they are a list that grows and shrinks, not a fixed set of named fields.
-  const [solutes, setSolutes] = useState(() => [makeSolute()]);
-  const [vehicleRows, setVehicleRows] = useState(POWDER_ROWS);
+  const [solutes, setSolutes] = useRememberedState('solutes', () => [makeSolute()], {
+    normalize: restoreSolutes,
+  });
+  const [vehicleRows, setVehicleRows] = useRememberedState('vehicleRows', POWDER_ROWS);
   const [outputFeedback, scheduleOutputFeedback] = useOutputFeedback();
   const [units, setUnits] = useState({
     dosePerSubject: 'mg',
@@ -270,7 +282,14 @@ export default function CarrierDosageForm({ carrier }) {
   // nanolitre, but it is enough to flag the lightest subject's row red in the
   // dosing table — on the very volume that was chosen to keep it green.
   const roundedSuggestion = suggestedUl > 0 ? ceilToStep(suggestedUl, 0.001) : '';
+  // On a restored visit the stored load volume is already what the person last
+  // had — the suggestion, or their own figure typed over it. Counting the
+  // current suggestion as already applied means it is only copied in again when
+  // an input actually changes it, never on arrival.
+  const lastAppliedSuggestion = useRef(formRestored ? roundedSuggestion : undefined);
   useEffect(() => {
+    if (roundedSuggestion === lastAppliedSuggestion.current) return;
+    lastAppliedSuggestion.current = roundedSuggestion;
     if (roundedSuggestion !== '') form.setFieldValue('loadVolumeUl', roundedSuggestion);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roundedSuggestion]);

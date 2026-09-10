@@ -32,7 +32,10 @@ export default function Support() {
         <Text size="sm" c="dimmed">
           <strong>What this site does and does not send.</strong> Every calculation happens in your
           browser. Nothing you type — a compound, a dose, an unpublished formulation — is sent
-          anywhere, stored, or logged, and there are no accounts and no analytics. The one
+          anywhere or logged, and there are no accounts and no analytics. Each page does remember
+          its last entries so you can pick up where you left off, but only on your own device, in
+          this browser: a notice says when a page has restored them, and Start fresh erases them.
+          On a shared computer, anyone using the same browser can see them. The one
           exception is the Ko-fi support button in the footer of every page: it is drawn by a
           script from ko-fi.com and pulls a font from Google, so those two see that a page was
           loaded. Nothing from any calculator reaches them. You do not have to take that on trust —

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Group, NumberInput, Paper, Stack, Text } from '@mantine/core';
-import { useForm } from '@mantine/form';
+import { useRememberedForm, useRememberedState } from '../../persistence/useRemembered';
 import {
   bottleVolumeMl as computeBottleVolumeMl,
   concentrationForDosePerDay,
@@ -12,7 +12,11 @@ import { MASS_PER_ML_UNITS } from '../../dosage/dosageTypes';
 import { MOLAR_CONCENTRATION_UNITS, anyConcentrationToMgPerMl } from '../../dosage/molarUnits';
 import { roundTo, toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
 import { PREPARATION_MODES } from '../../dosage/preparationModes';
-import { makeSolute, soluteDosesMg as computeSoluteDosesMg } from '../../dosage/solutes';
+import {
+  makeSolute,
+  soluteDosesMg as computeSoluteDosesMg,
+  restoreSolutes,
+} from '../../dosage/solutes';
 import { weightToKg } from '../../dosage/unitConversions';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import LabSelect from '../LabSelect';
@@ -36,7 +40,7 @@ const STOCK_ROWS = [
 ];
 
 export default function DrinkingFluidForm() {
-  const form = useForm({
+  const form = useRememberedForm('form', {
     initialValues: {
       preparation: PREPARATION_MODES.none,
       direction: 'target',
@@ -61,8 +65,10 @@ export default function DrinkingFluidForm() {
   });
   const v = form.values;
 
-  const [solutes, setSolutes] = useState(() => [makeSolute()]);
-  const [vehicleRows, setVehicleRows] = useState(POWDER_ROWS);
+  const [solutes, setSolutes] = useRememberedState('solutes', () => [makeSolute()], {
+    normalize: restoreSolutes,
+  });
+  const [vehicleRows, setVehicleRows] = useRememberedState('vehicleRows', POWDER_ROWS);
   const [outputFeedback, scheduleOutputFeedback] = useOutputFeedback();
 
   const isTargetDirection = v.direction === 'target';
