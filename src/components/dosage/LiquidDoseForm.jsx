@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Stack } from '@mantine/core';
-import { useForm } from '@mantine/form';
+import { useRememberedForm, useRememberedState } from '../../persistence/useRemembered';
 import { computeDoseRateMgPerG } from '../../dosage/computeMealwormOutputs';
 import { computeSoluteRequiredMg } from '../../dosage/computeSolutionOutputs';
 import { computeVehicleVolumes } from '../../dosage/computeVehicleVolumes';
@@ -8,7 +8,12 @@ import { concentrationToMgPerMl } from '../../dosage/molarUnits';
 import { roundTo, toOptionalNumber, toPositiveNumber } from '../../dosage/numberUtils';
 import { weightToKg } from '../../dosage/unitConversions';
 import { PREPARATION_MODES } from '../../dosage/preparationModes';
-import { makeSolute, soluteDosesMg as computeSoluteDosesMg, totalDoseMg } from '../../dosage/solutes';
+import {
+  makeSolute,
+  soluteDosesMg as computeSoluteDosesMg,
+  totalDoseMg,
+  restoreSolutes,
+} from '../../dosage/solutes';
 import useOutputFeedback from '../../hooks/useOutputFeedback';
 import SolutesSection from './SolutesSection';
 import SoluteBreakdown from './SoluteBreakdown';
@@ -29,7 +34,7 @@ const STOCK_ROWS = [
 
 export default function LiquidDoseForm({ route }) {
   const POWDER_ROWS = route.defaultVehicleRows;
-  const form = useForm({
+  const form = useRememberedForm('form', {
     initialValues: {
       preparation: PREPARATION_MODES.none,
       volPerInjMl: '',
@@ -56,8 +61,10 @@ export default function LiquidDoseForm({ route }) {
   });
   const v = form.values;
 
-  const [solutes, setSolutes] = useState(() => [makeSolute()]);
-  const [vehicleRows, setVehicleRows] = useState(POWDER_ROWS);
+  const [solutes, setSolutes] = useRememberedState('solutes', () => [makeSolute()], {
+    normalize: restoreSolutes,
+  });
+  const [vehicleRows, setVehicleRows] = useRememberedState('vehicleRows', POWDER_ROWS);
   const [outputFeedback, scheduleOutputFeedback] = useOutputFeedback();
   const [units, setUnits] = useState({
     narrativeVolume: 'ml',

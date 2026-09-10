@@ -7,6 +7,7 @@ import { CALCULATORS } from '../calculators';
 import { DOSAGE_DELIVERY_METHODS } from '../dosageDeliveryMethods';
 import KofiButton from '../components/feedback/KofiButton';
 import NoteButton from '../components/feedback/NoteButton';
+import RememberedInputs from '../components/RememberedInputs';
 import { navActiveColor } from '../theme';
 
 /**
@@ -174,7 +175,13 @@ export default function AppLayout() {
       </AppShell.Header>
 
       <AppShell.Main maw={1126} mx="auto" w="100%" ta="left">
-        <Outlet />
+        {/*
+          Keyed by path so each page — and each dosage route, though IP, SC
+          and gavage share one form — mounts with its own remembered entries.
+        */}
+        <RememberedInputs key={pathname} scope={pathname.replace(/\/+$/, '') || '/'}>
+          <Outlet />
+        </RememberedInputs>
 
         {/*
           On every page, because the page a problem happened on is the thing

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { listOf, useRememberedState } from '../persistence/useRemembered';
 import { Button, Container, Group, Stack, Text, Title } from '@mantine/core';
 import { IconRefresh } from '@tabler/icons-react';
 import ViralMix from '../components/reagents/ViralMix';
@@ -27,8 +27,10 @@ const BLANK_AGENTS = [
  * is covered by tests.
  */
 export default function ViralMixes() {
-  const [v, setV] = useState(BLANK);
-  const [agents, setAgents] = useState(BLANK_AGENTS);
+  const [v, setV] = useRememberedState('values', BLANK);
+  const [agents, setAgents] = useRememberedState('agents', BLANK_AGENTS, {
+    normalize: listOf({ name: '', titer: '', titerUnit: 'e12', parts: '1' }),
+  });
   const set = (key, value) => setV((prev) => ({ ...prev, [key]: value }));
   const reset = () => {
     setV(BLANK);

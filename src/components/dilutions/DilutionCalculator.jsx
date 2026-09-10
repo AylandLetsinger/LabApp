@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRememberedState } from '../../persistence/useRemembered';
 import { Button, Divider, Group, NumberInput, Paper, Stack, Text } from '@mantine/core';
 import { IconRefresh } from '@tabler/icons-react';
 import { VOLUME_UNITS } from '../../constants/doseUnits';
@@ -67,7 +67,7 @@ const BLANK = {
  * layout and unit handling only.
  */
 export default function DilutionCalculator() {
-  const [v, setV] = useState(BLANK);
+  const [v, setV] = useRememberedState('values', BLANK);
   const reset = () => setV(BLANK);
 
   /** See the note on the molarity form: clearing one field keeps the answer. */

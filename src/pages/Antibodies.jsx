@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { listOf, useRememberedState } from '../persistence/useRemembered';
 import { Button, Container, Group, Stack, Text, Title } from '@mantine/core';
 import { IconPlus, IconRefresh } from '@tabler/icons-react';
 import AntibodyDilution from '../components/reagents/AntibodyDilution';
@@ -11,13 +11,25 @@ import PrintActions from '../components/dosage/PrintActions';
  * well, a single jar. Ten samples of 1 mL is the same 10 mL, which is why
  * there is no third field offering to be told the volume directly.
  */
+const blankAntibody = () => ({ name: '', fold: 500, stock: '', stockUnit: 'ul' });
+
 const blankMixture = (name) => ({
   name,
   sampleCount: 1,
   volumePerSample: 10,
   volumePerSampleUnit: 'ml',
-  antibodies: [{ name: '', fold: 500, stock: '', stockUnit: 'ul' }],
+  antibodies: [blankAntibody()],
 });
+
+/** Remembered solutions, rebuilt field by field, antibodies included. */
+function restoreMixtures(stored) {
+  const mixtures = listOf(blankMixture(''))(stored);
+  if (!mixtures) return undefined;
+  return mixtures.map((m) => ({
+    ...m,
+    antibodies: listOf(blankAntibody())(m.antibodies) ?? [blankAntibody()],
+  }));
+}
 
 /**
  * Primary and secondary, because that is the order they happen in and a
@@ -26,7 +38,9 @@ const blankMixture = (name) => ({
 const BLANK = [blankMixture('Primary'), blankMixture('Secondary')];
 
 export default function Antibodies() {
-  const [mixtures, setMixtures] = useState(BLANK);
+  const [mixtures, setMixtures] = useRememberedState('mixtures', BLANK, {
+    normalize: restoreMixtures,
+  });
   const reset = () => setMixtures(BLANK);
 
   const setMixture = (i, next) => setMixtures(mixtures.map((m, j) => (j === i ? next : m)));

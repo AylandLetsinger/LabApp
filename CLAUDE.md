@@ -136,6 +136,7 @@ genuinely method-specific logic gets its own module.
 | Closing "so, in practice…" paragraph | `src/components/dosage/RecipeNarrative.jsx` |
 | Dosing table by body mass | `src/components/dosage/CarrierDosingTable.jsx` |
 | "Updating -> updated" state | `src/hooks/useOutputFeedback.js` |
+| Inputs that survive a reload | `src/persistence/useRemembered.js` — see below |
 | Print / PDF | `src/components/dosage/PrintActions.jsx` |
 | Feedback button, mailto | `src/components/feedback/`, `src/feedback/mailto.js` |
 
@@ -208,6 +209,40 @@ float tolerance tighter than the value being tested, and a check that passes
 because it silently compared a string to a number.
 
 The sandbox is a copy — edits there change nothing. Delete it when done.
+
+## Remembered inputs
+
+Each page remembers its last entries in `localStorage`, in that browser only.
+Nothing is sent anywhere. Read this before adding state to a page.
+
+- **How a page opts in:** use `useRememberedState(name, initial)` and
+  `useRememberedForm(name, config)` from `src/persistence/useRemembered.js`
+  instead of `useState` and `useForm`. `name` must be unique on the page.
+  Display preferences and computed outputs stay on plain `useState` —
+  remember what the person typed, nothing else.
+- **Scope is the URL path.** `RememberedInputs` wraps the page outlet in
+  `AppLayout.jsx`, keyed by path, so IP, SC and gavage keep separate memories
+  though they share `LiquidDoseForm`. The key also fixed values carrying over
+  between those three when switching routes — do not remove it.
+- **Shapes are checked on restore, not trusted.** Plain objects merge onto
+  their defaults field by field. Lists need a `normalize`: `listOf(defaults)`
+  for lists of plain objects, `restoreSolutes` for solutes.
+- **Bump `STORAGE_VERSION`** in `src/persistence/storage.js` when you rename a
+  remembered field or change its type. Adding a field needs no bump.
+- **Nothing is written until the person interacts with the page.** Some pages
+  fill fields in by themselves on mount; without this gate an untouched visit
+  was remembered as "your entries". Do not remove it.
+- **An effect that writes into a form on mount will clobber restored values.**
+  See `useWasRestored` and the load-volume effect in `CarrierDosageForm.jsx`.
+- **Ids in remembered state must be unique across page loads.** Solute ids
+  carry a load prefix for this reason: a plain counter restarts at zero, and a
+  restored `solute-1` would collide with the next one added.
+- **Restored values are never silent.** The page shows when they were last
+  used and offers Start fresh. Lab computers are shared, and a restored dose
+  looks exactly like a typed one.
+- **If a restore crashes a page**, its error boundary clears that page's
+  memory and starts it fresh, once. Without it, one bad entry would break the
+  page in that browser on every visit.
 
 ## Environment notes
 
