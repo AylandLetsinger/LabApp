@@ -1,5 +1,5 @@
 import { Anchor, Container, List, Paper, Stack, Text, Title } from '@mantine/core';
-import { LAB_WEBSITE, SOURCE_REPO, SUPPORT_LINK } from '../support';
+import { LAB_WEBSITE, LICENSE, SOURCE_REPO, SUPPORT_LINK } from '../support';
 
 /**
  * Who made this, and how to say thanks.
@@ -39,8 +39,8 @@ export default function Support() {
           the whole site is open source at{' '}
           <Anchor href={SOURCE_REPO.url} target="_blank" rel="noopener noreferrer">
             {SOURCE_REPO.label}
-          </Anchor>
-          .
+          </Anchor>{' '}
+          under the {LICENSE.name} license.
         </Text>
 
         <Paper p="md" radius="md" withBorder>

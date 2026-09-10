@@ -86,6 +86,11 @@ Coordinate before editing shared files — `src/theme.js`,
 `src/layout/AppLayout.jsx`, `src/App.jsx`, `src/dosageDeliveryMethods.js`,
 `package.json`. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## License
+
+[BSD 3-Clause](LICENSE). Copyright (c) 2026 Board of Regents, The University
+of Texas System.
+
 ## Found a wrong number?
 
 Every page has a **Send a note** button in the footer. A calculator nobody

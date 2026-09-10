@@ -3,7 +3,7 @@ import { useForm } from '@mantine/form';
 import { Link } from 'react-router-dom';
 import { DOSAGE_DELIVERY_METHODS } from '../dosageDeliveryMethods';
 import { noteMailtoUrl } from '../feedback/mailto';
-import { SOURCE_REPO } from '../support';
+import { LICENSE, SOURCE_REPO } from '../support';
 
 export default function About() {
   const feedbackForm = useForm({
@@ -83,6 +83,10 @@ export default function About() {
             All of it is public, so you can check any of that for yourself:{' '}
             <Anchor href={SOURCE_REPO.url} target="_blank" rel="noopener noreferrer">
               {SOURCE_REPO.label}
+            </Anchor>
+            , released under the{' '}
+            <Anchor href={LICENSE.url} target="_blank" rel="noopener noreferrer">
+              {LICENSE.name} license
             </Anchor>
             . And if a number here looks wrong to you, please tell us — that is the most useful
             thing anyone does for this app.

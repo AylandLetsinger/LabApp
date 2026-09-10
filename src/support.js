@@ -38,3 +38,19 @@ export const SOURCE_REPO = {
   url: 'https://github.com/AylandLetsinger/LabApp',
   label: 'github.com/AylandLetsinger/LabApp',
 };
+
+/**
+ * The license, as agreed with UT's IP office in September 2026.
+ *
+ * Until the LICENSE file existed, "open-source" on the About page was not
+ * true in the legal sense: public code with no license is all rights
+ * reserved. The holder is the Board of Regents, not the individual authors —
+ * that is what UT specified, and it means one party can relicense a future
+ * version rather than needing every contributor's signature.
+ */
+export const LICENSE = {
+  name: 'BSD 3-Clause',
+  holder: 'Board of Regents, The University of Texas System',
+  year: 2026,
+  url: 'https://github.com/AylandLetsinger/LabApp/blob/main/LICENSE',
+};
