@@ -281,8 +281,12 @@ Coordinate before editing outside your area, and always before touching
 
 | Person | Area |
 |---|---|
-| Ayland Letsinger | Dosage calculators |
-| Klarissa Tey | Molarity, Dilutions, Antibodies |
+| Ayland Letsinger | Every calculator — what it computes, its inputs, its warnings, its arithmetic |
+| Klarissa Tey | UI — theme, layout, navigation, and how every page looks |
 | Elijah Martinez | Recipes |
+
+A component file holds both layout and state, so one change can touch both
+areas. The split is by what the change does: **a number, an input, or a
+warning is Ayland's; how it looks is Klarissa's.**
 
 See `CONTRIBUTING.md` for the human workflow.

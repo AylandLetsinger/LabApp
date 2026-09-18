@@ -34,14 +34,15 @@ file at the same time is the one thing git cannot resolve on its own.
 
 | Person | Area | Files |
 |---|---|---|
-| **Ayland** | Dosage calculators | `src/dosage/`, `src/components/dosage/` |
-| **Klarissa** | Molarity, Dilutions, Antibodies | `src/components/molarity/`, `src/components/dilutions/`, `src/components/reagents/`, and the matching pages |
+| **Ayland** | Every calculator | the `compute*.js` modules, and what each calculator asks for, computes and warns about |
+| **Klarissa** | UI | `src/theme.js`, `src/layout/`, and how every page and component looks |
 | **Elijah** | Recipes | `src/pages/Recipes.jsx` |
 
 Each calculator is a page (framing text), a component (layout and state), and
-a `compute*.js` module (the arithmetic). Owning a calculator means owning all
-three. `src/pages/ViralMixes.jsx` and `src/pages/StockSolution.jsx` are
-unassigned — say so in chat before taking one on.
+a `compute*.js` module (the arithmetic). The component is where the two areas
+meet, so the split is by what a change does: **a number, an input, or a warning
+is Ayland's; how it looks is Klarissa's.** A change that is both — a new input
+that also needs a new layout — say so in chat first.
 
 **Shared files — say so in chat before editing:**
 

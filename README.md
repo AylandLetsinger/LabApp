@@ -78,8 +78,8 @@ There is no test runner; see the verification section in
 
 | Person | Area |
 |---|---|
-| Ayland Letsinger | Dosage calculators |
-| Klarissa Tey | Molarity, Dilutions, Antibodies |
+| Ayland Letsinger | Calculators |
+| Klarissa Tey | UI |
 | Elijah Martinez | Recipes |
 
 Coordinate before editing shared files — `src/theme.js`,
